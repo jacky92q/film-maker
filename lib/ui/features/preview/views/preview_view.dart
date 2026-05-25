@@ -165,12 +165,13 @@ class _PreviewViewState extends State<PreviewView>
               0.08 * _kenBurnsController.value;
           final dx = 0.03 *
               (_kenBurnsController.value - 0.5);
-          return Transform(
+          return Transform.scale(
+            scale: scale,
             alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..scaleByDouble(scale)
-              ..translateByDouble(dx * 200, 0, 0),
-            child: child,
+            child: Transform.translate(
+              offset: Offset(dx * 200, 0),
+              child: child,
+            ),
           );
         },
         child: background,
