@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 enum TransitionEffect { fade, slideLeft, slideRight, zoomIn, kenBurns }
 
 enum TextPosition {
