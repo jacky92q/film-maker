@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:film_maker/data/repositories/export_repository.dart';
 import 'package:film_maker/domain/models/slide.dart';
+import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';
 import 'package:film_maker/ui/features/export/view_models/export_view_model.dart';
@@ -50,10 +51,8 @@ class _EditorViewState extends State<EditorView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('Unsaved Changes',
             style: GoogleFonts.playfairDisplay(color: AppTheme.cream)),
-        content: Text(
-          'Save your film before leaving?',
-          style: GoogleFonts.lato(color: AppTheme.subtleText),
-        ),
+        content: Text('Save your film before leaving?',
+            style: GoogleFonts.lato(color: AppTheme.subtleText)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -75,7 +74,7 @@ class _EditorViewState extends State<EditorView> {
 
   void _openPreview() {
     Navigator.of(context).push(
-      MaterialPageRoute(
+      SlideUpPageRoute(
         builder: (_) => PreviewView(
           viewModel: PreviewViewModel(project: widget.viewModel.project),
         ),
@@ -85,7 +84,7 @@ class _EditorViewState extends State<EditorView> {
 
   void _openExport() {
     Navigator.of(context).push(
-      MaterialPageRoute(
+      SlideUpPageRoute(
         builder: (_) => ExportView(
           viewModel: ExportViewModel(
             project: widget.viewModel.project,
@@ -113,6 +112,22 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
+  void _showTemplatePickerForNewSlide() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.darkSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _TemplatePicker(
+        onSelect: (template) {
+          widget.viewModel.addSlide(template: template);
+          Navigator.of(context).pop();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -133,6 +148,7 @@ class _EditorViewState extends State<EditorView> {
             return Column(
               children: [
                 _buildSlideCanvas(),
+                _buildFilterStrip(),
                 _buildEditControls(),
                 _buildTimeline(),
               ],
@@ -169,9 +185,8 @@ class _EditorViewState extends State<EditorView> {
                 contentPadding: EdgeInsets.zero,
               ),
               onSubmitted: (v) {
-                widget.viewModel.updateProjectTitle(v.trim().isEmpty
-                    ? widget.viewModel.project.title
-                    : v.trim());
+                widget.viewModel.updateProjectTitle(
+                    v.trim().isEmpty ? widget.viewModel.project.title : v.trim());
                 setState(() => _editingTitle = false);
               },
             );
@@ -205,44 +220,38 @@ class _EditorViewState extends State<EditorView> {
       actions: [
         ListenableBuilder(
           listenable: widget.viewModel,
-          builder: (context, _) {
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.viewModel.hasUnsavedChanges)
-                  IconButton(
-                    tooltip: 'Save',
-                    icon: widget.viewModel.isSaving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: AppTheme.gold),
-                          )
-                        : const Icon(Icons.save_outlined, color: AppTheme.gold),
-                    onPressed: widget.viewModel.isSaving
-                        ? null
-                        : () => widget.viewModel.saveProject(),
-                  ),
-                TextButton(
-                  onPressed: _openPreview,
-                  child: Text(
-                    'Preview',
-                    style:
-                        GoogleFonts.lato(color: AppTheme.gold, fontSize: 13),
-                  ),
+          builder: (context, _) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.viewModel.hasUnsavedChanges)
+                IconButton(
+                  tooltip: 'Save',
+                  icon: widget.viewModel.isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppTheme.gold),
+                        )
+                      : const Icon(Icons.save_outlined, color: AppTheme.gold),
+                  onPressed: widget.viewModel.isSaving
+                      ? null
+                      : () => widget.viewModel.saveProject(),
                 ),
-                TextButton(
-                  onPressed: _openExport,
-                  child: Text(
-                    'Export',
+              TextButton(
+                onPressed: _openPreview,
+                child: Text('Preview',
                     style: GoogleFonts.lato(
-                        color: AppTheme.cream, fontSize: 13),
-                  ),
-                ),
-              ],
-            );
-          },
+                        color: AppTheme.gold, fontSize: 13)),
+              ),
+              TextButton(
+                onPressed: _openExport,
+                child: Text('Export',
+                    style: GoogleFonts.lato(
+                        color: AppTheme.cream, fontSize: 13)),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -275,13 +284,58 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
+  Widget _buildFilterStrip() {
+    final slide = widget.viewModel.selectedSlide;
+    if (slide == null) return const SizedBox.shrink();
+
+    return Container(
+      height: 44,
+      color: AppTheme.darkBg,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        children: PhotoFilter.values.map((filter) {
+          final selected = slide.photoFilter == filter;
+          return GestureDetector(
+            onTap: () => widget.viewModel
+                .updateSelectedSlide(slide.copyWith(photoFilter: filter)),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                color: selected
+                    ? AppTheme.gold.withValues(alpha: 0.2)
+                    : AppTheme.darkSurface,
+                border: Border.all(
+                  color: selected ? AppTheme.gold : AppTheme.border,
+                  width: selected ? 1.5 : 1,
+                ),
+              ),
+              child: Text(
+                filter.label,
+                style: GoogleFonts.lato(
+                  color: selected ? AppTheme.gold : AppTheme.subtleText,
+                  fontSize: 11,
+                  fontWeight:
+                      selected ? FontWeight.w700 : FontWeight.normal,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildEditControls() {
     final slide = widget.viewModel.selectedSlide;
     if (slide == null) return const SizedBox.shrink();
 
     return Container(
       color: AppTheme.darkSurface,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -292,17 +346,17 @@ class _EditorViewState extends State<EditorView> {
                 label: 'Photo',
                 onTap: widget.viewModel.pickImageForCurrentSlide,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               _ControlButton(
                 icon: Icons.text_fields,
                 label: 'Text',
                 onTap: _showSlideEditSheet,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               _ControlButton(
                 icon: Icons.music_note_outlined,
                 label: widget.viewModel.project.musicName ?? 'Music',
-                onTap: () => _showMusicPicker(),
+                onTap: _showMusicPicker,
                 highlighted: widget.viewModel.project.musicName != null,
               ),
               const Spacer(),
@@ -310,12 +364,14 @@ class _EditorViewState extends State<EditorView> {
                 IconButton(
                   onPressed: widget.viewModel.deleteSelectedSlide,
                   tooltip: 'Delete slide',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                   icon: const Icon(Icons.delete_outline,
                       color: Color(0xFFFF6B6B), size: 20),
                 ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _buildTransitionChips(slide),
         ],
       ),
@@ -331,21 +387,19 @@ class _EditorViewState extends State<EditorView> {
           return Padding(
             padding: const EdgeInsets.only(right: 6),
             child: GestureDetector(
-              onTap: () => widget.viewModel.updateSelectedSlide(
-                slide.copyWith(transition: effect),
-              ),
+              onTap: () => widget.viewModel
+                  .updateSelectedSlide(slide.copyWith(transition: effect)),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 180),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: selected
                       ? AppTheme.gold.withValues(alpha: 0.2)
                       : AppTheme.darkSurface2,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(7),
                   border: Border.all(
-                    color:
-                        selected ? AppTheme.gold : AppTheme.border,
+                    color: selected ? AppTheme.gold : AppTheme.border,
                     width: selected ? 1.5 : 1,
                   ),
                 ),
@@ -353,8 +407,9 @@ class _EditorViewState extends State<EditorView> {
                   effect.label,
                   style: GoogleFonts.lato(
                     color: selected ? AppTheme.gold : AppTheme.subtleText,
-                    fontSize: 12,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                    fontSize: 11,
+                    fontWeight:
+                        selected ? FontWeight.w700 : FontWeight.normal,
                   ),
                 ),
               ),
@@ -382,7 +437,8 @@ class _EditorViewState extends State<EditorView> {
               itemCount: widget.viewModel.project.slides.length + 1,
               itemBuilder: (context, index) {
                 if (index == widget.viewModel.project.slides.length) {
-                  return _AddSlideButton(onTap: widget.viewModel.addSlide);
+                  return _AddSlideButton(
+                      onTap: _showTemplatePickerForNewSlide);
                 }
                 final slide = widget.viewModel.project.slides[index];
                 final isSelected =
@@ -418,7 +474,7 @@ class _EditorViewState extends State<EditorView> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Slide canvas widget
+// Slide canvas
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SlideCanvas extends StatelessWidget {
@@ -448,16 +504,27 @@ class _SlideCanvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget photo = slide.imagePath != null
+        ? Image.file(File(slide.imagePath!),
+            fit: BoxFit.cover, errorBuilder: (_, __, ___) => _gradientBg())
+        : _gradientBg();
+
+    if (slide.photoFilter != PhotoFilter.none &&
+        slide.photoFilter.colorFilter != null) {
+      photo = ColorFiltered(
+          colorFilter: slide.photoFilter.colorFilter!, child: photo);
+    }
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        _buildBackground(),
-        _buildGradientOverlay(),
+        photo,
+        _gradientOverlay(),
         Padding(
           padding: const EdgeInsets.all(16),
           child: Align(
             alignment: _textAlignment(),
-            child: _buildTextOverlay(),
+            child: _textOverlay(),
           ),
         ),
         if (slide.imagePath == null)
@@ -467,7 +534,8 @@ class _SlideCanvas extends StatelessWidget {
             child: GestureDetector(
               onTap: onTapPhoto,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppTheme.darkBg.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(6),
@@ -480,11 +548,9 @@ class _SlideCanvas extends StatelessWidget {
                     const Icon(Icons.add_photo_alternate_outlined,
                         color: AppTheme.gold, size: 14),
                     const SizedBox(width: 4),
-                    Text(
-                      'Add Photo',
-                      style: GoogleFonts.lato(
-                          color: AppTheme.gold, fontSize: 11),
-                    ),
+                    Text('Add Photo',
+                        style: GoogleFonts.lato(
+                            color: AppTheme.gold, fontSize: 11)),
                   ],
                 ),
               ),
@@ -494,49 +560,34 @@ class _SlideCanvas extends StatelessWidget {
     );
   }
 
-  Widget _buildBackground() {
-    if (slide.imagePath != null) {
-      return Image.file(
-        File(slide.imagePath!),
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildGradientBg(),
+  Widget _gradientBg() => Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A1208), Color(0xFF0D0D0D)],
+          ),
+        ),
       );
-    }
-    return _buildGradientBg();
-  }
 
-  Widget _buildGradientBg() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1A1208), Color(0xFF0D0D0D)],
+  Widget _gradientOverlay() => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.black.withValues(alpha: 0.6),
+            ],
+            stops: const [0.4, 1.0],
+          ),
         ),
-      ),
-    );
-  }
+      );
 
-  Widget _buildGradientOverlay() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            Colors.black.withValues(alpha: 0.6),
-          ],
-          stops: const [0.4, 1.0],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextOverlay() {
+  Widget _textOverlay() {
     if (slide.title.isEmpty && slide.subtitle.isEmpty) {
       return Text(
-        'Tap to add text...',
+        'Tap to edit text...',
         style: GoogleFonts.playfairDisplay(
           color: AppTheme.subtleText.withValues(alpha: 0.6),
           fontSize: 16,
@@ -544,23 +595,37 @@ class _SlideCanvas extends StatelessWidget {
         ),
       );
     }
+
+    final textCol = slide.textColor.color;
+    final isSerif = slide.fontStyle == SlideFontStyle.serif;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (slide.title.isNotEmpty)
           Text(
             slide.title,
-            style: GoogleFonts.playfairDisplay(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.8),
-                  blurRadius: 8,
-                ),
-              ],
-            ),
+            style: isSerif
+                ? GoogleFonts.playfairDisplay(
+                    color: textCol,
+                    fontSize: slide.textSize.titleFontSize,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                          color: Colors.black.withValues(alpha: 0.8),
+                          blurRadius: 8),
+                    ],
+                  )
+                : GoogleFonts.lato(
+                    color: textCol,
+                    fontSize: slide.textSize.titleFontSize,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                          color: Colors.black.withValues(alpha: 0.8),
+                          blurRadius: 8),
+                    ],
+                  ),
             textAlign: TextAlign.center,
           ),
         if (slide.title.isNotEmpty && slide.subtitle.isNotEmpty)
@@ -569,14 +634,13 @@ class _SlideCanvas extends StatelessWidget {
           Text(
             slide.subtitle,
             style: GoogleFonts.lato(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 13,
+              color: textCol.withValues(alpha: 0.85),
+              fontSize: slide.textSize.subtitleFontSize,
               letterSpacing: 1.0,
               shadows: [
                 Shadow(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  blurRadius: 6,
-                ),
+                    color: Colors.black.withValues(alpha: 0.7),
+                    blurRadius: 6),
               ],
             ),
             textAlign: TextAlign.center,
@@ -627,11 +691,9 @@ class _SlideThumbnail extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               if (slide.imagePath != null)
-                Image.file(
-                  File(slide.imagePath!),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                ),
+                Image.file(File(slide.imagePath!),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink()),
               Positioned(
                 bottom: 2,
                 left: 0,
@@ -640,7 +702,8 @@ class _SlideThumbnail extends StatelessWidget {
                   child: Text(
                     '${index + 1}',
                     style: GoogleFonts.lato(
-                      color: isSelected ? AppTheme.gold : AppTheme.subtleText,
+                      color:
+                          isSelected ? AppTheme.gold : AppTheme.subtleText,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -669,8 +732,7 @@ class _AddSlideButton extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-              color: AppTheme.gold.withValues(alpha: 0.5),
-              style: BorderStyle.solid),
+              color: AppTheme.gold.withValues(alpha: 0.5)),
           color: AppTheme.gold.withValues(alpha: 0.08),
         ),
         child: const Icon(Icons.add, color: AppTheme.gold, size: 22),
@@ -703,11 +765,9 @@ class _MusicTimelineButton extends StatelessWidget {
               ? AppTheme.gold.withValues(alpha: 0.08)
               : AppTheme.darkSurface,
         ),
-        child: Icon(
-          Icons.music_note_outlined,
-          color: musicName != null ? AppTheme.gold : AppTheme.subtleText,
-          size: 20,
-        ),
+        child: Icon(Icons.music_note_outlined,
+            color: musicName != null ? AppTheme.gold : AppTheme.subtleText,
+            size: 20),
       ),
     );
   }
@@ -738,14 +798,17 @@ class _ControlButton extends StatelessWidget {
               : AppTheme.darkSurface2,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: highlighted ? AppTheme.gold.withValues(alpha: 0.4) : AppTheme.border,
+            color: highlighted
+                ? AppTheme.gold.withValues(alpha: 0.4)
+                : AppTheme.border,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon,
-                color: highlighted ? AppTheme.gold : AppTheme.subtleText,
+                color:
+                    highlighted ? AppTheme.gold : AppTheme.subtleText,
                 size: 15),
             const SizedBox(width: 4),
             ConstrainedBox(
@@ -770,9 +833,86 @@ class _ControlButton extends StatelessWidget {
 // Bottom sheets
 // ─────────────────────────────────────────────────────────────────────────────
 
+class _TemplatePicker extends StatelessWidget {
+  const _TemplatePicker({required this.onSelect});
+  final void Function(SlideTemplate) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: AppTheme.border,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text('Choose a Template',
+              style: GoogleFonts.playfairDisplay(
+                  color: AppTheme.cream,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text('Start with a pre-designed layout',
+              style: GoogleFonts.lato(
+                  color: AppTheme.subtleText, fontSize: 13)),
+          const SizedBox(height: 16),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.1,
+            physics: const NeverScrollableScrollPhysics(),
+            children: SlideTemplate.values.map((t) {
+              return GestureDetector(
+                onTap: () => onSelect(t),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.darkSurface2,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppTheme.gold.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(t.emoji,
+                          style: const TextStyle(fontSize: 22)),
+                      const SizedBox(height: 4),
+                      Text(t.label,
+                          style: GoogleFonts.lato(
+                              color: AppTheme.cream,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600)),
+                      Text(t.description,
+                          style: GoogleFonts.lato(
+                              color: AppTheme.subtleText, fontSize: 9),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SlideEditSheet extends StatefulWidget {
   const _SlideEditSheet({required this.slide, required this.viewModel});
-
   final Slide slide;
   final EditorViewModel viewModel;
 
@@ -819,76 +959,264 @@ class _SlideEditSheetState extends State<_SlideEditSheet> {
         top: 16,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppTheme.border,
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: AppTheme.border,
+                    borderRadius: BorderRadius.circular(2)),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Edit Slide',
-            style: GoogleFonts.playfairDisplay(
-                color: AppTheme.cream, fontSize: 20, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            controller: _titleCtrl,
-            style: const TextStyle(color: AppTheme.cream),
-            decoration: const InputDecoration(
-              labelText: 'Title',
-              hintText: 'e.g. The Day We Met',
+            const SizedBox(height: 20),
+            Text('Edit Slide',
+                style: GoogleFonts.playfairDisplay(
+                    color: AppTheme.cream,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _titleCtrl,
+              style: const TextStyle(color: AppTheme.cream),
+              decoration: const InputDecoration(
+                  labelText: 'Title', hintText: 'e.g. The Day We Met'),
             ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _subtitleCtrl,
-            style: const TextStyle(color: AppTheme.cream),
-            decoration: const InputDecoration(
-              labelText: 'Subtitle',
-              hintText: 'e.g. Seoul, Spring 2024',
+            const SizedBox(height: 10),
+            TextField(
+              controller: _subtitleCtrl,
+              style: const TextStyle(color: AppTheme.cream),
+              decoration: const InputDecoration(
+                  labelText: 'Subtitle',
+                  hintText: 'e.g. Seoul, Spring 2024'),
             ),
+            const SizedBox(height: 16),
+            // Text color
+            _SectionLabel(label: 'Text Color'),
+            const SizedBox(height: 8),
+            _ColorPicker(
+              current: _slide.textColor,
+              onSelect: (c) => setState(() => _slide = _slide.copyWith(textColor: c)),
+            ),
+            const SizedBox(height: 14),
+            // Font style + text size
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SectionLabel(label: 'Font'),
+                      const SizedBox(height: 8),
+                      _FontStyleToggle(
+                        current: _slide.fontStyle,
+                        onSelect: (f) =>
+                            setState(() => _slide = _slide.copyWith(fontStyle: f)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SectionLabel(label: 'Size'),
+                      const SizedBox(height: 8),
+                      _TextSizePicker(
+                        current: _slide.textSize,
+                        onSelect: (s) =>
+                            setState(() => _slide = _slide.copyWith(textSize: s)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _SectionLabel(label: 'Duration'),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: _slide.durationSeconds.toDouble(),
+                    min: 2,
+                    max: 10,
+                    divisions: 8,
+                    onChanged: (v) => setState(
+                        () => _slide = _slide.copyWith(durationSeconds: v.round())),
+                  ),
+                ),
+                Text('${_slide.durationSeconds}s',
+                    style: GoogleFonts.lato(
+                        color: AppTheme.gold, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(onPressed: _save, child: const Text('Apply')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Text(
+        label,
+        style: GoogleFonts.lato(
+            color: AppTheme.subtleText,
+            fontSize: 12,
+            letterSpacing: 0.8,
+            fontWeight: FontWeight.w600),
+      );
+}
+
+class _ColorPicker extends StatelessWidget {
+  const _ColorPicker({required this.current, required this.onSelect});
+  final SlideTextColor current;
+  final void Function(SlideTextColor) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: SlideTextColor.values.map((c) {
+        final selected = c == current;
+        return GestureDetector(
+          onTap: () => onSelect(c),
+          child: Container(
+            width: 28,
+            height: 28,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: c.color,
+              border: Border.all(
+                color: selected ? AppTheme.gold : AppTheme.border,
+                width: selected ? 2.5 : 1,
+              ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                          color: AppTheme.gold.withValues(alpha: 0.4),
+                          blurRadius: 6)
+                    ]
+                  : null,
+            ),
+            child: selected
+                ? Icon(
+                    Icons.check,
+                    size: 14,
+                    color: c == SlideTextColor.white || c == SlideTextColor.cream
+                        ? Colors.black
+                        : Colors.white,
+                  )
+                : null,
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Duration',
-            style: GoogleFonts.lato(
-                color: AppTheme.subtleText, fontSize: 13),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: Slider(
-                  value: _slide.durationSeconds.toDouble(),
-                  min: 2,
-                  max: 10,
-                  divisions: 8,
-                  onChanged: (v) =>
-                      setState(() => _slide = _slide.copyWith(durationSeconds: v.round())),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _FontStyleToggle extends StatelessWidget {
+  const _FontStyleToggle({required this.current, required this.onSelect});
+  final SlideFontStyle current;
+  final void Function(SlideFontStyle) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: SlideFontStyle.values.map((f) {
+        final selected = f == current;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => onSelect(f),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              decoration: BoxDecoration(
+                color: selected
+                    ? AppTheme.gold.withValues(alpha: 0.2)
+                    : AppTheme.darkSurface2,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                    color: selected ? AppTheme.gold : AppTheme.border,
+                    width: selected ? 1.5 : 1),
+              ),
+              child: Center(
+                child: Text(
+                  f == SlideFontStyle.serif ? 'Serif' : 'Sans',
+                  style: (f == SlideFontStyle.serif
+                          ? GoogleFonts.playfairDisplay()
+                          : GoogleFonts.lato())
+                      .copyWith(
+                    color: selected ? AppTheme.gold : AppTheme.subtleText,
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+                  ),
                 ),
               ),
-              Text(
-                '${_slide.durationSeconds}s',
-                style: GoogleFonts.lato(
-                    color: AppTheme.gold, fontWeight: FontWeight.bold),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _TextSizePicker extends StatelessWidget {
+  const _TextSizePicker({required this.current, required this.onSelect});
+  final SlideTextSize current;
+  final void Function(SlideTextSize) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: SlideTextSize.values.map((s) {
+        final selected = s == current;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => onSelect(s),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              decoration: BoxDecoration(
+                color: selected
+                    ? AppTheme.gold.withValues(alpha: 0.2)
+                    : AppTheme.darkSurface2,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                    color: selected ? AppTheme.gold : AppTheme.border,
+                    width: selected ? 1.5 : 1),
               ),
-            ],
+              child: Center(
+                child: Text(
+                  s.label,
+                  style: GoogleFonts.lato(
+                    color: selected ? AppTheme.gold : AppTheme.subtleText,
+                    fontSize: 13,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+                  ),
+                ),
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(onPressed: _save, child: const Text('Apply')),
-          ),
-        ],
-      ),
+        );
+      }).toList(),
     );
   }
 }
@@ -904,11 +1232,11 @@ class _MusicPickerSheet extends StatelessWidget {
   final void Function(String name) onSelect;
   final VoidCallback onRemove;
 
-  static const _sampleSongs = [
+  static const _songs = [
     ('A Thousand Years', 'Christina Perri'),
     ('Perfect', 'Ed Sheeran'),
     ('All of Me', 'John Legend'),
-    ('Can\'t Help Falling in Love', 'Elvis Presley'),
+    ("Can't Help Falling in Love", 'Elvis Presley'),
     ('Marry Me', 'Train'),
     ('Make You Feel My Love', 'Adele'),
   ];
@@ -933,13 +1261,11 @@ class _MusicPickerSheet extends StatelessWidget {
           const SizedBox(height: 20),
           Row(
             children: [
-              Text(
-                'Choose a Song',
-                style: GoogleFonts.playfairDisplay(
-                    color: AppTheme.cream,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600),
-              ),
+              Text('Choose a Song',
+                  style: GoogleFonts.playfairDisplay(
+                      color: AppTheme.cream,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600)),
               const Spacer(),
               if (currentMusicName != null)
                 TextButton(
@@ -953,13 +1279,8 @@ class _MusicPickerSheet extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Sample songs for demo — connect real library for production',
-            style: GoogleFonts.lato(color: AppTheme.subtleText, fontSize: 12),
-          ),
-          const SizedBox(height: 16),
-          ..._sampleSongs.map((song) {
+          const SizedBox(height: 14),
+          ..._songs.map((song) {
             final isSelected = currentMusicName == song.$1;
             return ListTile(
               dense: true,
@@ -974,10 +1295,11 @@ class _MusicPickerSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  isSelected ? Icons.music_note : Icons.music_note_outlined,
-                  color: isSelected ? AppTheme.gold : AppTheme.subtleText,
-                  size: 18,
-                ),
+                    isSelected
+                        ? Icons.music_note
+                        : Icons.music_note_outlined,
+                    color: isSelected ? AppTheme.gold : AppTheme.subtleText,
+                    size: 18),
               ),
               title: Text(song.$1,
                   style: GoogleFonts.lato(

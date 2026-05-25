@@ -1,5 +1,6 @@
 import 'package:film_maker/data/repositories/project_repository.dart';
 import 'package:film_maker/domain/models/user.dart';
+import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/home/view_models/home_view_model.dart';
 import 'package:film_maker/ui/features/projects/view_models/projects_view_model.dart';
@@ -42,7 +43,7 @@ class _HomeViewState extends State<HomeView> {
 
   void _goToProjects() {
     Navigator.of(context).push(
-      MaterialPageRoute(
+      SlideUpPageRoute(
         builder: (_) => ProjectsView(
           viewModel: ProjectsViewModel(
             projectRepository: widget.projectRepository,
