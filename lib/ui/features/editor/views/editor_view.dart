@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:film_maker/data/repositories/export_repository.dart';
-import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';

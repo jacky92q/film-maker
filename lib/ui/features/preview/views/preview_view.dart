@@ -168,8 +168,8 @@ class _PreviewViewState extends State<PreviewView>
           return Transform(
             alignment: Alignment.center,
             transform: Matrix4.identity()
-              ..scale(scale)
-              ..translate(dx * 200, 0),
+              ..scaleByDouble(scale)
+              ..translateByDouble(dx * 200, 0, 0),
             child: child,
           );
         },
