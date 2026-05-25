@@ -1,31 +1,39 @@
 import 'package:film_maker/data/repositories/auth_repository.dart';
+import 'package:film_maker/domain/models/user.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthViewModel extends ChangeNotifier {
-  AuthViewModel({required AuthRepository authRepository}) : _authRepository = authRepository;
+  AuthViewModel({required AuthRepository authRepository})
+      : _authRepository = authRepository;
 
   final AuthRepository _authRepository;
 
   bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
   String? _error;
-  String? get error => _error;
+  User? _user;
 
-  Future<bool> login({required String email, required String password}) async {
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  User? get user => _user;
+
+  Future<User?> login({
+    required String email,
+    required String password,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _authRepository.login(email: email, password: password);
-      return true;
+      _user = await _authRepository.login(email: email, password: password);
     } catch (_) {
-      _error = 'Login failed. Check email/password.';
-      return false;
+      _error = 'Invalid credentials. Try any email with 4+ char password.';
+      _user = null;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+
+    return _user;
   }
 }

@@ -1,5 +1,7 @@
+import 'package:film_maker/domain/models/user.dart';
+
 class MockAuthService {
-  Future<Map<String, String>> login({
+  Future<User> login({
     required String email,
     required String password,
   }) async {
@@ -9,10 +11,9 @@ class MockAuthService {
       throw Exception('Invalid credentials');
     }
 
-    return {
-      'id': 'u1',
-      'name': 'Wedding Creator',
-      'email': email,
-    };
+    final local = email.split('@').first;
+    final name = local[0].toUpperCase() + local.substring(1);
+
+    return User(id: 'u1', name: name, email: email);
   }
 }
