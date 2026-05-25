@@ -36,13 +36,8 @@ class EditorViewModel extends ChangeNotifier {
     }
   }
 
-  void addSlide() {
-    final newSlide = Slide(
-      id: _uuid.v4(),
-      title: '',
-      subtitle: '',
-      transition: TransitionEffect.fade,
-    );
+  void addSlide({SlideTemplate template = SlideTemplate.blank}) {
+    final newSlide = SlideDefaults.fromTemplate(_uuid.v4(), template);
     final slides = [..._project.slides, newSlide];
     _project = _project.copyWith(slides: slides);
     _selectedSlideIndex = slides.length - 1;

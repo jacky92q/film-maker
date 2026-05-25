@@ -3,6 +3,7 @@ import 'package:film_maker/data/repositories/project_repository.dart';
 import 'package:film_maker/data/services/mock_auth_service.dart';
 import 'package:film_maker/data/services/mock_project_service.dart';
 import 'package:film_maker/domain/models/user.dart';
+import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/auth/view_models/auth_view_model.dart';
 import 'package:film_maker/ui/features/auth/views/login_view.dart';
@@ -41,7 +42,7 @@ class _RootView extends StatelessWidget {
 
   void _onLoggedIn(BuildContext context, User user) {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
+      FadePageRoute(
         builder: (_) => HomeView(
           user: user,
           projectRepository: projectRepository,

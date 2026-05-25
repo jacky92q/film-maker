@@ -148,11 +148,15 @@ class _PreviewViewState extends State<PreviewView>
     Widget background;
 
     if (slide.imagePath != null) {
-      background = Image.file(
+      Widget img = Image.file(
         File(slide.imagePath!),
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _buildGradientBg(),
       );
+      final filter = slide.photoFilter.colorFilter;
+      background = filter != null
+          ? ColorFiltered(colorFilter: filter, child: img)
+          : img;
     } else {
       background = _buildGradientBg();
     }
@@ -292,9 +296,12 @@ class _PreviewViewState extends State<PreviewView>
                 child: Text(
                   slide.title,
                   key: ValueKey('title_${slide.id}'),
-                  style: GoogleFonts.playfairDisplay(
-                    color: Colors.white,
-                    fontSize: 28,
+                  style: (slide.fontStyle == SlideFontStyle.serif
+                          ? GoogleFonts.playfairDisplay()
+                          : GoogleFonts.lato())
+                      .copyWith(
+                    color: slide.textColor.color,
+                    fontSize: slide.textSize.titleFontSize,
                     fontWeight: FontWeight.bold,
                     shadows: [
                       Shadow(
@@ -316,14 +323,14 @@ class _PreviewViewState extends State<PreviewView>
                 decoration: BoxDecoration(
                   border: Border(
                     left: BorderSide(
-                        color: AppTheme.gold, width: 2),
+                        color: slide.textColor.color, width: 2),
                   ),
                 ),
                 child: Text(
                   slide.subtitle,
                   style: GoogleFonts.lato(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 14,
+                    color: slide.textColor.color.withValues(alpha: 0.85),
+                    fontSize: slide.textSize.subtitleFontSize,
                     letterSpacing: 1.5,
                   ),
                   textAlign: TextAlign.center,
