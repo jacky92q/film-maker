@@ -21,22 +21,30 @@ TextStyle slideLayerTextStyle(
   List<Shadow>? shadows,
 }) {
   final String family;
+  final String koreanFamily;
   switch (font) {
     case SlideFontStyle.serif:
       family = 'PlayfairDisplay';
+      koreanFamily = 'NotoSerifKR';
     case SlideFontStyle.sans:
       family = 'Lato';
+      koreanFamily = 'NotoSansKR';
     case SlideFontStyle.script:
       family = 'DancingScript';
+      koreanFamily = 'Gaegu';
     case SlideFontStyle.display:
       family = 'Cinzel';
+      koreanFamily = 'BlackHanSans';
     case SlideFontStyle.elegant:
       family = 'EBGaramond';
+      koreanFamily = 'GowunBatang';
     case SlideFontStyle.modern:
       family = 'Montserrat';
+      koreanFamily = 'DoHyeon';
   }
   return TextStyle(
     fontFamily: family,
+    fontFamilyFallback: [koreanFamily],
     fontSize: fontSize,
     color: color,
     fontWeight: fontWeight,
