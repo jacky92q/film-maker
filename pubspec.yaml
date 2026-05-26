@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  file_picker: ^11.0.2
+  file_picker: ^8.1.7
   uuid: ^4.5.1
   provider: ^6.1.2
   ffmpeg_kit_flutter_new: ^4.1.0
