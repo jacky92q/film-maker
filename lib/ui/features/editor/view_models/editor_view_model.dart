@@ -166,7 +166,7 @@ class EditorViewModel extends ChangeNotifier {
     if (slide == null) return;
     _pickError = null;
     try {
-      final result = await FilePicker.platform.pickFiles(type: FileType.image);
+      final result = await FilePicker.pickFiles(type: FileType.image);
       if (result != null && result.files.isNotEmpty) {
         final path = result.files.first.path;
         if (path != null) _updateSlide(slide.copyWith(imagePath: path));
