@@ -392,101 +392,177 @@ class _EditorViewState extends State<EditorView> {
 // Interactive slide canvas
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SlideCanvas extends StatelessWidget {
+class _SlideCanvas extends StatefulWidget {
   const _SlideCanvas({required this.viewModel});
   final EditorViewModel viewModel;
 
   @override
+  State<_SlideCanvas> createState() => _SlideCanvasState();
+}
+
+class _SlideCanvasState extends State<_SlideCanvas> {
+  // Saved at gesture start so we compute absolute (not cumulative) deltas.
+  double _scaleStart = 1.0;
+  double _offsetXStart = 0.0;
+  double _offsetYStart = 0.0;
+  Offset _focalStart = Offset.zero;
+
+  void _onPhotoScaleStart(ScaleStartDetails d) {
+    final slide = widget.viewModel.selectedSlide!;
+    _scaleStart = slide.photoScale;
+    _offsetXStart = slide.photoOffsetX;
+    _offsetYStart = slide.photoOffsetY;
+    _focalStart = d.localFocalPoint;
+  }
+
+  void _onPhotoScaleUpdate(ScaleUpdateDetails d, double w, double h) {
+    final newScale = (_scaleStart * d.scale).clamp(1.0, 4.0);
+    final delta = d.localFocalPoint - _focalStart;
+    final newOX = _offsetXStart + delta.dx / w;
+    final newOY = _offsetYStart + delta.dy / h;
+    // Clamp so the photo always fills the canvas.
+    final maxOff = (newScale - 1.0) / 2.0;
+    widget.viewModel.updatePhotoTransform(
+      scale: newScale,
+      offsetX: newOX.clamp(-maxOff, maxOff),
+      offsetY: newOY.clamp(-maxOff, maxOff),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final slide = viewModel.selectedSlide!;
-    final selectedLayerId = viewModel.selectedLayerId;
-
-    Widget photo = slide.imagePath != null
-        ? Image.file(File(slide.imagePath!),
-            fit: BoxFit.cover, errorBuilder: (_, __, ___) => _gradientBg())
-        : _gradientBg();
-
-    final filter = slide.photoFilter.colorFilter;
-    if (filter != null) {
-      photo = ColorFiltered(colorFilter: filter, child: photo);
-    }
+    final slide = widget.viewModel.selectedSlide!;
+    final selectedLayerId = widget.viewModel.selectedLayerId;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
         final h = constraints.maxHeight;
 
-        return GestureDetector(
-          // tap on empty canvas = deselect layer
-          onTap: () => viewModel.selectLayer(null),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              photo,
-              _gradientOverlay(),
-              // Text layers — draggable
-              for (final layer in slide.textLayers)
-                Positioned.fill(
-                  child: Align(
-                    alignment: Alignment(
-                      (layer.x * 2 - 1).clamp(-0.95, 0.95),
-                      (layer.y * 2 - 1).clamp(-0.95, 0.95),
-                    ),
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => viewModel.selectLayer(layer.id),
-                      onPanUpdate: (d) => viewModel.moveTextLayer(
-                        layer.id,
-                        (layer.x + d.delta.dx / w).clamp(0.05, 0.95),
-                        (layer.y + d.delta.dy / h).clamp(0.05, 0.95),
-                      ),
-                      child: _LayerWidget(
-                        layer: layer,
-                        selected: layer.id == selectedLayerId,
-                      ),
-                    ),
+        // Build photo widget with pan/zoom transform applied.
+        Widget background;
+        bool hasPhoto = slide.imagePath != null;
+        if (hasPhoto) {
+          Widget img = Image.file(
+            File(slide.imagePath!),
+            fit: BoxFit.cover,
+            width: w,
+            height: h,
+            errorBuilder: (_, __, ___) => _gradientBg(),
+          );
+          final filter = slide.photoFilter.colorFilter;
+          if (filter != null) img = ColorFiltered(colorFilter: filter, child: img);
+
+          // Apply user-controlled pan+zoom.
+          img = Transform.translate(
+            offset: Offset(slide.photoOffsetX * w, slide.photoOffsetY * h),
+            child: Transform.scale(scale: slide.photoScale, child: img),
+          );
+
+          // Photo acts as the interactive background: tap=deselect, drag/pinch=move+zoom.
+          background = GestureDetector(
+            onTap: () => widget.viewModel.selectLayer(null),
+            onScaleStart: _onPhotoScaleStart,
+            onScaleUpdate: (d) => _onPhotoScaleUpdate(d, w, h),
+            child: ClipRect(child: SizedBox.expand(child: img)),
+          );
+        } else {
+          background = GestureDetector(
+            onTap: () => widget.viewModel.selectLayer(null),
+            child: _gradientBg(),
+          );
+        }
+
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            background,
+            _gradientOverlay(),
+            // Text layers — draggable, opaque (intercept their own touches before photo GD).
+            for (final layer in slide.textLayers)
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment(
+                    (layer.x * 2 - 1).clamp(-0.95, 0.95),
+                    (layer.y * 2 - 1).clamp(-0.95, 0.95),
                   ),
-                ),
-              // Empty canvas hint
-              if (slide.textLayers.isEmpty)
-                IgnorePointer(
-                  child: Center(
-                    child: Text(
-                      'Tap "+ Main" or "+ Sub" to add text',
-                      style: GoogleFonts.lato(
-                        color: AppTheme.subtleText.withValues(alpha: 0.5),
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                ),
-              // Add photo chip
-              if (slide.imagePath == null)
-                Positioned(
-                  top: 6, right: 6,
                   child: GestureDetector(
-                    onTap: viewModel.pickImageForCurrentSlide,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.darkBg.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppTheme.gold.withValues(alpha: 0.5)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.add_photo_alternate_outlined, color: AppTheme.gold, size: 14),
-                          const SizedBox(width: 4),
-                          Text('Add Photo', style: GoogleFonts.lato(color: AppTheme.gold, fontSize: 11)),
-                        ],
-                      ),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => widget.viewModel.selectLayer(layer.id),
+                    onPanUpdate: (d) => widget.viewModel.moveTextLayer(
+                      layer.id,
+                      (layer.x + d.delta.dx / w).clamp(0.05, 0.95),
+                      (layer.y + d.delta.dy / h).clamp(0.05, 0.95),
+                    ),
+                    child: _LayerWidget(
+                      layer: layer,
+                      selected: layer.id == selectedLayerId,
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+            // Drag/pinch hint — shown on photo slides when no text layer is selected.
+            if (hasPhoto && selectedLayerId == null)
+              Positioned(
+                bottom: 6, right: 6,
+                child: IgnorePointer(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.open_with, color: Colors.white54, size: 10),
+                        const SizedBox(width: 3),
+                        Text('drag · pinch to zoom',
+                            style: GoogleFonts.lato(color: Colors.white54, fontSize: 8)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            // Empty canvas hint.
+            if (slide.textLayers.isEmpty)
+              IgnorePointer(
+                child: Center(
+                  child: Text(
+                    'Tap "+ Main" or "+ Sub" to add text',
+                    style: GoogleFonts.lato(
+                      color: AppTheme.subtleText.withValues(alpha: 0.5),
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ),
+            // Add photo chip.
+            if (!hasPhoto)
+              Positioned(
+                top: 6, right: 6,
+                child: GestureDetector(
+                  onTap: widget.viewModel.pickImageForCurrentSlide,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.darkBg.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppTheme.gold.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add_photo_alternate_outlined, color: AppTheme.gold, size: 14),
+                        const SizedBox(width: 4),
+                        Text('Add Photo', style: GoogleFonts.lato(color: AppTheme.gold, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );
@@ -783,6 +859,50 @@ class _SlideEditPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Photo scale + reset (only when a photo is present)
+            if (slide.imagePath != null) ...[
+              Row(
+                children: [
+                  _Label('Photo Zoom'),
+                  const Spacer(),
+                  Text(
+                    '${slide.photoScale.toStringAsFixed(1)}×',
+                    style: GoogleFonts.lato(color: AppTheme.gold, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => viewModel.updatePhotoTransform(scale: 1.0, offsetX: 0.0, offsetY: 0.0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppTheme.border),
+                      ),
+                      child: Text('Reset', style: GoogleFonts.lato(color: AppTheme.subtleText, fontSize: 11)),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.zoom_out, color: AppTheme.subtleText, size: 16),
+                  Expanded(
+                    child: Slider(
+                      value: slide.photoScale.clamp(1.0, 4.0),
+                      min: 1.0,
+                      max: 4.0,
+                      onChanged: (v) => viewModel.updatePhotoTransform(
+                        scale: v,
+                        offsetX: slide.photoOffsetX,
+                        offsetY: slide.photoOffsetY,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.zoom_in, color: AppTheme.subtleText, size: 16),
+                ],
+              ),
+              const SizedBox(height: 4),
+            ],
             // Photo filter strip
             _Label('Filter'),
             const SizedBox(height: 6),

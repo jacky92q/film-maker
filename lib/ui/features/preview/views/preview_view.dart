@@ -154,7 +154,22 @@ class _PreviewViewState extends State<PreviewView>
         errorBuilder: (_, __, ___) => _buildGradientBg(),
       );
       final filter = slide.photoFilter.colorFilter;
-      background = filter != null ? ColorFiltered(colorFilter: filter, child: img) : img;
+      if (filter != null) img = ColorFiltered(colorFilter: filter, child: img);
+
+      if (slide.photoScale != 1.0 || slide.photoOffsetX != 0.0 || slide.photoOffsetY != 0.0) {
+        img = LayoutBuilder(
+          builder: (ctx, constraints) => ClipRect(
+            child: Transform.translate(
+              offset: Offset(
+                slide.photoOffsetX * constraints.maxWidth,
+                slide.photoOffsetY * constraints.maxHeight,
+              ),
+              child: Transform.scale(scale: slide.photoScale, child: img),
+            ),
+          ),
+        );
+      }
+      background = img;
     } else {
       background = _buildGradientBg();
     }

@@ -334,6 +334,9 @@ class Slide {
     this.transition = TransitionEffect.fade,
     this.durationSeconds = 4,
     this.photoFilter = PhotoFilter.none,
+    this.photoScale = 1.0,
+    this.photoOffsetX = 0.0,
+    this.photoOffsetY = 0.0,
   });
 
   final String id;
@@ -342,6 +345,9 @@ class Slide {
   final TransitionEffect transition;
   final int durationSeconds;
   final PhotoFilter photoFilter;
+  final double photoScale;    // 1.0 = fill canvas, up to 4.0
+  final double photoOffsetX;  // fraction of canvas width, 0 = center
+  final double photoOffsetY;  // fraction of canvas height, 0 = center
 
   Slide copyWith({
     String? imagePath,
@@ -349,6 +355,9 @@ class Slide {
     TransitionEffect? transition,
     int? durationSeconds,
     PhotoFilter? photoFilter,
+    double? photoScale,
+    double? photoOffsetX,
+    double? photoOffsetY,
   }) {
     return Slide(
       id: id,
@@ -357,6 +366,9 @@ class Slide {
       transition: transition ?? this.transition,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       photoFilter: photoFilter ?? this.photoFilter,
+      photoScale: photoScale ?? this.photoScale,
+      photoOffsetX: photoOffsetX ?? this.photoOffsetX,
+      photoOffsetY: photoOffsetY ?? this.photoOffsetY,
     );
   }
 }
