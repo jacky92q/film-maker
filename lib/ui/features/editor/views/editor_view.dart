@@ -85,7 +85,7 @@ class _EditorViewState extends State<EditorView> {
             style: GoogleFonts.lato(color: AppTheme.subtleText)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
+            onPressed: () => Navigator.of(ctx).pop(true),
             child: Text('Discard',
                 style: GoogleFonts.lato(color: AppTheme.subtleText)),
           ),
@@ -579,13 +579,11 @@ class _LayerEditPanel extends StatefulWidget {
 
 class _LayerEditPanelState extends State<_LayerEditPanel> {
   late final TextEditingController _ctrl;
-  late TextLayer _layer;
 
   @override
   void initState() {
     super.initState();
-    _layer = widget.layer;
-    _ctrl = TextEditingController(text: _layer.text);
+    _ctrl = TextEditingController(text: widget.layer.text);
   }
 
   @override
@@ -594,13 +592,15 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
     super.dispose();
   }
 
-  void _update(TextLayer updated) {
-    setState(() => _layer = updated);
-    widget.onUpdate(updated);
+  // Always base every write on widget.layer (live ViewModel state) so that
+  // drag-repositioned text is never overwritten by stale local position values.
+  void _applyStyle(TextLayer Function(TextLayer) fn) {
+    widget.onUpdate(fn(widget.layer.copyWith(text: _ctrl.text)));
   }
 
   @override
   Widget build(BuildContext context) {
+    final layer = widget.layer;
     return Container(
       color: AppTheme.darkSurface,
       child: SingleChildScrollView(
@@ -614,7 +614,7 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                 const Icon(Icons.text_fields, color: AppTheme.gold, size: 14),
                 const SizedBox(width: 6),
                 Text(
-                  _layer.isSubtitle ? 'Subtitle layer' : 'Main layer',
+                  layer.isSubtitle ? 'Subtitle layer' : 'Main layer',
                   style: GoogleFonts.lato(color: AppTheme.gold, fontSize: 12, fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
@@ -649,7 +649,7 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                 hintText: 'Enter text…',
                 contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               ),
-              onChanged: (v) => _update(_layer.copyWith(text: v)),
+              onChanged: (v) => widget.onUpdate(widget.layer.copyWith(text: v)),
             ),
             const SizedBox(height: 10),
             // Type toggle (main / subtitle)
@@ -658,15 +658,15 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                 _TypeButton(
                   label: 'Main',
                   icon: Icons.title,
-                  selected: !_layer.isSubtitle,
-                  onTap: () => _update(_layer.copyWith(isSubtitle: false)),
+                  selected: !layer.isSubtitle,
+                  onTap: () => _applyStyle((l) => l.copyWith(isSubtitle: false)),
                 ),
                 const SizedBox(width: 6),
                 _TypeButton(
                   label: 'Subtitle',
                   icon: Icons.short_text,
-                  selected: _layer.isSubtitle,
-                  onTap: () => _update(_layer.copyWith(isSubtitle: true)),
+                  selected: layer.isSubtitle,
+                  onTap: () => _applyStyle((l) => l.copyWith(isSubtitle: true)),
                 ),
               ],
             ),
@@ -675,17 +675,17 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
             _Label('Text Color'),
             const SizedBox(height: 6),
             _ColorDots(
-              current: _layer.color,
-              onSelect: (c) => _update(_layer.copyWith(color: c)),
+              current: layer.color,
+              onSelect: (c) => _applyStyle((l) => l.copyWith(color: c)),
             ),
             // Bar color (only for subtitle)
-            if (_layer.isSubtitle) ...[
+            if (layer.isSubtitle) ...[
               const SizedBox(height: 10),
               _Label('Bar Color'),
               const SizedBox(height: 6),
               _ColorDots(
-                current: _layer.barColor,
-                onSelect: (c) => _update(_layer.copyWith(barColor: c)),
+                current: layer.barColor,
+                onSelect: (c) => _applyStyle((l) => l.copyWith(barColor: c)),
               ),
             ],
             const SizedBox(height: 10),
@@ -696,9 +696,9 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: SlideFontStyle.values.map((f) {
-                  final sel = _layer.fontStyle == f;
+                  final sel = layer.fontStyle == f;
                   return GestureDetector(
-                    onTap: () => _update(_layer.copyWith(fontStyle: f)),
+                    onTap: () => _applyStyle((l) => l.copyWith(fontStyle: f)),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       margin: const EdgeInsets.only(right: 7),
@@ -727,9 +727,9 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                 _Label('Size'),
                 const SizedBox(width: 12),
                 ...SlideTextSize.values.map((s) {
-                  final sel = _layer.size == s;
+                  final sel = layer.size == s;
                   return GestureDetector(
-                    onTap: () => _update(_layer.copyWith(size: s)),
+                    onTap: () => _applyStyle((l) => l.copyWith(size: s)),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       width: 36,
