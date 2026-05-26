@@ -120,9 +120,10 @@ class VideoExportService {
     final picture = recorder.endRecording();
     final image = await picture.toImage(size.width.toInt(), size.height.toInt());
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    picture.dispose();
     image.dispose();
-    return byteData!.buffer.asUint8List();
+    picture.dispose();
+    if (byteData == null) throw Exception('Frame $index render failed');
+    return byteData.buffer.asUint8List();
   }
 
   void _drawGradientBg(Canvas canvas, Size size, int index) {
@@ -148,9 +149,16 @@ class VideoExportService {
     if (!await file.exists()) return;
 
     final bytes = await file.readAsBytes();
-    final codec = await ui.instantiateImageCodec(bytes);
+    // Decode at canvas resolution — prevents loading full 12MP camera images
+    // into GPU memory (which would OOM on most phones).
+    final codec = await ui.instantiateImageCodec(
+      bytes,
+      targetWidth: size.width.toInt(),
+      targetHeight: size.height.toInt(),
+    );
     final frame = await codec.getNextFrame();
     final img = frame.image;
+    codec.dispose();
 
     final imgW = img.width.toDouble();
     final imgH = img.height.toDouble();

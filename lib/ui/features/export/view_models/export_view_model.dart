@@ -41,7 +41,7 @@ class ExportViewModel extends ChangeNotifier {
   final ExportRepository exportRepository;
 
   ExportStatus _status = ExportStatus.idle;
-  ExportResolution _resolution = ExportResolution.fullHd;
+  ExportResolution _resolution = ExportResolution.hd;
   double _progress = 0;
   String? _error;
 

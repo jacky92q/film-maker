@@ -193,7 +193,7 @@ class ExportView extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (res == ExportResolution.fullHd)
+                    if (res == ExportResolution.hd)
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
@@ -220,9 +220,9 @@ class ExportView extends StatelessWidget {
   String _resolutionDescription(ExportResolution res) {
     switch (res) {
       case ExportResolution.hd:
-        return 'Good for sharing on mobile';
+        return 'Recommended — great for sharing';
       case ExportResolution.fullHd:
-        return 'Great for TV and displays';
+        return 'Higher quality, uses more memory';
       case ExportResolution.fourK:
         return 'Best for cinema-quality output';
     }
