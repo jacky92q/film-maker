@@ -36,10 +36,26 @@ class _EditorViewState extends State<EditorView> {
   void initState() {
     super.initState();
     _titleController.text = widget.viewModel.project.title;
+    widget.viewModel.addListener(_onViewModelChange);
+  }
+
+  void _onViewModelChange() {
+    final err = widget.viewModel.pickError;
+    if (err == null) return;
+    widget.viewModel.clearPickError();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Could not open photo picker: $err'),
+        backgroundColor: AppTheme.darkSurface,
+        behavior: SnackBarBehavior.floating,
+      ));
+    });
   }
 
   @override
   void dispose() {
+    widget.viewModel.removeListener(_onViewModelChange);
     _titleController.dispose();
     super.dispose();
   }

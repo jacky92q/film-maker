@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -57,23 +56,18 @@ class VideoExportService {
     if (project.musicPath != null) {
       cmd.write('-i "${project.musicPath}" -c:a aac -shortest ');
     }
-    cmd.write('-vf "$vf" -c:v libx264 -preset fast -crf 23 "$outputPath"');
+    // ultrafast + threads 1: uses ~4× less memory than fast, safe on mid-range phones
+    cmd.write('-vf "$vf" -c:v libx264 -preset ultrafast -threads 1 '
+        '-crf 28 "$outputPath"');
 
-    final completer = Completer<bool>();
-    FFmpegKit.executeAsync(cmd.toString(), (session) async {
-      final rc = await session.getReturnCode();
-      completer.complete(ReturnCode.isSuccess(rc));
-    });
-
-    // Yield incremental progress while FFmpeg works
-    for (double p = 0.76; p < 0.99; p += 0.01) {
-      if (completer.isCompleted) break;
-      await Future<void>.delayed(const Duration(milliseconds: 400));
-      yield p;
+    final session = await FFmpegKit.execute(cmd.toString());
+    final rc = await session.getReturnCode();
+    if (rc == null || !ReturnCode.isSuccess(rc)) {
+      final logs = await session.getAllLogs();
+      final tail = logs.length > 5 ? logs.sublist(logs.length - 5) : logs;
+      final msg = tail.map((l) => l.getMessage()).join(' | ');
+      throw Exception('Encoding failed: $msg');
     }
-
-    final success = await completer.future;
-    if (!success) throw Exception('Video encoding failed');
 
     _lastOutputPath = outputPath;
     yield 1.0;
