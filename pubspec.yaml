@@ -22,6 +22,13 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
 
+# flutter_plugin_android_lifecycle ≥2.0.19 bakes minCompileSdk=36 into its
+# AAR metadata, which causes file_picker 8.1.7 (compileSdk=34) to fail the
+# checkReleaseAarMetadata Gradle task. Pin to 2.0.15 which has no such
+# requirement while remaining compatible with file_picker 8.x.
+dependency_overrides:
+  flutter_plugin_android_lifecycle: 2.0.15
+
 flutter:
   uses-material-design: true
 
