@@ -21,12 +21,19 @@ class EditorViewModel extends ChangeNotifier {
   String? _selectedLayerId;
   bool _isSaving = false;
   bool _hasUnsavedChanges = false;
+  String? _pickError;
 
   Project get project => _project;
   int get selectedSlideIndex => _selectedSlideIndex;
   String? get selectedLayerId => _selectedLayerId;
   bool get isSaving => _isSaving;
   bool get hasUnsavedChanges => _hasUnsavedChanges;
+  String? get pickError => _pickError;
+
+  void clearPickError() {
+    _pickError = null;
+    notifyListeners();
+  }
 
   Slide? get selectedSlide =>
       _project.slides.isNotEmpty ? _project.slides[_selectedSlideIndex] : null;
@@ -158,16 +165,19 @@ class EditorViewModel extends ChangeNotifier {
   Future<void> pickImageForCurrentSlide() async {
     final slide = selectedSlide;
     if (slide == null) return;
+    _pickError = null;
     try {
       final picked = await _imagePicker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 85,
+        requestFullMetadata: false,
       );
       if (picked != null) {
         _updateSlide(slide.copyWith(imagePath: picked.path));
       }
-    } catch (_) {
-      // Image picker unavailable in this environment
+    } catch (e) {
+      _pickError = e.toString();
+      notifyListeners();
     }
   }
 
