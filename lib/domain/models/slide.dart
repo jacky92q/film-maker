@@ -337,6 +337,7 @@ class Slide {
     this.photoScale = 1.0,
     this.photoOffsetX = 0.0,
     this.photoOffsetY = 0.0,
+    this.backgroundColor = 0xFF000000,
   });
 
   final String id;
@@ -345,9 +346,10 @@ class Slide {
   final TransitionEffect transition;
   final int durationSeconds;
   final PhotoFilter photoFilter;
-  final double photoScale;    // 1.0 = fill canvas, up to 4.0
-  final double photoOffsetX;  // fraction of canvas width, 0 = center
-  final double photoOffsetY;  // fraction of canvas height, 0 = center
+  final double photoScale;      // 1.0 = photo fits canvas (contain), < 1 zooms out, > 1 zooms in
+  final double photoOffsetX;    // fraction of canvas width, 0 = center
+  final double photoOffsetY;    // fraction of canvas height, 0 = center
+  final int backgroundColor;    // ARGB int shown behind the photo (default black)
 
   Slide copyWith({
     String? imagePath,
@@ -358,6 +360,7 @@ class Slide {
     double? photoScale,
     double? photoOffsetX,
     double? photoOffsetY,
+    int? backgroundColor,
   }) {
     return Slide(
       id: id,
@@ -369,6 +372,7 @@ class Slide {
       photoScale: photoScale ?? this.photoScale,
       photoOffsetX: photoOffsetX ?? this.photoOffsetX,
       photoOffsetY: photoOffsetY ?? this.photoOffsetY,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
     );
   }
 }

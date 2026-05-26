@@ -416,7 +416,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
   }
 
   void _onPhotoScaleUpdate(ScaleUpdateDetails d, double w, double h) {
-    final newScale = (_scaleStart * d.scale).clamp(1.0, 4.0);
+    final newScale = (_scaleStart * d.scale).clamp(0.1, 4.0);
     final delta = d.localFocalPoint - _focalStart;
     widget.viewModel.updatePhotoTransform(
       scale: newScale,
@@ -441,26 +441,30 @@ class _SlideCanvasState extends State<_SlideCanvas> {
         if (hasPhoto) {
           Widget img = Image.file(
             File(slide.imagePath!),
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,   // show full photo, no crop
             width: w,
             height: h,
-            errorBuilder: (_, __, ___) => _gradientBg(),
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           );
           final filter = slide.photoFilter.colorFilter;
           if (filter != null) img = ColorFiltered(colorFilter: filter, child: img);
-
-          // Apply user-controlled pan+zoom.
-          img = Transform.translate(
-            offset: Offset(slide.photoOffsetX * w, slide.photoOffsetY * h),
-            child: Transform.scale(scale: slide.photoScale, child: img),
-          );
 
           // Photo acts as the interactive background: tap=deselect, drag/pinch=move+zoom.
           background = GestureDetector(
             onTap: () => widget.viewModel.selectLayer(null),
             onScaleStart: _onPhotoScaleStart,
             onScaleUpdate: (d) => _onPhotoScaleUpdate(d, w, h),
-            child: ClipRect(child: SizedBox.expand(child: img)),
+            child: SizedBox.expand(
+              child: ColoredBox(
+                color: Color(slide.backgroundColor),
+                child: ClipRect(
+                  child: Transform.translate(
+                    offset: Offset(slide.photoOffsetX * w, slide.photoOffsetY * h),
+                    child: Transform.scale(scale: slide.photoScale, child: img),
+                  ),
+                ),
+              ),
+            ),
           );
         } else {
           background = GestureDetector(
@@ -884,8 +888,8 @@ class _SlideEditPanel extends StatelessWidget {
                   const Icon(Icons.zoom_out, color: AppTheme.subtleText, size: 16),
                   Expanded(
                     child: Slider(
-                      value: slide.photoScale.clamp(1.0, 4.0),
-                      min: 1.0,
+                      value: slide.photoScale.clamp(0.1, 4.0),
+                      min: 0.1,
                       max: 4.0,
                       onChanged: (v) => viewModel.updatePhotoTransform(
                         scale: v,
@@ -897,7 +901,14 @@ class _SlideEditPanel extends StatelessWidget {
                   const Icon(Icons.zoom_in, color: AppTheme.subtleText, size: 16),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
+              _Label('Background Color'),
+              const SizedBox(height: 6),
+              _BackgroundColorPicker(
+                current: slide.backgroundColor,
+                onSelect: (c) => viewModel.updateSelectedSlide(slide.copyWith(backgroundColor: c)),
+              ),
+              const SizedBox(height: 6),
             ],
             // Photo filter strip
             _Label('Filter'),
@@ -1042,6 +1053,117 @@ class _ColorDots extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+class _BackgroundColorPicker extends StatefulWidget {
+  const _BackgroundColorPicker({required this.current, required this.onSelect});
+  final int current;
+  final void Function(int argb) onSelect;
+
+  @override
+  State<_BackgroundColorPicker> createState() => _BackgroundColorPickerState();
+}
+
+class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
+  late final TextEditingController _hex;
+
+  static const _presets = <int>[
+    0xFF000000,
+    0xFF1A1A1A,
+    0xFF0D0D0D,
+    0xFFFFFFFF,
+    0xFFF5F0E8,
+    0xFFE8B4B8,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _hex = TextEditingController(text: _toHex(widget.current));
+  }
+
+  @override
+  void didUpdateWidget(_BackgroundColorPicker old) {
+    super.didUpdateWidget(old);
+    if (old.current != widget.current) _hex.text = _toHex(widget.current);
+  }
+
+  @override
+  void dispose() {
+    _hex.dispose();
+    super.dispose();
+  }
+
+  static String _toHex(int argb) =>
+      '#${(argb & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+  int? _parseHex(String raw) {
+    final s = raw.replaceAll('#', '').trim();
+    if (s.length != 6) return null;
+    final v = int.tryParse(s, radix: 16);
+    return v != null ? (0xFF000000 | v) : null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: _presets.map((c) {
+            final sel = c == widget.current;
+            return GestureDetector(
+              onTap: () {
+                widget.onSelect(c);
+                _hex.text = _toHex(c);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 26,
+                height: 26,
+                margin: const EdgeInsets.only(right: 7),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(c),
+                  border: Border.all(
+                    color: sel ? AppTheme.gold : AppTheme.border,
+                    width: sel ? 2.5 : 1,
+                  ),
+                  boxShadow: sel
+                      ? [BoxShadow(color: AppTheme.gold.withValues(alpha: 0.4), blurRadius: 5)]
+                      : null,
+                ),
+                child: sel
+                    ? Icon(Icons.check, size: 12,
+                        color: (c == 0xFFFFFFFF || c == 0xFFF5F0E8) ? Colors.black : Colors.white)
+                    : null,
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          height: 34,
+          child: TextField(
+            controller: _hex,
+            style: GoogleFonts.lato(color: AppTheme.cream, fontSize: 12),
+            decoration: const InputDecoration(
+              hintText: '#000000',
+              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              prefixIcon: Padding(
+                padding: EdgeInsets.all(10),
+                child: Icon(Icons.palette_outlined, size: 14, color: AppTheme.subtleText),
+              ),
+            ),
+            onSubmitted: (raw) {
+              final color = _parseHex(raw);
+              if (color != null) widget.onSelect(color);
+            },
+          ),
+        ),
+      ],
     );
   }
 }
