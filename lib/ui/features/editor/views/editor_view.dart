@@ -418,14 +418,10 @@ class _SlideCanvasState extends State<_SlideCanvas> {
   void _onPhotoScaleUpdate(ScaleUpdateDetails d, double w, double h) {
     final newScale = (_scaleStart * d.scale).clamp(1.0, 4.0);
     final delta = d.localFocalPoint - _focalStart;
-    final newOX = _offsetXStart + delta.dx / w;
-    final newOY = _offsetYStart + delta.dy / h;
-    // Clamp so the photo always fills the canvas.
-    final maxOff = (newScale - 1.0) / 2.0;
     widget.viewModel.updatePhotoTransform(
       scale: newScale,
-      offsetX: newOX.clamp(-maxOff, maxOff),
-      offsetY: newOY.clamp(-maxOff, maxOff),
+      offsetX: _offsetXStart + delta.dx / w,
+      offsetY: _offsetYStart + delta.dy / h,
     );
   }
 
