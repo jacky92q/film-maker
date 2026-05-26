@@ -56,9 +56,7 @@ class VideoExportService {
     if (project.musicPath != null) {
       cmd.write('-i "${project.musicPath}" -c:a aac -shortest ');
     }
-    // ultrafast + threads 1: uses ~4× less memory than fast, safe on mid-range phones
-    cmd.write('-vf "$vf" -c:v libx264 -preset ultrafast -threads 1 '
-        '-crf 28 "$outputPath"');
+    cmd.write('-vf "$vf" -c:v h264_mediacodec -b:v 2000k "$outputPath"');
 
     final session = await FFmpegKit.execute(cmd.toString());
     final rc = await session.getReturnCode();
