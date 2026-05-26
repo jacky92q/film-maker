@@ -18,22 +18,82 @@ class EditorViewModel extends ChangeNotifier {
 
   Project _project;
   int _selectedSlideIndex;
+  String? _selectedLayerId;
   bool _isSaving = false;
   bool _hasUnsavedChanges = false;
 
   Project get project => _project;
   int get selectedSlideIndex => _selectedSlideIndex;
+  String? get selectedLayerId => _selectedLayerId;
   bool get isSaving => _isSaving;
   bool get hasUnsavedChanges => _hasUnsavedChanges;
 
   Slide? get selectedSlide =>
       _project.slides.isNotEmpty ? _project.slides[_selectedSlideIndex] : null;
 
+  TextLayer? get selectedLayer {
+    final slide = selectedSlide;
+    if (slide == null || _selectedLayerId == null) return null;
+    try {
+      return slide.textLayers.firstWhere((l) => l.id == _selectedLayerId);
+    } catch (_) {
+      return null;
+    }
+  }
+
   void selectSlide(int index) {
     if (index >= 0 && index < _project.slides.length) {
       _selectedSlideIndex = index;
+      _selectedLayerId = null;
       notifyListeners();
     }
+  }
+
+  void selectLayer(String? id) {
+    _selectedLayerId = id;
+    notifyListeners();
+  }
+
+  void addTextLayer({bool isSubtitle = false}) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final layer = TextLayer(
+      id: _uuid.v4(),
+      text: isSubtitle ? 'Subtitle text' : 'Main title',
+      isSubtitle: isSubtitle,
+      x: 0.5,
+      y: isSubtitle ? 0.70 : 0.50,
+    );
+    _updateSlide(slide.copyWith(textLayers: [...slide.textLayers, layer]));
+    _selectedLayerId = layer.id;
+  }
+
+  void updateTextLayer(TextLayer layer) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final layers = [
+      for (final l in slide.textLayers)
+        if (l.id == layer.id) layer else l,
+    ];
+    _updateSlide(slide.copyWith(textLayers: layers));
+  }
+
+  void deleteTextLayer(String layerId) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final layers = slide.textLayers.where((l) => l.id != layerId).toList();
+    _updateSlide(slide.copyWith(textLayers: layers));
+    if (_selectedLayerId == layerId) _selectedLayerId = null;
+  }
+
+  void moveTextLayer(String layerId, double x, double y) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final layers = [
+      for (final l in slide.textLayers)
+        if (l.id == layerId) l.copyWith(x: x, y: y) else l,
+    ];
+    _updateSlide(slide.copyWith(textLayers: layers));
   }
 
   void addSlide({SlideTemplate template = SlideTemplate.blank}) {
@@ -41,6 +101,7 @@ class EditorViewModel extends ChangeNotifier {
     final slides = [..._project.slides, newSlide];
     _project = _project.copyWith(slides: slides);
     _selectedSlideIndex = slides.length - 1;
+    _selectedLayerId = null;
     _hasUnsavedChanges = true;
     notifyListeners();
   }
@@ -52,6 +113,7 @@ class EditorViewModel extends ChangeNotifier {
     if (_selectedSlideIndex >= slides.length) {
       _selectedSlideIndex = slides.length - 1;
     }
+    _selectedLayerId = null;
     _hasUnsavedChanges = true;
     notifyListeners();
   }
@@ -68,9 +130,13 @@ class EditorViewModel extends ChangeNotifier {
   }
 
   void updateSelectedSlide(Slide updatedSlide) {
+    _updateSlide(updatedSlide);
+  }
+
+  void _updateSlide(Slide slide) {
     final slides = [
       for (final s in _project.slides)
-        if (s.id == updatedSlide.id) updatedSlide else s,
+        if (s.id == slide.id) slide else s,
     ];
     _project = _project.copyWith(slides: slides);
     _hasUnsavedChanges = true;
@@ -92,7 +158,7 @@ class EditorViewModel extends ChangeNotifier {
         imageQuality: 85,
       );
       if (picked != null) {
-        updateSelectedSlide(slide.copyWith(imagePath: picked.path));
+        _updateSlide(slide.copyWith(imagePath: picked.path));
       }
     } catch (_) {
       // Image picker unavailable in this environment
