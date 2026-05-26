@@ -27,7 +27,7 @@ dev_dependencies:
 # checkReleaseAarMetadata Gradle task. Pin to 2.0.15 which has no such
 # requirement while remaining compatible with file_picker 8.x.
 dependency_overrides:
-  flutter_plugin_android_lifecycle: 2.0.15
+  flutter_plugin_android_lifecycle: 2.0.18
 
 flutter:
   uses-material-design: true
