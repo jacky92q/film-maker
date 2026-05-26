@@ -148,28 +148,30 @@ class _PreviewViewState extends State<PreviewView>
     Widget background;
 
     if (slide.imagePath != null) {
-      Widget img = Image.file(
-        File(slide.imagePath!),
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildGradientBg(),
-      );
-      final filter = slide.photoFilter.colorFilter;
-      if (filter != null) img = ColorFiltered(colorFilter: filter, child: img);
-
-      if (slide.photoScale != 1.0 || slide.photoOffsetX != 0.0 || slide.photoOffsetY != 0.0) {
-        img = LayoutBuilder(
-          builder: (ctx, constraints) => ClipRect(
-            child: Transform.translate(
-              offset: Offset(
-                slide.photoOffsetX * constraints.maxWidth,
-                slide.photoOffsetY * constraints.maxHeight,
+      background = LayoutBuilder(
+        builder: (ctx, constraints) {
+          final w = constraints.maxWidth;
+          final h = constraints.maxHeight;
+          Widget img = Image.file(
+            File(slide.imagePath!),
+            fit: BoxFit.contain,
+            width: w,
+            height: h,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          );
+          final filter = slide.photoFilter.colorFilter;
+          if (filter != null) img = ColorFiltered(colorFilter: filter, child: img);
+          return ColoredBox(
+            color: Color(slide.backgroundColor),
+            child: ClipRect(
+              child: Transform.translate(
+                offset: Offset(slide.photoOffsetX * w, slide.photoOffsetY * h),
+                child: Transform.scale(scale: slide.photoScale, child: img),
               ),
-              child: Transform.scale(scale: slide.photoScale, child: img),
             ),
-          ),
-        );
-      }
-      background = img;
+          );
+        },
+      );
     } else {
       background = _buildGradientBg();
     }
