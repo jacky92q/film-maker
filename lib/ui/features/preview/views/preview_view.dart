@@ -7,7 +7,7 @@ import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/preview/view_models/preview_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 
 class PreviewView extends StatefulWidget {
   const PreviewView({super.key, required this.viewModel});
@@ -354,7 +354,7 @@ class _PreviewViewState extends State<PreviewView>
             Expanded(
               child: Text(
                 widget.viewModel.project.title,
-                style: GoogleFonts.playfairDisplay(
+                style: TextStyle(fontFamily: 'Montserrat', 
                     color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),

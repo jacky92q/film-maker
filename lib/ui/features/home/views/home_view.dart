@@ -6,7 +6,7 @@ import 'package:film_maker/ui/features/home/view_models/home_view_model.dart';
 import 'package:film_maker/ui/features/projects/view_models/projects_view_model.dart';
 import 'package:film_maker/ui/features/projects/views/projects_view.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 
 class HomeView extends StatefulWidget {
   const HomeView({
@@ -91,7 +91,7 @@ class _HomeViewState extends State<HomeView> {
       backgroundColor: AppTheme.darkBg,
       title: Text(
         'Film Maker',
-        style: GoogleFonts.playfairDisplay(
+        style: TextStyle(fontFamily: 'Montserrat', 
           color: AppTheme.cream,
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -105,7 +105,7 @@ class _HomeViewState extends State<HomeView> {
             backgroundColor: AppTheme.darkSurface2,
             child: Text(
               widget.user.name[0].toUpperCase(),
-              style: GoogleFonts.playfairDisplay(
+              style: TextStyle(fontFamily: 'Montserrat', 
                   color: AppTheme.gold, fontWeight: FontWeight.bold),
             ),
           ),
@@ -152,7 +152,7 @@ class _HomeViewState extends State<HomeView> {
                     const SizedBox(width: 8),
                     Text(
                       'Welcome back',
-                      style: GoogleFonts.lato(
+                      style: TextStyle(fontFamily: 'Montserrat', 
                         color: AppTheme.gold,
                         fontSize: 12,
                         letterSpacing: 1.5,
@@ -163,7 +163,7 @@ class _HomeViewState extends State<HomeView> {
                 const SizedBox(height: 6),
                 Text(
                   widget.user.name,
-                  style: GoogleFonts.playfairDisplay(
+                  style: TextStyle(fontFamily: 'Montserrat', 
                     color: AppTheme.cream,
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -172,7 +172,7 @@ class _HomeViewState extends State<HomeView> {
                 const SizedBox(height: 4),
                 Text(
                   'Tell your love story through film',
-                  style: GoogleFonts.lato(
+                  style: TextStyle(fontFamily: 'Montserrat', 
                     color: AppTheme.subtleText,
                     fontSize: 13,
                   ),
@@ -233,7 +233,7 @@ class _HomeViewState extends State<HomeView> {
             const SizedBox(height: 6),
             Text(
               value,
-              style: GoogleFonts.playfairDisplay(
+              style: TextStyle(fontFamily: 'Montserrat', 
                 color: AppTheme.cream,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -241,7 +241,7 @@ class _HomeViewState extends State<HomeView> {
             ),
             Text(
               label,
-              style: GoogleFonts.lato(
+              style: TextStyle(fontFamily: 'Montserrat', 
                   color: AppTheme.subtleText, fontSize: 11),
               textAlign: TextAlign.center,
             ),
@@ -258,7 +258,7 @@ class _HomeViewState extends State<HomeView> {
         const SizedBox(width: 10),
         Text(
           title,
-          style: GoogleFonts.playfairDisplay(
+          style: TextStyle(fontFamily: 'Montserrat', 
             color: AppTheme.cream,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -332,7 +332,7 @@ class _HomeViewState extends State<HomeView> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.playfairDisplay(
+                  style: TextStyle(fontFamily: 'Montserrat', 
                     color: AppTheme.cream,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -340,7 +340,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 Text(
                   subtitle,
-                  style: GoogleFonts.lato(
+                  style: TextStyle(fontFamily: 'Montserrat', 
                       color: AppTheme.subtleText, fontSize: 11),
                 ),
               ],
@@ -372,7 +372,7 @@ class _HomeViewState extends State<HomeView> {
                 const SizedBox(width: 12),
                 Text(
                   tip.$2,
-                  style: GoogleFonts.lato(
+                  style: TextStyle(fontFamily: 'Montserrat', 
                       color: AppTheme.subtleText, fontSize: 13),
                 ),
               ],

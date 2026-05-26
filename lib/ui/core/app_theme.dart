@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 
 class AppTheme {
   static const Color gold = Color(0xFFC9A84C);
@@ -34,7 +34,7 @@ class AppTheme {
         foregroundColor: cream,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.playfairDisplay(
+        titleTextStyle: TextStyle(fontFamily: 'Montserrat', 
           color: cream,
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -42,34 +42,34 @@ class AppTheme {
         iconTheme: const IconThemeData(color: cream),
         actionsIconTheme: const IconThemeData(color: gold),
       ),
-      textTheme: GoogleFonts.latoTextTheme(base.textTheme).copyWith(
-        displayLarge: GoogleFonts.playfairDisplay(
+      textTheme: base.textTheme.apply(fontFamily: 'Montserrat').copyWith(
+        displayLarge: TextStyle(fontFamily: 'Montserrat', 
             color: cream, fontSize: 36, fontWeight: FontWeight.bold),
-        displayMedium: GoogleFonts.playfairDisplay(
+        displayMedium: TextStyle(fontFamily: 'Montserrat', 
             color: cream, fontSize: 28, fontWeight: FontWeight.bold),
-        displaySmall: GoogleFonts.playfairDisplay(
+        displaySmall: TextStyle(fontFamily: 'Montserrat', 
             color: cream, fontSize: 22, fontWeight: FontWeight.w600),
-        headlineLarge: GoogleFonts.playfairDisplay(
+        headlineLarge: TextStyle(fontFamily: 'Montserrat', 
             color: cream, fontSize: 28, fontWeight: FontWeight.bold),
-        headlineMedium: GoogleFonts.playfairDisplay(
+        headlineMedium: TextStyle(fontFamily: 'Montserrat', 
             color: cream, fontSize: 22, fontWeight: FontWeight.w600),
-        headlineSmall: GoogleFonts.playfairDisplay(
+        headlineSmall: TextStyle(fontFamily: 'Montserrat', 
             color: cream, fontSize: 18, fontWeight: FontWeight.w600),
-        titleLarge: GoogleFonts.lato(
+        titleLarge: TextStyle(fontFamily: 'Montserrat', 
             color: cream, fontSize: 18, fontWeight: FontWeight.w600),
-        titleMedium: GoogleFonts.lato(
+        titleMedium: TextStyle(fontFamily: 'Montserrat', 
             color: cream, fontSize: 16, fontWeight: FontWeight.w500),
-        titleSmall: GoogleFonts.lato(
+        titleSmall: TextStyle(fontFamily: 'Montserrat', 
             color: subtleText, fontSize: 14, fontWeight: FontWeight.w500),
-        bodyLarge: GoogleFonts.lato(color: cream, fontSize: 16),
-        bodyMedium: GoogleFonts.lato(color: subtleText, fontSize: 14),
-        bodySmall: GoogleFonts.lato(color: subtleText, fontSize: 12),
-        labelLarge: GoogleFonts.lato(
+        bodyLarge: TextStyle(fontFamily: 'Montserrat', color: cream, fontSize: 16),
+        bodyMedium: TextStyle(fontFamily: 'Montserrat', color: subtleText, fontSize: 14),
+        bodySmall: TextStyle(fontFamily: 'Montserrat', color: subtleText, fontSize: 12),
+        labelLarge: TextStyle(fontFamily: 'Montserrat', 
             color: cream,
             fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.8),
-        labelMedium: GoogleFonts.lato(
+        labelMedium: TextStyle(fontFamily: 'Montserrat', 
             color: subtleText,
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -94,8 +94,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
         ),
-        labelStyle: GoogleFonts.lato(color: Color(0xFF888888), fontSize: 14),
-        hintStyle: GoogleFonts.lato(color: Color(0xFF555555), fontSize: 14),
+        labelStyle: TextStyle(fontFamily: 'Montserrat', color: Color(0xFF888888), fontSize: 14),
+        hintStyle: TextStyle(fontFamily: 'Montserrat', color: Color(0xFF555555), fontSize: 14),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
@@ -106,7 +106,7 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: GoogleFonts.lato(
+          textStyle: TextStyle(fontFamily: 'Montserrat', 
               fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.5),
         ),
       ),
@@ -117,7 +117,7 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: TextStyle(fontFamily: 'Montserrat', fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -133,7 +133,7 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: darkSurface2,
         selectedColor: gold.withValues(alpha: 0.25),
-        labelStyle: GoogleFonts.lato(fontSize: 12, color: cream),
+        labelStyle: TextStyle(fontFamily: 'Montserrat', fontSize: 12, color: cream),
         side: const BorderSide(color: border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

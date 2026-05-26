@@ -1,7 +1,7 @@
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/export/view_models/export_view_model.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 
 class ExportView extends StatelessWidget {
   const ExportView({super.key, required this.viewModel});
@@ -14,7 +14,7 @@ class ExportView extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'Export Film',
-          style: GoogleFonts.playfairDisplay(color: AppTheme.cream),
+          style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream),
         ),
       ),
       body: ListenableBuilder(
@@ -73,7 +73,7 @@ class ExportView extends StatelessWidget {
               Expanded(
                 child: Text(
                   project.title,
-                  style: GoogleFonts.playfairDisplay(
+                  style: TextStyle(fontFamily: 'Montserrat', 
                     color: AppTheme.cream,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -120,7 +120,7 @@ class ExportView extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               'Output Quality',
-              style: GoogleFonts.playfairDisplay(
+              style: TextStyle(fontFamily: 'Montserrat', 
                 color: AppTheme.cream,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -175,7 +175,7 @@ class ExportView extends StatelessWidget {
                         children: [
                           Text(
                             res.label,
-                            style: GoogleFonts.lato(
+                            style: TextStyle(fontFamily: 'Montserrat', 
                               color: AppTheme.cream,
                               fontSize: 15,
                               fontWeight: isSelected
@@ -185,7 +185,7 @@ class ExportView extends StatelessWidget {
                           ),
                           Text(
                             _resolutionDescription(res),
-                            style: GoogleFonts.lato(
+                            style: TextStyle(fontFamily: 'Montserrat', 
                               color: AppTheme.subtleText,
                               fontSize: 12,
                             ),
@@ -203,7 +203,7 @@ class ExportView extends StatelessWidget {
                         ),
                         child: Text(
                           'Recommended',
-                          style: GoogleFonts.lato(
+                          style: TextStyle(fontFamily: 'Montserrat', 
                               color: AppTheme.gold, fontSize: 10),
                         ),
                       ),
@@ -243,7 +243,7 @@ class ExportView extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           'The video will be saved to your device',
-          style: GoogleFonts.lato(color: AppTheme.subtleText, fontSize: 12),
+          style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 12),
           textAlign: TextAlign.center,
         ),
       ],
@@ -273,7 +273,7 @@ class ExportView extends StatelessWidget {
               children: [
                 Text(
                   '$percent%',
-                  style: GoogleFonts.playfairDisplay(
+                  style: TextStyle(fontFamily: 'Montserrat', 
                     color: AppTheme.cream,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -286,7 +286,7 @@ class ExportView extends StatelessWidget {
         const SizedBox(height: 24),
         Text(
           'Rendering your wedding film...',
-          style: GoogleFonts.playfairDisplay(
+          style: TextStyle(fontFamily: 'Montserrat', 
             color: AppTheme.cream,
             fontSize: 18,
             fontWeight: FontWeight.w500,
@@ -295,7 +295,7 @@ class ExportView extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           _getExportMessage(viewModel.progress),
-          style: GoogleFonts.lato(color: AppTheme.subtleText, fontSize: 13),
+          style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 13),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -339,7 +339,7 @@ class ExportView extends StatelessWidget {
         const SizedBox(height: 20),
         Text(
           'Export Complete!',
-          style: GoogleFonts.playfairDisplay(
+          style: TextStyle(fontFamily: 'Montserrat', 
             color: AppTheme.cream,
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -348,7 +348,7 @@ class ExportView extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           'Your wedding film is ready',
-          style: GoogleFonts.lato(color: AppTheme.subtleText, fontSize: 14),
+          style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 14),
         ),
         const SizedBox(height: 20),
         if (viewModel.outputPath != null)
@@ -367,7 +367,7 @@ class ExportView extends StatelessWidget {
                 Expanded(
                   child: Text(
                     viewModel.outputPath!,
-                    style: GoogleFonts.lato(
+                    style: TextStyle(fontFamily: 'Montserrat', 
                         color: AppTheme.subtleText, fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -399,7 +399,7 @@ class ExportView extends StatelessWidget {
         TextButton(
           onPressed: viewModel.reset,
           child: Text('Export Again',
-              style: GoogleFonts.lato(color: AppTheme.subtleText)),
+              style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText)),
         ),
       ],
     );
@@ -413,7 +413,7 @@ class ExportView extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           viewModel.error ?? 'Export failed',
-          style: GoogleFonts.lato(color: AppTheme.cream, fontSize: 16),
+          style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream, fontSize: 16),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -430,7 +430,7 @@ class ExportView extends StatelessWidget {
       SnackBar(
         content: Text(
           'Share functionality requires platform integration',
-          style: GoogleFonts.lato(),
+          style: TextStyle(fontFamily: 'Montserrat', ),
         ),
         backgroundColor: AppTheme.darkSurface,
         behavior: SnackBarBehavior.floating,
@@ -443,7 +443,7 @@ class ExportView extends StatelessWidget {
       SnackBar(
         content: Text(
           'Film saved to ${viewModel.outputPath}',
-          style: GoogleFonts.lato(),
+          style: TextStyle(fontFamily: 'Montserrat', ),
         ),
         backgroundColor: AppTheme.darkSurface,
         behavior: SnackBarBehavior.floating,
@@ -474,7 +474,7 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             label,
-            style: GoogleFonts.lato(
+            style: TextStyle(fontFamily: 'Montserrat', 
                 color: AppTheme.subtleText,
                 fontSize: 12),
           ),

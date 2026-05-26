@@ -10,7 +10,7 @@ import 'package:film_maker/ui/features/export/views/export_view.dart';
 import 'package:film_maker/ui/features/preview/view_models/preview_view_model.dart';
 import 'package:film_maker/ui/features/preview/views/preview_view.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 
 // Returns the appropriate TextStyle for a given font style using bundled fonts.
 TextStyle slideLayerTextStyle(
@@ -90,21 +90,21 @@ class _EditorViewState extends State<EditorView> {
         backgroundColor: AppTheme.darkSurface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('Unsaved Changes',
-            style: GoogleFonts.playfairDisplay(color: AppTheme.cream)),
+            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream)),
         content: Text('Save your film before leaving?',
-            style: GoogleFonts.lato(color: AppTheme.subtleText)),
+            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text('Discard',
-                style: GoogleFonts.lato(color: AppTheme.subtleText)),
+                style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText)),
           ),
           TextButton(
             onPressed: () async {
               await widget.viewModel.saveProject();
               if (ctx.mounted) Navigator.of(ctx).pop(true);
             },
-            child: Text('Save', style: GoogleFonts.lato(color: AppTheme.gold)),
+            child: Text('Save', style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold)),
           ),
         ],
       ),
@@ -231,7 +231,7 @@ class _EditorViewState extends State<EditorView> {
             return TextField(
               controller: _titleController,
               autofocus: true,
-              style: GoogleFonts.playfairDisplay(color: AppTheme.cream, fontSize: 18),
+              style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream, fontSize: 18),
               decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.zero),
               onSubmitted: (v) {
                 widget.viewModel.updateProjectTitle(
@@ -253,7 +253,7 @@ class _EditorViewState extends State<EditorView> {
                     widget.viewModel.project.title.isEmpty
                         ? 'Untitled Film'
                         : widget.viewModel.project.title,
-                    style: GoogleFonts.playfairDisplay(color: AppTheme.cream, fontSize: 18),
+                    style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream, fontSize: 18),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -283,11 +283,11 @@ class _EditorViewState extends State<EditorView> {
                 ),
               TextButton(
                 onPressed: _openPreview,
-                child: Text('Preview', style: GoogleFonts.lato(color: AppTheme.gold, fontSize: 13)),
+                child: Text('Preview', style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold, fontSize: 13)),
               ),
               TextButton(
                 onPressed: _openExport,
-                child: Text('Export', style: GoogleFonts.lato(color: AppTheme.cream, fontSize: 13)),
+                child: Text('Export', style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream, fontSize: 13)),
               ),
             ],
           ),
@@ -526,7 +526,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                         const Icon(Icons.open_with, color: Colors.white54, size: 10),
                         const SizedBox(width: 3),
                         Text('drag · pinch to zoom',
-                            style: GoogleFonts.lato(color: Colors.white54, fontSize: 8)),
+                            style: TextStyle(fontFamily: 'Montserrat', color: Colors.white54, fontSize: 8)),
                       ],
                     ),
                   ),
@@ -538,7 +538,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                 child: Center(
                   child: Text(
                     'Tap "+ Main" or "+ Sub" to add text',
-                    style: GoogleFonts.lato(
+                    style: TextStyle(fontFamily: 'Montserrat', 
                       color: AppTheme.subtleText.withValues(alpha: 0.5),
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
@@ -564,7 +564,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                       children: [
                         const Icon(Icons.add_photo_alternate_outlined, color: AppTheme.gold, size: 14),
                         const SizedBox(width: 4),
-                        Text('Add Photo', style: GoogleFonts.lato(color: AppTheme.gold, fontSize: 11)),
+                        Text('Add Photo', style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold, fontSize: 11)),
                       ],
                     ),
                   ),
@@ -701,7 +701,7 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                 const SizedBox(width: 6),
                 Text(
                   layer.isSubtitle ? 'Subtitle layer' : 'Main layer',
-                  style: GoogleFonts.lato(color: AppTheme.gold, fontSize: 12, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold, fontSize: 12, fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
                 GestureDetector(
@@ -718,7 +718,7 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                       children: [
                         const Icon(Icons.delete_outline, color: Color(0xFFFF6B6B), size: 13),
                         const SizedBox(width: 3),
-                        Text('Delete', style: GoogleFonts.lato(color: const Color(0xFFFF6B6B), fontSize: 11)),
+                        Text('Delete', style: TextStyle(fontFamily: 'Montserrat', color: const Color(0xFFFF6B6B), fontSize: 11)),
                       ],
                     ),
                   ),
@@ -830,7 +830,7 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                       child: Center(
                         child: Text(
                           s.label,
-                          style: GoogleFonts.lato(
+                          style: TextStyle(fontFamily: 'Montserrat', 
                             color: sel ? AppTheme.gold : AppTheme.subtleText,
                             fontSize: 12,
                             fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
@@ -875,7 +875,7 @@ class _SlideEditPanel extends StatelessWidget {
                   const Spacer(),
                   Text(
                     '${slide.photoScale.toStringAsFixed(1)}×',
-                    style: GoogleFonts.lato(color: AppTheme.gold, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
@@ -886,7 +886,7 @@ class _SlideEditPanel extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: AppTheme.border),
                       ),
-                      child: Text('Reset', style: GoogleFonts.lato(color: AppTheme.subtleText, fontSize: 11)),
+                      child: Text('Reset', style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 11)),
                     ),
                   ),
                 ],
@@ -939,7 +939,7 @@ class _SlideEditPanel extends StatelessWidget {
                       ),
                       child: Text(
                         filter.label,
-                        style: GoogleFonts.lato(
+                        style: TextStyle(fontFamily: 'Montserrat', 
                           color: sel ? AppTheme.gold : AppTheme.subtleText,
                           fontSize: 11,
                           fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
@@ -972,7 +972,7 @@ class _SlideEditPanel extends StatelessWidget {
                       ),
                       child: Text(
                         effect.label,
-                        style: GoogleFonts.lato(
+                        style: TextStyle(fontFamily: 'Montserrat', 
                           color: sel ? AppTheme.gold : AppTheme.subtleText,
                           fontSize: 11,
                           fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
@@ -990,7 +990,7 @@ class _SlideEditPanel extends StatelessWidget {
                 _Label('Duration'),
                 const Spacer(),
                 Text('${slide.durationSeconds}s',
-                    style: GoogleFonts.lato(color: AppTheme.gold, fontWeight: FontWeight.bold, fontSize: 13)),
+                    style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold, fontWeight: FontWeight.bold, fontSize: 13)),
               ],
             ),
             Slider(
@@ -1018,7 +1018,7 @@ class _Label extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style: GoogleFonts.lato(
+        style: TextStyle(fontFamily: 'Montserrat', 
           color: AppTheme.subtleText,
           fontSize: 11,
           letterSpacing: 0.8,
@@ -1156,7 +1156,7 @@ class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
           height: 34,
           child: TextField(
             controller: _hex,
-            style: GoogleFonts.lato(color: AppTheme.cream, fontSize: 12),
+            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream, fontSize: 12),
             decoration: const InputDecoration(
               hintText: '#000000',
               contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -1206,7 +1206,7 @@ class _TypeButton extends StatelessWidget {
             Icon(icon, size: 13, color: selected ? AppTheme.gold : AppTheme.subtleText),
             const SizedBox(width: 4),
             Text(label,
-                style: GoogleFonts.lato(
+                style: TextStyle(fontFamily: 'Montserrat', 
                   color: selected ? AppTheme.gold : AppTheme.subtleText,
                   fontSize: 12,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
@@ -1251,7 +1251,7 @@ class _ControlButton extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 70),
               child: Text(
                 label,
-                style: GoogleFonts.lato(
+                style: TextStyle(fontFamily: 'Montserrat', 
                   color: highlighted ? AppTheme.gold : AppTheme.subtleText,
                   fontSize: 11,
                 ),
@@ -1311,7 +1311,7 @@ class _SlideThumbnail extends StatelessWidget {
                 child: Center(
                   child: Text(
                     '${index + 1}',
-                    style: GoogleFonts.lato(
+                    style: TextStyle(fontFamily: 'Montserrat', 
                       color: isSelected ? AppTheme.gold : AppTheme.subtleText,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -1399,11 +1399,11 @@ class _TemplatePicker extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text('Choose a Template',
-              style: GoogleFonts.playfairDisplay(
+              style: TextStyle(fontFamily: 'Montserrat', 
                   color: AppTheme.cream, fontSize: 20, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
           Text('Start with a pre-designed layout',
-              style: GoogleFonts.lato(color: AppTheme.subtleText, fontSize: 13)),
+              style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 13)),
           const SizedBox(height: 16),
           GridView.count(
             crossAxisCount: 3,
@@ -1427,10 +1427,10 @@ class _TemplatePicker extends StatelessWidget {
                       Text(t.emoji, style: const TextStyle(fontSize: 22)),
                       const SizedBox(height: 4),
                       Text(t.label,
-                          style: GoogleFonts.lato(
+                          style: TextStyle(fontFamily: 'Montserrat', 
                               color: AppTheme.cream, fontSize: 12, fontWeight: FontWeight.w600)),
                       Text(t.description,
-                          style: GoogleFonts.lato(color: AppTheme.subtleText, fontSize: 9),
+                          style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 9),
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis),
@@ -1484,7 +1484,7 @@ class _MusicPickerSheet extends StatelessWidget {
           Row(
             children: [
               Text('Choose a Song',
-                  style: GoogleFonts.playfairDisplay(
+                  style: TextStyle(fontFamily: 'Montserrat', 
                       color: AppTheme.cream, fontSize: 20, fontWeight: FontWeight.w600)),
               const Spacer(),
               if (currentMusicName != null)
@@ -1494,7 +1494,7 @@ class _MusicPickerSheet extends StatelessWidget {
                     Navigator.of(context).pop();
                   },
                   child: Text('Remove',
-                      style: GoogleFonts.lato(color: const Color(0xFFFF6B6B), fontSize: 13)),
+                      style: TextStyle(fontFamily: 'Montserrat', color: const Color(0xFFFF6B6B), fontSize: 13)),
                 ),
             ],
           ),
@@ -1514,12 +1514,12 @@ class _MusicPickerSheet extends StatelessWidget {
                     color: isSel ? AppTheme.gold : AppTheme.subtleText, size: 18),
               ),
               title: Text(song.$1,
-                  style: GoogleFonts.lato(
+                  style: TextStyle(fontFamily: 'Montserrat', 
                       color: AppTheme.cream,
                       fontSize: 14,
                       fontWeight: isSel ? FontWeight.w700 : FontWeight.w400)),
               subtitle: Text(song.$2,
-                  style: GoogleFonts.lato(color: AppTheme.subtleText, fontSize: 12)),
+                  style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 12)),
               trailing: isSel
                   ? const Icon(Icons.check_circle, color: AppTheme.gold, size: 18)
                   : null,
