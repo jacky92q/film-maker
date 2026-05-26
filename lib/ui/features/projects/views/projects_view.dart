@@ -8,7 +8,7 @@ import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/projects/view_models/projects_view_model.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 
 class ProjectsView extends StatefulWidget {
   const ProjectsView({
@@ -40,14 +40,14 @@ class _ProjectsViewState extends State<ProjectsView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'New Wedding Film',
-          style: GoogleFonts.playfairDisplay(color: AppTheme.cream),
+          style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'Give your film a title to remember',
-              style: GoogleFonts.lato(color: AppTheme.subtleText, fontSize: 13),
+              style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 13),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -67,7 +67,7 @@ class _ProjectsViewState extends State<ProjectsView> {
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text('Cancel',
-                style: GoogleFonts.lato(color: AppTheme.subtleText)),
+                style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText)),
           ),
           FilledButton(
             onPressed: () {
@@ -114,16 +114,16 @@ class _ProjectsViewState extends State<ProjectsView> {
         backgroundColor: AppTheme.darkSurface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('Delete Film?',
-            style: GoogleFonts.playfairDisplay(color: AppTheme.cream)),
+            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream)),
         content: Text(
           '"${project.title}" will be permanently deleted.',
-          style: GoogleFonts.lato(color: AppTheme.subtleText),
+          style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: Text('Cancel',
-                style: GoogleFonts.lato(color: AppTheme.subtleText)),
+                style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText)),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -147,7 +147,7 @@ class _ProjectsViewState extends State<ProjectsView> {
       appBar: AppBar(
         title: Text(
           'My Wedding Films',
-          style: GoogleFonts.playfairDisplay(
+          style: TextStyle(fontFamily: 'Montserrat', 
               color: AppTheme.cream, fontWeight: FontWeight.w600),
         ),
       ),
@@ -172,7 +172,7 @@ class _ProjectsViewState extends State<ProjectsView> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showNewProjectDialog,
         icon: const Icon(Icons.add),
-        label: Text('New Film', style: GoogleFonts.lato(fontWeight: FontWeight.w700)),
+        label: Text('New Film', style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -208,13 +208,13 @@ class _ProjectsViewState extends State<ProjectsView> {
           const SizedBox(height: 16),
           Text(
             'No films yet',
-            style: GoogleFonts.playfairDisplay(
+            style: TextStyle(fontFamily: 'Montserrat', 
                 color: AppTheme.cream, fontSize: 22, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             'Tap the button below to create\nyour first wedding film',
-            style: GoogleFonts.lato(color: AppTheme.subtleText, fontSize: 14),
+            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ],
@@ -231,7 +231,7 @@ class _ProjectsViewState extends State<ProjectsView> {
           const SizedBox(height: 12),
           Text(
             widget.viewModel.error!,
-            style: GoogleFonts.lato(color: AppTheme.subtleText),
+            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText),
           ),
           const SizedBox(height: 16),
           OutlinedButton(
@@ -286,7 +286,7 @@ class _ProjectCard extends StatelessWidget {
                 children: [
                   Text(
                     project.title,
-                    style: GoogleFonts.playfairDisplay(
+                    style: TextStyle(fontFamily: 'Montserrat', 
                       color: AppTheme.cream,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -302,7 +302,7 @@ class _ProjectCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '${project.slideCount} slides',
-                        style: GoogleFonts.lato(
+                        style: TextStyle(fontFamily: 'Montserrat', 
                             color: AppTheme.subtleText, fontSize: 11),
                       ),
                     ],
@@ -310,7 +310,7 @@ class _ProjectCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     _formatDate(project.updatedAt),
-                    style: GoogleFonts.lato(
+                    style: TextStyle(fontFamily: 'Montserrat', 
                         color: AppTheme.border, fontSize: 10),
                   ),
                 ],
@@ -368,7 +368,7 @@ class _ProjectCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Text(
                         'Music',
-                        style: GoogleFonts.lato(
+                        style: TextStyle(fontFamily: 'Montserrat', 
                             color: AppTheme.gold, fontSize: 9),
                       ),
                     ],

@@ -2,7 +2,7 @@ import 'package:film_maker/domain/models/user.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/auth/view_models/auth_view_model.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 
 class LoginView extends StatefulWidget {
   const LoginView({
@@ -98,7 +98,7 @@ class _LoginViewState extends State<LoginView> {
         const SizedBox(height: 20),
         Text(
           'Film Maker',
-          style: GoogleFonts.playfairDisplay(
+          style: TextStyle(fontFamily: 'Montserrat', 
             color: AppTheme.cream,
             fontSize: 36,
             fontWeight: FontWeight.bold,
@@ -114,7 +114,7 @@ class _LoginViewState extends State<LoginView> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 'Your love story, beautifully told',
-                style: GoogleFonts.lato(
+                style: TextStyle(fontFamily: 'Montserrat', 
                   color: AppTheme.subtleText,
                   fontSize: 13,
                   letterSpacing: 0.5,
@@ -201,7 +201,7 @@ class _LoginViewState extends State<LoginView> {
                     Expanded(
                       child: Text(
                         widget.viewModel.error!,
-                        style: GoogleFonts.lato(
+                        style: TextStyle(fontFamily: 'Montserrat', 
                             color: Color(0xFFFF6B6B), fontSize: 13),
                       ),
                     ),
@@ -230,7 +230,7 @@ class _LoginViewState extends State<LoginView> {
           Expanded(
             child: Text(
               'Demo: enter any email + password (4+ chars)',
-              style: GoogleFonts.lato(
+              style: TextStyle(fontFamily: 'Montserrat', 
                   color: AppTheme.subtleText, fontSize: 12),
             ),
           ),
