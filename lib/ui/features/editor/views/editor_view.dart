@@ -12,7 +12,7 @@ import 'package:film_maker/ui/features/preview/views/preview_view.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Returns the appropriate TextStyle for a given font style.
+// Returns the appropriate TextStyle for a given font style using bundled fonts.
 TextStyle slideLayerTextStyle(
   SlideFontStyle font, {
   double fontSize = 20,
@@ -20,26 +20,28 @@ TextStyle slideLayerTextStyle(
   FontWeight fontWeight = FontWeight.w600,
   List<Shadow>? shadows,
 }) {
+  final String family;
   switch (font) {
     case SlideFontStyle.serif:
-      return GoogleFonts.playfairDisplay(
-          fontSize: fontSize, color: color, fontWeight: fontWeight, shadows: shadows);
+      family = 'PlayfairDisplay';
     case SlideFontStyle.sans:
-      return GoogleFonts.lato(
-          fontSize: fontSize, color: color, fontWeight: fontWeight, shadows: shadows);
+      family = 'Lato';
     case SlideFontStyle.script:
-      return GoogleFonts.dancingScript(
-          fontSize: fontSize, color: color, fontWeight: fontWeight, shadows: shadows);
+      family = 'DancingScript';
     case SlideFontStyle.display:
-      return GoogleFonts.cinzel(
-          fontSize: fontSize, color: color, fontWeight: fontWeight, shadows: shadows);
+      family = 'Cinzel';
     case SlideFontStyle.elegant:
-      return GoogleFonts.ebGaramond(
-          fontSize: fontSize, color: color, fontWeight: fontWeight, shadows: shadows);
+      family = 'EBGaramond';
     case SlideFontStyle.modern:
-      return GoogleFonts.montserrat(
-          fontSize: fontSize, color: color, fontWeight: fontWeight, shadows: shadows);
+      family = 'Montserrat';
   }
+  return TextStyle(
+    fontFamily: family,
+    fontSize: fontSize,
+    color: color,
+    fontWeight: fontWeight,
+    shadows: shadows,
+  );
 }
 
 class EditorView extends StatefulWidget {
