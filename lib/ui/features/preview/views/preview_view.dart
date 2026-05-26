@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/preview/view_models/preview_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -126,8 +127,7 @@ class _PreviewViewState extends State<PreviewView>
                 final slide = widget.viewModel.currentSlide;
                 if (slide == null) {
                   return const Center(
-                    child: Text('No slides',
-                        style: TextStyle(color: AppTheme.subtleText)),
+                    child: Text('No slides', style: TextStyle(color: AppTheme.subtleText)),
                   );
                 }
                 return _buildSlideView(slide);
@@ -154,9 +154,7 @@ class _PreviewViewState extends State<PreviewView>
         errorBuilder: (_, __, ___) => _buildGradientBg(),
       );
       final filter = slide.photoFilter.colorFilter;
-      background = filter != null
-          ? ColorFiltered(colorFilter: filter, child: img)
-          : img;
+      background = filter != null ? ColorFiltered(colorFilter: filter, child: img) : img;
     } else {
       background = _buildGradientBg();
     }
@@ -165,24 +163,19 @@ class _PreviewViewState extends State<PreviewView>
       background = AnimatedBuilder(
         animation: _kenBurnsController,
         builder: (context, child) {
-          final scale = 1.0 +
-              0.08 * _kenBurnsController.value;
-          final dx = 0.03 *
-              (_kenBurnsController.value - 0.5);
+          final scale = 1.0 + 0.08 * _kenBurnsController.value;
+          final dx = 0.03 * (_kenBurnsController.value - 0.5);
           return Transform.scale(
             scale: scale,
             alignment: Alignment.center,
-            child: Transform.translate(
-              offset: Offset(dx * 200, 0),
-              child: child,
-            ),
+            child: Transform.translate(offset: Offset(dx * 200, 0), child: child),
           );
         },
         child: background,
       );
     }
 
-    Widget slideWidget = AnimatedSwitcher(
+    return AnimatedSwitcher(
       duration: const Duration(milliseconds: 700),
       switchInCurve: Curves.easeInOut,
       switchOutCurve: Curves.easeInOut,
@@ -199,12 +192,49 @@ class _PreviewViewState extends State<PreviewView>
         ),
       ),
     );
-
-    return slideWidget;
   }
 
-  AnimatedSwitcherTransitionBuilder _buildTransition(
-      TransitionEffect effect) {
+  Widget _buildTextOverlay(Slide slide) {
+    if (slide.textLayers.isEmpty) return const SizedBox.shrink();
+    return Stack(
+      fit: StackFit.expand,
+      children: slide.textLayers.map((layer) {
+        return Positioned.fill(
+          child: Align(
+            alignment: Alignment(
+              (layer.x * 2 - 1).clamp(-0.92, 0.92),
+              (layer.y * 2 - 1).clamp(-0.92, 0.92),
+            ),
+            child: _buildLayerText(layer),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildLayerText(TextLayer layer) {
+    final color = layer.color.color;
+    final fontSize = layer.isSubtitle ? layer.size.subFontSize : layer.size.mainFontSize;
+    final shadows = [Shadow(color: Colors.black.withValues(alpha: 0.85), blurRadius: 12)];
+    final style = slideLayerTextStyle(layer.fontStyle,
+        fontSize: fontSize, color: color, shadows: shadows);
+
+    final text = Text(layer.text, style: style, textAlign: TextAlign.center);
+
+    if (!layer.isSubtitle) return text;
+
+    return IntrinsicWidth(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          border: Border(left: BorderSide(color: layer.barColor.color, width: 2.5)),
+        ),
+        child: text,
+      ),
+    );
+  }
+
+  AnimatedSwitcherTransitionBuilder _buildTransition(TransitionEffect effect) {
     switch (effect) {
       case TransitionEffect.fade:
       case TransitionEffect.kenBurns:
@@ -215,8 +245,7 @@ class _PreviewViewState extends State<PreviewView>
           final offset = Tween<Offset>(
             begin: const Offset(1.0, 0.0),
             end: Offset.zero,
-          ).animate(CurvedAnimation(
-              parent: animation, curve: Curves.easeInOut));
+          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
           return SlideTransition(position: offset, child: child);
         };
 
@@ -225,8 +254,7 @@ class _PreviewViewState extends State<PreviewView>
           final offset = Tween<Offset>(
             begin: const Offset(-1.0, 0.0),
             end: Offset.zero,
-          ).animate(CurvedAnimation(
-              parent: animation, curve: Curves.easeInOut));
+          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
           return SlideTransition(position: offset, child: child);
         };
 
@@ -268,75 +296,8 @@ class _PreviewViewState extends State<PreviewView>
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            Colors.black.withValues(alpha: 0.7),
-          ],
+          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.5)],
           stops: const [0.3, 1.0],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextOverlay(Slide slide) {
-    if (slide.title.isEmpty && slide.subtitle.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 28, 28, 100),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (slide.title.isNotEmpty)
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500),
-                child: Text(
-                  slide.title,
-                  key: ValueKey('title_${slide.id}'),
-                  style: (slide.fontStyle == SlideFontStyle.serif
-                          ? GoogleFonts.playfairDisplay()
-                          : GoogleFonts.lato())
-                      .copyWith(
-                    color: slide.textColor.color,
-                    fontSize: slide.textSize.titleFontSize,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withValues(alpha: 0.8),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            if (slide.title.isNotEmpty && slide.subtitle.isNotEmpty)
-              const SizedBox(height: 6),
-            if (slide.subtitle.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-                decoration: BoxDecoration(
-                  border: Border(
-                    left: BorderSide(
-                        color: slide.textColor.color, width: 2),
-                  ),
-                ),
-                child: Text(
-                  slide.subtitle,
-                  style: GoogleFonts.lato(
-                    color: slide.textColor.color.withValues(alpha: 0.85),
-                    fontSize: slide.textSize.subtitleFontSize,
-                    letterSpacing: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-          ],
         ),
       ),
     );
@@ -354,25 +315,18 @@ class _PreviewViewState extends State<PreviewView>
 
   Widget _buildTopBar() {
     return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
+      top: 0, left: 0, right: 0,
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0.6),
-              Colors.transparent,
-            ],
+            colors: [Colors.black.withValues(alpha: 0.6), Colors.transparent],
           ),
         ),
         padding: EdgeInsets.only(
           top: MediaQuery.of(context).padding.top + 8,
-          left: 8,
-          right: 16,
-          bottom: 16,
+          left: 8, right: 16, bottom: 16,
         ),
         child: Row(
           children: [
@@ -384,10 +338,7 @@ class _PreviewViewState extends State<PreviewView>
               child: Text(
                 widget.viewModel.project.title,
                 style: GoogleFonts.playfairDisplay(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                    color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -408,9 +359,7 @@ class _PreviewViewState extends State<PreviewView>
             children: [
               _buildIconButton(
                 icon: Icons.skip_previous_rounded,
-                onTap: widget.viewModel.isFirstSlide
-                    ? null
-                    : widget.viewModel.previousSlide,
+                onTap: widget.viewModel.isFirstSlide ? null : widget.viewModel.previousSlide,
                 size: 36,
               ),
               const SizedBox(width: 20),
@@ -425,9 +374,7 @@ class _PreviewViewState extends State<PreviewView>
               const SizedBox(width: 20),
               _buildIconButton(
                 icon: Icons.skip_next_rounded,
-                onTap: widget.viewModel.isLastSlide
-                    ? null
-                    : widget.viewModel.nextSlide,
+                onTap: widget.viewModel.isLastSlide ? null : widget.viewModel.nextSlide,
                 size: 36,
               ),
             ],
@@ -448,32 +395,24 @@ class _PreviewViewState extends State<PreviewView>
       child: Icon(
         icon,
         size: size,
-        color: onTap == null
-            ? color.withValues(alpha: 0.3)
-            : color.withValues(alpha: 0.9),
+        color: onTap == null ? color.withValues(alpha: 0.3) : color.withValues(alpha: 0.9),
       ),
     );
   }
 
   Widget _buildBottomBar() {
     return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
+      bottom: 0, left: 0, right: 0,
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0.7),
-              Colors.transparent,
-            ],
+            colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent],
           ),
         ),
         padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
+          left: 20, right: 20,
           bottom: MediaQuery.of(context).padding.bottom + 16,
           top: 24,
         ),
@@ -519,9 +458,7 @@ class _PreviewViewState extends State<PreviewView>
           margin: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(3),
-            color: isCurrent
-                ? AppTheme.gold
-                : Colors.white.withValues(alpha: 0.4),
+            color: isCurrent ? AppTheme.gold : Colors.white.withValues(alpha: 0.4),
           ),
         );
       }),

@@ -2,21 +2,11 @@ import 'package:flutter/material.dart';
 
 enum TransitionEffect { fade, slideLeft, slideRight, zoomIn, kenBurns }
 
-enum TextPosition {
-  topCenter,
-  centerLeft,
-  center,
-  centerRight,
-  bottomLeft,
-  bottomCenter,
-  bottomRight,
-}
-
 enum SlideTextColor { white, gold, cream, black, rose }
 
-enum SlideTextSize { small, medium, large }
+enum SlideTextSize { small, medium, large, xlarge }
 
-enum SlideFontStyle { serif, sans }
+enum SlideFontStyle { serif, sans, script, display, elegant, modern }
 
 enum PhotoFilter { none, warm, cool, blackAndWhite, vintage, dramatic }
 
@@ -80,28 +70,53 @@ extension SlideTextSizeX on SlideTextSize {
         return 'M';
       case SlideTextSize.large:
         return 'L';
+      case SlideTextSize.xlarge:
+        return 'XL';
     }
   }
 
-  double get titleFontSize {
+  double get mainFontSize {
     switch (this) {
       case SlideTextSize.small:
-        return 16;
+        return 20;
       case SlideTextSize.medium:
+        return 28;
+      case SlideTextSize.large:
+        return 38;
+      case SlideTextSize.xlarge:
+        return 52;
+    }
+  }
+
+  double get subFontSize {
+    switch (this) {
+      case SlideTextSize.small:
+        return 14;
+      case SlideTextSize.medium:
+        return 18;
+      case SlideTextSize.large:
         return 22;
-      case SlideTextSize.large:
-        return 30;
+      case SlideTextSize.xlarge:
+        return 28;
     }
   }
+}
 
-  double get subtitleFontSize {
+extension SlideFontStyleX on SlideFontStyle {
+  String get label {
     switch (this) {
-      case SlideTextSize.small:
-        return 11;
-      case SlideTextSize.medium:
-        return 13;
-      case SlideTextSize.large:
-        return 16;
+      case SlideFontStyle.serif:
+        return 'Serif';
+      case SlideFontStyle.sans:
+        return 'Sans';
+      case SlideFontStyle.script:
+        return 'Script';
+      case SlideFontStyle.display:
+        return 'Display';
+      case SlideFontStyle.elegant:
+        return 'Elegant';
+      case SlideFontStyle.modern:
+        return 'Modern';
     }
   }
 }
@@ -214,6 +229,55 @@ extension SlideTemplateX on SlideTemplate {
   }
 }
 
+/// A single text element placed at a free (x, y) position on a slide.
+/// x/y are fractions: 0.0 = left/top edge, 1.0 = right/bottom edge.
+class TextLayer {
+  const TextLayer({
+    required this.id,
+    required this.text,
+    this.isSubtitle = false,
+    this.x = 0.5,
+    this.y = 0.75,
+    this.color = SlideTextColor.white,
+    this.barColor = SlideTextColor.gold,
+    this.size = SlideTextSize.medium,
+    this.fontStyle = SlideFontStyle.serif,
+  });
+
+  final String id;
+  final String text;
+  final bool isSubtitle;
+  final double x;
+  final double y;
+  final SlideTextColor color;
+  final SlideTextColor barColor;
+  final SlideTextSize size;
+  final SlideFontStyle fontStyle;
+
+  TextLayer copyWith({
+    String? text,
+    bool? isSubtitle,
+    double? x,
+    double? y,
+    SlideTextColor? color,
+    SlideTextColor? barColor,
+    SlideTextSize? size,
+    SlideFontStyle? fontStyle,
+  }) {
+    return TextLayer(
+      id: id,
+      text: text ?? this.text,
+      isSubtitle: isSubtitle ?? this.isSubtitle,
+      x: x ?? this.x,
+      y: y ?? this.y,
+      color: color ?? this.color,
+      barColor: barColor ?? this.barColor,
+      size: size ?? this.size,
+      fontStyle: fontStyle ?? this.fontStyle,
+    );
+  }
+}
+
 // ignore: avoid_classes_with_only_static_members
 class SlideDefaults {
   static Slide fromTemplate(String id, SlideTemplate template) {
@@ -223,46 +287,38 @@ class SlideDefaults {
       case SlideTemplate.opening:
         return Slide(
           id: id,
-          title: 'Our Story',
-          subtitle: 'A Wedding Film',
-          textPosition: TextPosition.center,
-          textSize: SlideTextSize.large,
-          fontStyle: SlideFontStyle.serif,
+          textLayers: [
+            TextLayer(id: '${id}_t', text: 'Our Story', x: 0.5, y: 0.50, size: SlideTextSize.large, fontStyle: SlideFontStyle.serif, color: SlideTextColor.cream),
+            TextLayer(id: '${id}_s', text: 'A Wedding Film', isSubtitle: true, x: 0.5, y: 0.66, size: SlideTextSize.small, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
+          ],
           transition: TransitionEffect.fade,
           durationSeconds: 5,
         );
       case SlideTemplate.memory:
         return Slide(
           id: id,
-          title: '',
-          subtitle: 'A cherished moment',
-          textPosition: TextPosition.bottomCenter,
-          textSize: SlideTextSize.small,
-          textColor: SlideTextColor.cream,
+          textLayers: [
+            TextLayer(id: '${id}_s', text: 'A cherished moment', isSubtitle: true, x: 0.5, y: 0.86, size: SlideTextSize.small, color: SlideTextColor.cream, barColor: SlideTextColor.cream),
+          ],
           transition: TransitionEffect.kenBurns,
           durationSeconds: 5,
         );
       case SlideTemplate.loveNote:
         return Slide(
           id: id,
-          title: '"You are my greatest adventure"',
-          subtitle: '',
-          textPosition: TextPosition.center,
-          textSize: SlideTextSize.medium,
-          fontStyle: SlideFontStyle.serif,
-          textColor: SlideTextColor.gold,
+          textLayers: [
+            TextLayer(id: '${id}_t', text: '"You are my greatest adventure"', x: 0.5, y: 0.50, size: SlideTextSize.medium, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
+          ],
           transition: TransitionEffect.fade,
           durationSeconds: 6,
         );
       case SlideTemplate.closing:
         return Slide(
           id: id,
-          title: 'Forever & Always',
-          subtitle: '${DateTime.now().year}',
-          textPosition: TextPosition.center,
-          textSize: SlideTextSize.large,
-          fontStyle: SlideFontStyle.serif,
-          textColor: SlideTextColor.gold,
+          textLayers: [
+            TextLayer(id: '${id}_t', text: 'Forever & Always', x: 0.5, y: 0.46, size: SlideTextSize.large, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
+            TextLayer(id: '${id}_s', text: '${DateTime.now().year}', isSubtitle: true, x: 0.5, y: 0.62, size: SlideTextSize.small, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
+          ],
           transition: TransitionEffect.fade,
           durationSeconds: 5,
         );
@@ -274,52 +330,32 @@ class Slide {
   const Slide({
     required this.id,
     this.imagePath,
-    this.title = '',
-    this.subtitle = '',
+    this.textLayers = const [],
     this.transition = TransitionEffect.fade,
-    this.textPosition = TextPosition.bottomCenter,
     this.durationSeconds = 4,
-    this.textColor = SlideTextColor.white,
-    this.textSize = SlideTextSize.medium,
-    this.fontStyle = SlideFontStyle.serif,
     this.photoFilter = PhotoFilter.none,
   });
 
   final String id;
   final String? imagePath;
-  final String title;
-  final String subtitle;
+  final List<TextLayer> textLayers;
   final TransitionEffect transition;
-  final TextPosition textPosition;
   final int durationSeconds;
-  final SlideTextColor textColor;
-  final SlideTextSize textSize;
-  final SlideFontStyle fontStyle;
   final PhotoFilter photoFilter;
 
   Slide copyWith({
     String? imagePath,
-    String? title,
-    String? subtitle,
+    List<TextLayer>? textLayers,
     TransitionEffect? transition,
-    TextPosition? textPosition,
     int? durationSeconds,
-    SlideTextColor? textColor,
-    SlideTextSize? textSize,
-    SlideFontStyle? fontStyle,
     PhotoFilter? photoFilter,
   }) {
     return Slide(
       id: id,
       imagePath: imagePath ?? this.imagePath,
-      title: title ?? this.title,
-      subtitle: subtitle ?? this.subtitle,
+      textLayers: textLayers ?? this.textLayers,
       transition: transition ?? this.transition,
-      textPosition: textPosition ?? this.textPosition,
       durationSeconds: durationSeconds ?? this.durationSeconds,
-      textColor: textColor ?? this.textColor,
-      textSize: textSize ?? this.textSize,
-      fontStyle: fontStyle ?? this.fontStyle,
       photoFilter: photoFilter ?? this.photoFilter,
     );
   }

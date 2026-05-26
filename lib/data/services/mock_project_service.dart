@@ -12,22 +12,28 @@ class MockProjectService {
       slides: [
         Slide(
           id: 's1',
-          title: 'The Day We Met',
-          subtitle: 'Seoul, Spring 2024',
+          textLayers: [
+            TextLayer(id: 's1_t', text: 'The Day We Met', x: 0.5, y: 0.48, size: SlideTextSize.large, fontStyle: SlideFontStyle.serif, color: SlideTextColor.cream),
+            TextLayer(id: 's1_s', text: 'Seoul, Spring 2024', isSubtitle: true, x: 0.5, y: 0.64, size: SlideTextSize.small, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
+          ],
           transition: TransitionEffect.fade,
           durationSeconds: 5,
         ),
         Slide(
           id: 's2',
-          title: 'First Date',
-          subtitle: 'Hangang Park',
+          textLayers: [
+            TextLayer(id: 's2_t', text: 'First Date', x: 0.5, y: 0.50, size: SlideTextSize.large, fontStyle: SlideFontStyle.script, color: SlideTextColor.rose),
+            TextLayer(id: 's2_s', text: 'Hangang Park', isSubtitle: true, x: 0.5, y: 0.65, size: SlideTextSize.small, color: SlideTextColor.cream, barColor: SlideTextColor.rose),
+          ],
           transition: TransitionEffect.slideLeft,
           durationSeconds: 4,
         ),
         Slide(
           id: 's3',
-          title: 'Our Journey',
-          subtitle: '365 days together',
+          textLayers: [
+            TextLayer(id: 's3_t', text: 'Our Journey', x: 0.5, y: 0.46, size: SlideTextSize.large, fontStyle: SlideFontStyle.elegant, color: SlideTextColor.gold),
+            TextLayer(id: 's3_s', text: '365 days together', isSubtitle: true, x: 0.5, y: 0.62, size: SlideTextSize.small, color: SlideTextColor.cream, barColor: SlideTextColor.gold),
+          ],
           transition: TransitionEffect.kenBurns,
           durationSeconds: 6,
         ),
@@ -41,15 +47,19 @@ class MockProjectService {
       slides: [
         Slide(
           id: 's4',
-          title: 'Under the Rain',
-          subtitle: 'Just us two',
+          textLayers: [
+            TextLayer(id: 's4_t', text: 'Under the Rain', x: 0.5, y: 0.50, size: SlideTextSize.xlarge, fontStyle: SlideFontStyle.display, color: SlideTextColor.white),
+            TextLayer(id: 's4_s', text: 'Just us two', isSubtitle: true, x: 0.5, y: 0.68, size: SlideTextSize.small, color: SlideTextColor.cream, barColor: SlideTextColor.white),
+          ],
           transition: TransitionEffect.fade,
           durationSeconds: 4,
         ),
         Slide(
           id: 's5',
-          title: 'Neon Lights',
-          subtitle: 'Hongdae Street',
+          textLayers: [
+            TextLayer(id: 's5_t', text: 'Neon Lights', x: 0.5, y: 0.48, size: SlideTextSize.xlarge, fontStyle: SlideFontStyle.modern, color: SlideTextColor.rose),
+            TextLayer(id: 's5_s', text: 'Hongdae Street', isSubtitle: true, x: 0.5, y: 0.66, size: SlideTextSize.small, color: SlideTextColor.rose, barColor: SlideTextColor.rose),
+          ],
           transition: TransitionEffect.zoomIn,
           durationSeconds: 5,
         ),
@@ -69,14 +79,7 @@ class MockProjectService {
     final project = Project(
       id: _uuid.v4(),
       title: title,
-      slides: [
-        Slide(
-          id: _uuid.v4(),
-          title: '',
-          subtitle: '',
-          transition: TransitionEffect.fade,
-        ),
-      ],
+      slides: [Slide(id: _uuid.v4())],
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
