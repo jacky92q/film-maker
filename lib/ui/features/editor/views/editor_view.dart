@@ -643,7 +643,8 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
             // Text input
             TextField(
               controller: _ctrl,
-              style: const TextStyle(color: AppTheme.cream, fontSize: 14),
+              style: slideLayerTextStyle(layer.fontStyle,
+                  fontSize: 16, color: AppTheme.cream, fontWeight: FontWeight.normal),
               maxLines: 2,
               decoration: const InputDecoration(
                 hintText: 'Enter text…',
