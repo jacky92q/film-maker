@@ -1,17 +1,20 @@
-import 'package:film_maker/data/services/mock_export_service.dart';
+import 'package:film_maker/data/services/video_export_service.dart';
+import 'package:film_maker/domain/models/project.dart';
 
 class ExportRepository {
-  ExportRepository({required MockExportService exportService})
+  ExportRepository({required VideoExportService exportService})
       : _exportService = exportService;
 
-  final MockExportService _exportService;
+  final VideoExportService _exportService;
+
+  String? get lastOutputPath => _exportService.lastOutputPath;
 
   Stream<double> exportProject({
-    required String projectId,
+    required Project project,
     required String resolution,
   }) {
     return _exportService.exportProject(
-      projectId: projectId,
+      project: project,
       resolution: resolution,
     );
   }
