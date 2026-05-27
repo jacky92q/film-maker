@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class AppTheme {
   static const Color gold = Color(0xFFC9A84C);
   static const Color cream = Color(0xFFF5F0E8);
@@ -9,6 +8,7 @@ class AppTheme {
   static const Color darkSurface2 = Color(0xFF242424);
   static const Color subtleText = Color(0xFFB0A890);
   static const Color border = Color(0xFF2A2A2A);
+  static const String fontTheme = 'Cinzel';
 
   static ThemeData light() => _dark();
 
@@ -34,7 +34,8 @@ class AppTheme {
         foregroundColor: cream,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(fontFamily: 'Montserrat', 
+        titleTextStyle: TextStyle(
+          fontFamily: 'Cinzel',
           color: cream,
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -42,39 +43,71 @@ class AppTheme {
         iconTheme: const IconThemeData(color: cream),
         actionsIconTheme: const IconThemeData(color: gold),
       ),
-      textTheme: base.textTheme.apply(fontFamily: 'Montserrat').copyWith(
-        displayLarge: TextStyle(fontFamily: 'Montserrat', 
-            color: cream, fontSize: 36, fontWeight: FontWeight.bold),
-        displayMedium: TextStyle(fontFamily: 'Montserrat', 
-            color: cream, fontSize: 28, fontWeight: FontWeight.bold),
-        displaySmall: TextStyle(fontFamily: 'Montserrat', 
-            color: cream, fontSize: 22, fontWeight: FontWeight.w600),
-        headlineLarge: TextStyle(fontFamily: 'Montserrat', 
-            color: cream, fontSize: 28, fontWeight: FontWeight.bold),
-        headlineMedium: TextStyle(fontFamily: 'Montserrat', 
-            color: cream, fontSize: 22, fontWeight: FontWeight.w600),
-        headlineSmall: TextStyle(fontFamily: 'Montserrat', 
-            color: cream, fontSize: 18, fontWeight: FontWeight.w600),
-        titleLarge: TextStyle(fontFamily: 'Montserrat', 
-            color: cream, fontSize: 18, fontWeight: FontWeight.w600),
-        titleMedium: TextStyle(fontFamily: 'Montserrat', 
-            color: cream, fontSize: 16, fontWeight: FontWeight.w500),
-        titleSmall: TextStyle(fontFamily: 'Montserrat', 
-            color: subtleText, fontSize: 14, fontWeight: FontWeight.w500),
-        bodyLarge: TextStyle(fontFamily: 'Montserrat', color: cream, fontSize: 16),
-        bodyMedium: TextStyle(fontFamily: 'Montserrat', color: subtleText, fontSize: 14),
-        bodySmall: TextStyle(fontFamily: 'Montserrat', color: subtleText, fontSize: 12),
-        labelLarge: TextStyle(fontFamily: 'Montserrat', 
-            color: cream,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8),
-        labelMedium: TextStyle(fontFamily: 'Montserrat', 
-            color: subtleText,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.5),
-      ),
+      textTheme: base.textTheme.apply(fontFamily: 'Cinzel').copyWith(
+            displayLarge: TextStyle(
+                fontFamily: 'Cinzel',
+                color: cream,
+                fontSize: 36,
+                fontWeight: FontWeight.bold),
+            displayMedium: TextStyle(
+                fontFamily: 'Cinzel',
+                color: cream,
+                fontSize: 28,
+                fontWeight: FontWeight.bold),
+            displaySmall: TextStyle(
+                fontFamily: 'Cinzel',
+                color: cream,
+                fontSize: 22,
+                fontWeight: FontWeight.w600),
+            headlineLarge: TextStyle(
+                fontFamily: 'Cinzel',
+                color: cream,
+                fontSize: 28,
+                fontWeight: FontWeight.bold),
+            headlineMedium: TextStyle(
+                fontFamily: 'Cinzel',
+                color: cream,
+                fontSize: 22,
+                fontWeight: FontWeight.w600),
+            headlineSmall: TextStyle(
+                fontFamily: 'Cinzel',
+                color: cream,
+                fontSize: 18,
+                fontWeight: FontWeight.w600),
+            titleLarge: TextStyle(
+                fontFamily: 'Cinzel',
+                color: cream,
+                fontSize: 18,
+                fontWeight: FontWeight.w600),
+            titleMedium: TextStyle(
+                fontFamily: 'Cinzel',
+                color: cream,
+                fontSize: 16,
+                fontWeight: FontWeight.w500),
+            titleSmall: TextStyle(
+                fontFamily: 'Cinzel',
+                color: subtleText,
+                fontSize: 14,
+                fontWeight: FontWeight.w500),
+            bodyLarge:
+                TextStyle(fontFamily: 'Cinzel', color: cream, fontSize: 16),
+            bodyMedium: TextStyle(
+                fontFamily: 'Cinzel', color: subtleText, fontSize: 14),
+            bodySmall: TextStyle(
+                fontFamily: 'Cinzel', color: subtleText, fontSize: 12),
+            labelLarge: TextStyle(
+                fontFamily: 'Cinzel',
+                color: cream,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8),
+            labelMedium: TextStyle(
+                fontFamily: 'Cinzel',
+                color: subtleText,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.5),
+          ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: darkSurface,
@@ -94,8 +127,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
         ),
-        labelStyle: TextStyle(fontFamily: 'Montserrat', color: Color(0xFF888888), fontSize: 14),
-        hintStyle: TextStyle(fontFamily: 'Montserrat', color: Color(0xFF555555), fontSize: 14),
+        labelStyle: TextStyle(
+            fontFamily: 'Cinzel', color: Color(0xFF888888), fontSize: 14),
+        hintStyle: TextStyle(
+            fontFamily: 'Cinzel', color: Color(0xFF555555), fontSize: 14),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
@@ -106,8 +141,11 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: TextStyle(fontFamily: 'Montserrat', 
-              fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+          textStyle: TextStyle(
+              fontFamily: 'Cinzel',
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -117,7 +155,8 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: TextStyle(fontFamily: 'Montserrat', fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: TextStyle(
+              fontFamily: 'Cinzel', fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -133,7 +172,7 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: darkSurface2,
         selectedColor: gold.withValues(alpha: 0.25),
-        labelStyle: TextStyle(fontFamily: 'Montserrat', fontSize: 12, color: cream),
+        labelStyle: TextStyle(fontFamily: 'Cinzel', fontSize: 12, color: cream),
         side: const BorderSide(color: border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
