@@ -162,6 +162,7 @@ class EditorViewModel extends ChangeNotifier {
       final picked = await _imagePicker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 85,
+        requestFullMetadata: false, // uses system Photo Picker on Android 13+ (no permission needed)
       );
       if (picked != null) {
         _updateSlide(slide.copyWith(imagePath: picked.path));
