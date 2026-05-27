@@ -1,8 +1,8 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:film_maker/data/repositories/project_repository.dart';
 import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 class EditorViewModel extends ChangeNotifier {
@@ -14,6 +14,7 @@ class EditorViewModel extends ChangeNotifier {
 
   final ProjectRepository projectRepository;
   final _uuid = const Uuid();
+  final _imagePicker = ImagePicker();
 
   Project _project;
   int _selectedSlideIndex;
@@ -166,10 +167,9 @@ class EditorViewModel extends ChangeNotifier {
     if (slide == null) return;
     _pickError = null;
     try {
-      final result = await FilePicker.pickFiles(type: FileType.image);
-      if (result != null && result.files.isNotEmpty) {
-        final path = result.files.first.path;
-        if (path != null) _updateSlide(slide.copyWith(imagePath: path));
+      final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
+      if (picked != null) {
+        _updateSlide(slide.copyWith(imagePath: picked.path));
       }
     } catch (e) {
       _pickError = e.toString();
