@@ -241,6 +241,7 @@ class _PreviewViewState extends State<PreviewView>
                 frame: pl.frame,
                 fit: BoxFit.cover,
                 colorFilter: pl.filter.colorFilter,
+                frameWidth: pl.frameWidth,    // ← add this
               ),
             ),
           );

@@ -363,6 +363,7 @@ class PhotoLayer {
     this.shape = PhotoShape.none,
     this.frame = PhotoFrame.none,
     this.filter = PhotoFilter.none,
+    this.frameWidth = 4.0,
   });
 
   final String id;
@@ -375,6 +376,7 @@ class PhotoLayer {
   final PhotoShape shape;
   final PhotoFrame frame;
   final PhotoFilter filter;
+  final double frameWidth;   // border thickness in logical pixels
 
   PhotoLayer copyWith({
     String? imagePath,
@@ -386,6 +388,7 @@ class PhotoLayer {
     PhotoShape? shape,
     PhotoFrame? frame,
     PhotoFilter? filter,
+    double? frameWidth,
   }) {
     return PhotoLayer(
       id: id,
@@ -398,6 +401,7 @@ class PhotoLayer {
       shape: shape ?? this.shape,
       frame: frame ?? this.frame,
       filter: filter ?? this.filter,
+      frameWidth: frameWidth ?? this.frameWidth,
     );
   }
 }

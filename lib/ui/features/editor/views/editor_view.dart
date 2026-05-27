@@ -561,6 +561,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
 
         return Stack(
           fit: StackFit.expand,
+          clipBehavior: Clip.none,
           children: [
             background,
             _gradientOverlay(),
@@ -591,42 +592,146 @@ class _SlideCanvasState extends State<_SlideCanvas> {
             // Photo layers
             ...slide.photoLayers.map((pl) {
               final isSelectedPL = widget.viewModel.selectedPhotoLayerId == pl.id;
-              return Positioned(
-                left: (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * canvasW,
-                top:  (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * canvasH,
-                width: pl.widthFraction * canvasW,
-                height: pl.heightFraction * canvasH,
-                child: GestureDetector(
-                  onTap: () => widget.viewModel.selectPhotoLayer(pl.id),
-                  onPanUpdate: (d) {
-                    final newX = (pl.x + d.delta.dx / canvasW).clamp(0.05, 0.95);
-                    final newY = (pl.y + d.delta.dy / canvasH).clamp(0.05, 0.95);
-                    widget.viewModel.movePhotoLayer(pl.id, newX, newY);
-                  },
-                  child: Transform.rotate(
-                    angle: pl.rotation * 3.14159265 / 180.0,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        buildShapedPhoto(
-                          imagePath: pl.imagePath,
-                          shape: pl.shape,
-                          frame: pl.frame,
-                          fit: BoxFit.cover,
-                          colorFilter: pl.filter.colorFilter,
-                        ),
-                        if (isSelectedPL)
-                          Positioned.fill(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.blueAccent, width: 2),
-                              ),
-                            ),
-                          ),
-                      ],
+              final left   = (pl.x - pl.widthFraction / 2).clamp(0.0, 0.98) * canvasW;
+              final top    = (pl.y - pl.heightFraction / 2).clamp(0.0, 0.98) * canvasH;
+              final pw     = pl.widthFraction * canvasW;
+              final ph     = pl.heightFraction * canvasH;
+
+              // Corner handle helper — returns a Positioned drag handle
+              Widget cornerHandle({
+                required double hLeft,
+                required double hTop,
+                required double signX,   // -1 or +1 — direction wf grows
+                required double signY,   // -1 or +1 — direction hf grows
+              }) {
+                const hs = 10.0; // handle size
+                return Positioned(
+                  left: hLeft - hs / 2,
+                  top:  hTop  - hs / 2,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onPanUpdate: (d) {
+                      final dx = d.delta.dx;
+                      final dy = d.delta.dy;
+                      final newWf = (pl.widthFraction  + signX * dx / canvasW).clamp(0.08, 1.0);
+                      final newHf = (pl.heightFraction + signY * dy / canvasH).clamp(0.08, 1.0);
+                      final newX  = (pl.x + dx / (2 * canvasW)).clamp(0.04, 0.96);
+                      final newY  = (pl.y + dy / (2 * canvasH)).clamp(0.04, 0.96);
+                      widget.viewModel.updatePhotoLayer(
+                        pl.copyWith(widthFraction: newWf, heightFraction: newHf, x: newX, y: newY),
+                      );
+                    },
+                    child: Container(
+                      width: hs,
+                      height: hs,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: Colors.blueAccent, width: 1.5),
+                      ),
                     ),
                   ),
-                ),
+                );
+              }
+
+              return Stack(
+                key: ValueKey('pl_${pl.id}'),
+                children: [
+                  // ── Main layer (draggable) ───────────────────────────────────────────
+                  Positioned(
+                    left: left,
+                    top: top,
+                    width: pw,
+                    height: ph,
+                    child: GestureDetector(
+                      onTap: () {
+                        widget.viewModel.selectPhotoLayer(pl.id);
+                        widget.viewModel.selectLayer(null);
+                      },
+                      onPanUpdate: isSelectedPL
+                          ? null   // corners handle resize when selected; body handles move when not selected
+                          : (d) {
+                              final newX = (pl.x + d.delta.dx / canvasW).clamp(0.04, 0.96);
+                              final newY = (pl.y + d.delta.dy / canvasH).clamp(0.04, 0.96);
+                              widget.viewModel.movePhotoLayer(pl.id, newX, newY);
+                            },
+                      child: GestureDetector(
+                        // inner GestureDetector handles move when selected
+                        onPanUpdate: isSelectedPL
+                            ? (d) {
+                                final newX = (pl.x + d.delta.dx / canvasW).clamp(0.04, 0.96);
+                                final newY = (pl.y + d.delta.dy / canvasH).clamp(0.04, 0.96);
+                                widget.viewModel.movePhotoLayer(pl.id, newX, newY);
+                              }
+                            : null,
+                        child: Transform.rotate(
+                          angle: pl.rotation * 3.14159265 / 180.0,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              buildShapedPhoto(
+                                imagePath: pl.imagePath,
+                                shape: pl.shape,
+                                frame: pl.frame,
+                                fit: BoxFit.cover,
+                                colorFilter: pl.filter.colorFilter,
+                                frameWidth: pl.frameWidth,
+                              ),
+                              if (isSelectedPL)
+                                Positioned.fill(
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.blueAccent, width: 1.5),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // ── Corner handles (only when selected) ─────────────────────────────
+                  if (isSelectedPL) ...[
+                    // Top-left
+                    cornerHandle(hLeft: left,      hTop: top,       signX: -1, signY: -1),
+                    // Top-right
+                    cornerHandle(hLeft: left + pw, hTop: top,       signX:  1, signY: -1),
+                    // Bottom-left
+                    cornerHandle(hLeft: left,      hTop: top + ph,  signX: -1, signY:  1),
+                    // Bottom-right
+                    cornerHandle(hLeft: left + pw, hTop: top + ph,  signX:  1, signY:  1),
+
+                    // ── Rotation handle (above top-center) ────────────────────────────
+                    Positioned(
+                      left: left + pw / 2 - 10,
+                      top: (top - 30).clamp(-20.0, canvasH - 20),
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onPanUpdate: (d) {
+                          // Horizontal drag → rotation. 1 px ≈ 0.4°
+                          final newRot = (pl.rotation + d.delta.dx * 0.4)
+                              .clamp(-180.0, 180.0);
+                          widget.viewModel.updatePhotoLayer(pl.copyWith(rotation: newRot));
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 20, height: 20,
+                              decoration: const BoxDecoration(
+                                color: Colors.blueAccent,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.rotate_right, size: 14, color: Colors.white),
+                            ),
+                            Container(width: 1.5, height: 10, color: Colors.blueAccent),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               );
             }),
             // Drag/pinch hint — shown on photo slides when no text layer is selected.
@@ -1242,6 +1347,16 @@ class _PhotoLayerEditPanel extends StatelessWidget {
               onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(rotation: v)),
             ),
 
+            const SizedBox(height: 8),
+
+            // Frame Width
+            const Text('Border Width', style: labelStyle),
+            Slider(
+              value: layer.frameWidth.clamp(1.0, 20.0),
+              min: 1, max: 20, divisions: 19,
+              label: '${layer.frameWidth.round()}px',
+              onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(frameWidth: v)),
+            ),
             const SizedBox(height: 8),
 
             // Shape chips
