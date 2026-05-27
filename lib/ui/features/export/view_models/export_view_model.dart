@@ -1,7 +1,6 @@
 import 'package:film_maker/data/repositories/export_repository.dart';
 import 'package:film_maker/domain/models/project.dart';
 import 'package:flutter/foundation.dart';
-import 'package:share_plus/share_plus.dart';
 
 enum ExportStatus { idle, exporting, done, error }
 
@@ -41,7 +40,7 @@ class ExportViewModel extends ChangeNotifier {
   final ExportRepository exportRepository;
 
   ExportStatus _status = ExportStatus.idle;
-  ExportResolution _resolution = ExportResolution.hd;
+  ExportResolution _resolution = ExportResolution.fullHd;
   double _progress = 0;
   String? _error;
   String? _outputPath;
@@ -63,33 +62,26 @@ class ExportViewModel extends ChangeNotifier {
     _status = ExportStatus.exporting;
     _progress = 0;
     _error = null;
-    _outputPath = null;
     notifyListeners();
 
     try {
-      _outputPath = await exportRepository.exportProject(
-        project: project,
+      await for (final p in exportRepository.exportProject(
+        projectId: project.id,
         resolution: _resolution.value,
-        onProgress: (p) {
-          _progress = p;
-          notifyListeners();
-        },
-      );
+      )) {
+        _progress = p;
+        notifyListeners();
+      }
       _status = ExportStatus.done;
-    } catch (e) {
+      final fileName = project.title
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+      _outputPath = '/Movies/${fileName}_wedding_film.mp4';
+    } catch (_) {
       _status = ExportStatus.error;
       _error = 'Export failed. Please try again.';
     }
     notifyListeners();
-  }
-
-  Future<void> shareVideo() async {
-    final path = _outputPath;
-    if (path == null) return;
-    await Share.shareXFiles(
-      [XFile(path, mimeType: 'video/mp4')],
-      subject: '${project.title} — Wedding Film',
-    );
   }
 
   void reset() {
