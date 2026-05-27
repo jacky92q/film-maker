@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:flutter/material.dart';
 
@@ -45,6 +46,9 @@ Widget buildShapedPhoto({
     case PhotoShape.heart:
       shaped = ClipPath(clipper: _HeartClipper(), child: img);
       break;
+    case PhotoShape.arch:
+      shaped = ClipPath(clipper: _ArchClipper(), child: img);
+      break;
   }
 
   // Apply frame
@@ -90,6 +94,32 @@ class _HeartClipper extends CustomClipper<Path> {
     // Right curve
     path.cubicTo(w * 0.5,  h * 0.22, w * 0.65, h * 0.06, w * 0.8,  h * 0.15);
     path.cubicTo(w * 1.1,  h * 0.25, w * 1.0,  h * 0.60, w * 0.5,  h * 0.85);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> old) => false;
+}
+
+class _ArchClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size s) {
+    final w = s.width;
+    final h = s.height;
+    final r = w / 2.0;
+    final archHeight = r; // the arch dome height equals the radius
+    final path = Path();
+    // Start bottom-left, go up left side to where arch begins
+    path.moveTo(0, h);
+    path.lineTo(0, archHeight);
+    // Draw the top arch (semi-circle)
+    path.arcTo(
+      Rect.fromLTWH(0, 0, w, archHeight * 2),
+      math.pi, math.pi, false,
+    );
+    // Right side down to bottom-right
+    path.lineTo(w, h);
     path.close();
     return path;
   }

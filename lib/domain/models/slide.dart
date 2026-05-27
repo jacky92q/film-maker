@@ -185,7 +185,7 @@ extension PhotoFilterX on PhotoFilter {
   }
 }
 
-enum PhotoShape { none, rounded, circle, heart }
+enum PhotoShape { none, rounded, circle, heart, arch }
 
 extension PhotoShapeX on PhotoShape {
   String get label {
@@ -194,6 +194,7 @@ extension PhotoShapeX on PhotoShape {
       case PhotoShape.rounded: return 'Rounded';
       case PhotoShape.circle:  return 'Circle';
       case PhotoShape.heart:   return 'Heart';
+      case PhotoShape.arch:    return 'Arch';
     }
   }
 }
@@ -219,6 +220,18 @@ extension SlideLayoutX on SlideLayout {
       case SlideLayout.single: return 'Single';
       case SlideLayout.strip2: return '2 Photos';
       case SlideLayout.strip3: return '3 Photos';
+    }
+  }
+}
+
+enum SlideDesign { classic, editorial, invitation }
+
+extension SlideDesignX on SlideDesign {
+  String get label {
+    switch (this) {
+      case SlideDesign.classic:    return 'Classic';
+      case SlideDesign.editorial:  return 'Editorial';
+      case SlideDesign.invitation: return 'Invitation';
     }
   }
 }
@@ -423,6 +436,10 @@ class Slide {
     this.layout = SlideLayout.single,
     this.imagePath2,
     this.imagePath3,
+    this.design = SlideDesign.classic,
+    this.weddingDate = '',
+    this.groomName = '',
+    this.brideName = '',
   });
 
   final String id;
@@ -441,6 +458,10 @@ class Slide {
   final SlideLayout layout;
   final String? imagePath2;
   final String? imagePath3;
+  final SlideDesign design;
+  final String weddingDate;     // e.g. "2024.10.05"
+  final String groomName;       // e.g. "YUSILLANG"
+  final String brideName;       // e.g. "HANSINBU"
 
   Slide copyWith({
     String? imagePath,
@@ -458,6 +479,10 @@ class Slide {
     SlideLayout? layout,
     String? imagePath2,
     String? imagePath3,
+    SlideDesign? design,
+    String? weddingDate,
+    String? groomName,
+    String? brideName,
   }) {
     return Slide(
       id: id,
@@ -476,6 +501,10 @@ class Slide {
       layout: layout ?? this.layout,
       imagePath2: imagePath2 ?? this.imagePath2,
       imagePath3: imagePath3 ?? this.imagePath3,
+      design: design ?? this.design,
+      weddingDate: weddingDate ?? this.weddingDate,
+      groomName: groomName ?? this.groomName,
+      brideName: brideName ?? this.brideName,
     );
   }
 }

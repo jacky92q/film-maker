@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/core/photo_frame_widget.dart';
+import 'package:film_maker/ui/core/slide_design_widget.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/preview/view_models/preview_view_model.dart';
@@ -163,9 +164,9 @@ class _PreviewViewState extends State<PreviewView>
           fit: StackFit.expand,
           children: [
             background,
-            _buildGradientOverlay(),
-            buildSlideOverlay(slide.overlay),
-            _buildTextOverlay(slide),
+            if (slide.design == SlideDesign.classic) _buildGradientOverlay(),
+            if (slide.design == SlideDesign.classic) buildSlideOverlay(slide.overlay),
+            if (slide.design == SlideDesign.classic) _buildTextOverlay(slide),
           ],
         ),
       ),
@@ -505,6 +506,30 @@ class _SlidePhotoLayerState extends State<_SlidePhotoLayer>
   Widget build(BuildContext context) {
     final slide = widget.slide;
 
+    final design = slide.design;
+
+    if (design == SlideDesign.editorial) {
+      // Start strip animation if not yet started
+      if (!_stripController.isAnimating && _stripController.value == 0) {
+        _stripController.forward();
+      }
+      return buildEditorialDesign(
+        slide: slide,
+        stripController: _stripController,
+      );
+    }
+
+    if (design == SlideDesign.invitation) {
+      if (!_stripController.isAnimating && _stripController.value == 0) {
+        _stripController.forward();
+      }
+      return buildInvitationDesign(
+        slide: slide,
+        stripController: _stripController,
+      );
+    }
+
+    // Otherwise fall through to existing single/strip logic
     if (slide.imagePath == null && slide.layout == SlideLayout.single) {
       return _buildGradientBg();
     }

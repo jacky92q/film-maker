@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:film_maker/data/repositories/export_repository.dart';
 import 'package:film_maker/ui/core/photo_frame_widget.dart';
+import 'package:film_maker/ui/core/slide_design_widget.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
@@ -438,12 +439,27 @@ class _SlideCanvas extends StatefulWidget {
   State<_SlideCanvas> createState() => _SlideCanvasState();
 }
 
-class _SlideCanvasState extends State<_SlideCanvas> {
+class _SlideCanvasState extends State<_SlideCanvas>
+    with SingleTickerProviderStateMixin {
   // Saved at gesture start so we compute absolute (not cumulative) deltas.
   double _scaleStart = 1.0;
   double _offsetXStart = 0.0;
   double _offsetYStart = 0.0;
   Offset _focalStart = Offset.zero;
+
+  late AnimationController _designPreviewController;
+
+  @override
+  void initState() {
+    super.initState();
+    _designPreviewController = AnimationController(vsync: this, value: 0.5);
+  }
+
+  @override
+  void dispose() {
+    _designPreviewController.dispose();
+    super.dispose();
+  }
 
   void _onPhotoScaleStart(ScaleStartDetails d) {
     final slide = widget.viewModel.selectedSlide!;
@@ -541,12 +557,25 @@ class _SlideCanvasState extends State<_SlideCanvas> {
           );
         }
 
+        // For non-classic designs, override the entire background with the design widget
+        if (slide.design == SlideDesign.editorial) {
+          background = buildEditorialDesign(
+            slide: slide,
+            stripController: _designPreviewController,
+          );
+        } else if (slide.design == SlideDesign.invitation) {
+          background = buildInvitationDesign(
+            slide: slide,
+            stripController: _designPreviewController,
+          );
+        }
+
         return Stack(
           fit: StackFit.expand,
           children: [
             background,
-            _gradientOverlay(),
-            buildSlideOverlay(slide.overlay),
+            if (slide.design == SlideDesign.classic) _gradientOverlay(),
+            if (slide.design == SlideDesign.classic) buildSlideOverlay(slide.overlay),
             // Text layers — draggable, opaque (intercept their own touches before photo GD).
             for (final layer in slide.textLayers)
               Positioned.fill(
@@ -1398,6 +1427,86 @@ class _SlideEditPanel extends StatelessWidget {
               }).toList(),
             ),
             const SizedBox(height: 16),
+            // Design picker
+            _Label('Design'),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: SlideDesign.values.map((d) {
+                final selected = slide.design == d;
+                return ChoiceChip(
+                  label: Text(d.label),
+                  selected: selected,
+                  onSelected: (_) => viewModel.updateSelectedSlide(slide.copyWith(design: d)),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            // Wedding date field (only when design is editorial or invitation)
+            if (slide.design != SlideDesign.classic) ...[
+              _Label('Wedding Date'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: TextEditingController(text: slide.weddingDate),
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: '2024.10.05',
+                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                  filled: true,
+                  fillColor: Colors.white10,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.white24),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.white24),
+                  ),
+                ),
+                onSubmitted: (v) => viewModel.updateSelectedSlide(slide.copyWith(weddingDate: v)),
+                onEditingComplete: () {},
+              ),
+              const SizedBox(height: 16),
+            ],
+            // Groom and Bride name fields (only when design is invitation)
+            if (slide.design == SlideDesign.invitation) ...[
+              _Label('Groom Name'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: TextEditingController(text: slide.groomName),
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'GROOM',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  filled: true,
+                  fillColor: Colors.white10,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.white24)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.white24)),
+                ),
+                onSubmitted: (v) => viewModel.updateSelectedSlide(slide.copyWith(groomName: v)),
+              ),
+              const SizedBox(height: 8),
+              _Label('Bride Name'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: TextEditingController(text: slide.brideName),
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'BRIDE',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  filled: true,
+                  fillColor: Colors.white10,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.white24)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.white24)),
+                ),
+                onSubmitted: (v) => viewModel.updateSelectedSlide(slide.copyWith(brideName: v)),
+              ),
+              const SizedBox(height: 16),
+            ],
             // Duration slider
             Row(
               children: [
