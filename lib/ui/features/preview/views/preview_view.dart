@@ -354,7 +354,7 @@ class _PreviewViewState extends State<PreviewView>
             Expanded(
               child: Text(
                 widget.viewModel.project.title,
-                style: TextStyle(fontFamily: 'Montserrat', 
+                style: TextStyle(fontFamily: AppTheme.fontTheme, 
                     color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),

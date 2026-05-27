@@ -98,7 +98,7 @@ class _LoginViewState extends State<LoginView> {
         const SizedBox(height: 20),
         Text(
           'Film Maker',
-          style: TextStyle(fontFamily: 'Montserrat', 
+          style: TextStyle(fontFamily: AppTheme.fontTheme, 
             color: AppTheme.cream,
             fontSize: 36,
             fontWeight: FontWeight.bold,
@@ -114,7 +114,7 @@ class _LoginViewState extends State<LoginView> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 'Your love story, beautifully told',
-                style: TextStyle(fontFamily: 'Montserrat', 
+                style: TextStyle(fontFamily: AppTheme.fontTheme, 
                   color: AppTheme.subtleText,
                   fontSize: 13,
                   letterSpacing: 0.5,
@@ -201,7 +201,7 @@ class _LoginViewState extends State<LoginView> {
                     Expanded(
                       child: Text(
                         widget.viewModel.error!,
-                        style: TextStyle(fontFamily: 'Montserrat', 
+                        style: TextStyle(fontFamily: AppTheme.fontTheme, 
                             color: Color(0xFFFF6B6B), fontSize: 13),
                       ),
                     ),
@@ -230,7 +230,7 @@ class _LoginViewState extends State<LoginView> {
           Expanded(
             child: Text(
               'Demo: enter any email + password (4+ chars)',
-              style: TextStyle(fontFamily: 'Montserrat', 
+              style: TextStyle(fontFamily: AppTheme.fontTheme, 
                   color: AppTheme.subtleText, fontSize: 12),
             ),
           ),

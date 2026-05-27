@@ -40,14 +40,14 @@ class _ProjectsViewState extends State<ProjectsView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'New Wedding Film',
-          style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream),
+          style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.cream),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'Give your film a title to remember',
-              style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 13),
+              style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText, fontSize: 13),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -67,7 +67,7 @@ class _ProjectsViewState extends State<ProjectsView> {
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text('Cancel',
-                style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText)),
+                style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText)),
           ),
           FilledButton(
             onPressed: () {
@@ -114,16 +114,16 @@ class _ProjectsViewState extends State<ProjectsView> {
         backgroundColor: AppTheme.darkSurface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('Delete Film?',
-            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream)),
+            style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.cream)),
         content: Text(
           '"${project.title}" will be permanently deleted.',
-          style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText),
+          style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: Text('Cancel',
-                style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText)),
+                style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText)),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -147,7 +147,7 @@ class _ProjectsViewState extends State<ProjectsView> {
       appBar: AppBar(
         title: Text(
           'My Wedding Films',
-          style: TextStyle(fontFamily: 'Montserrat', 
+          style: TextStyle(fontFamily: AppTheme.fontTheme, 
               color: AppTheme.cream, fontWeight: FontWeight.w600),
         ),
       ),
@@ -172,7 +172,7 @@ class _ProjectsViewState extends State<ProjectsView> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showNewProjectDialog,
         icon: const Icon(Icons.add),
-        label: Text('New Film', style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.w700)),
+        label: Text('New Film', style: TextStyle(fontFamily: AppTheme.fontTheme, fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -208,13 +208,13 @@ class _ProjectsViewState extends State<ProjectsView> {
           const SizedBox(height: 16),
           Text(
             'No films yet',
-            style: TextStyle(fontFamily: 'Montserrat', 
+            style: TextStyle(fontFamily: AppTheme.fontTheme, 
                 color: AppTheme.cream, fontSize: 22, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             'Tap the button below to create\nyour first wedding film',
-            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 14),
+            style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText, fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ],
@@ -231,7 +231,7 @@ class _ProjectsViewState extends State<ProjectsView> {
           const SizedBox(height: 12),
           Text(
             widget.viewModel.error!,
-            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText),
+            style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText),
           ),
           const SizedBox(height: 16),
           OutlinedButton(
@@ -286,7 +286,7 @@ class _ProjectCard extends StatelessWidget {
                 children: [
                   Text(
                     project.title,
-                    style: TextStyle(fontFamily: 'Montserrat', 
+                    style: TextStyle(fontFamily: AppTheme.fontTheme, 
                       color: AppTheme.cream,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -302,7 +302,7 @@ class _ProjectCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '${project.slideCount} slides',
-                        style: TextStyle(fontFamily: 'Montserrat', 
+                        style: TextStyle(fontFamily: AppTheme.fontTheme, 
                             color: AppTheme.subtleText, fontSize: 11),
                       ),
                     ],
@@ -310,7 +310,7 @@ class _ProjectCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     _formatDate(project.updatedAt),
-                    style: TextStyle(fontFamily: 'Montserrat', 
+                    style: TextStyle(fontFamily: AppTheme.fontTheme, 
                         color: AppTheme.border, fontSize: 10),
                   ),
                 ],
@@ -368,7 +368,7 @@ class _ProjectCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Text(
                         'Music',
-                        style: TextStyle(fontFamily: 'Montserrat', 
+                        style: TextStyle(fontFamily: AppTheme.fontTheme, 
                             color: AppTheme.gold, fontSize: 9),
                       ),
                     ],

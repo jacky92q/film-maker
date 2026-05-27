@@ -8,7 +8,7 @@ class AppTheme {
   static const Color darkSurface2 = Color(0xFF242424);
   static const Color subtleText = Color(0xFFB0A890);
   static const Color border = Color(0xFF2A2A2A);
-  static const String fontTheme = 'Cinzel';
+  static const String fontTheme = 'Lato';
 
   static ThemeData light() => _dark();
 
@@ -35,7 +35,7 @@ class AppTheme {
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
-          fontFamily: 'Cinzel',
+          fontFamily: fontTheme,
           color: cream,
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -43,66 +43,66 @@ class AppTheme {
         iconTheme: const IconThemeData(color: cream),
         actionsIconTheme: const IconThemeData(color: gold),
       ),
-      textTheme: base.textTheme.apply(fontFamily: 'Cinzel').copyWith(
+      textTheme: base.textTheme.apply(fontFamily: fontTheme).copyWith(
             displayLarge: TextStyle(
-                fontFamily: 'Cinzel',
+                fontFamily: fontTheme,
                 color: cream,
                 fontSize: 36,
                 fontWeight: FontWeight.bold),
             displayMedium: TextStyle(
-                fontFamily: 'Cinzel',
+                fontFamily: fontTheme,
                 color: cream,
                 fontSize: 28,
                 fontWeight: FontWeight.bold),
             displaySmall: TextStyle(
-                fontFamily: 'Cinzel',
+                fontFamily: fontTheme,
                 color: cream,
                 fontSize: 22,
                 fontWeight: FontWeight.w600),
             headlineLarge: TextStyle(
-                fontFamily: 'Cinzel',
+                fontFamily: fontTheme,
                 color: cream,
                 fontSize: 28,
                 fontWeight: FontWeight.bold),
             headlineMedium: TextStyle(
-                fontFamily: 'Cinzel',
+                fontFamily: fontTheme,
                 color: cream,
                 fontSize: 22,
                 fontWeight: FontWeight.w600),
             headlineSmall: TextStyle(
-                fontFamily: 'Cinzel',
+                fontFamily: fontTheme,
                 color: cream,
                 fontSize: 18,
                 fontWeight: FontWeight.w600),
             titleLarge: TextStyle(
-                fontFamily: 'Cinzel',
+                fontFamily: fontTheme,
                 color: cream,
                 fontSize: 18,
                 fontWeight: FontWeight.w600),
             titleMedium: TextStyle(
-                fontFamily: 'Cinzel',
+                fontFamily: fontTheme,
                 color: cream,
                 fontSize: 16,
                 fontWeight: FontWeight.w500),
             titleSmall: TextStyle(
-                fontFamily: 'Cinzel',
+                fontFamily: fontTheme,
                 color: subtleText,
                 fontSize: 14,
                 fontWeight: FontWeight.w500),
             bodyLarge:
-                TextStyle(fontFamily: 'Cinzel', color: cream, fontSize: 16),
+                TextStyle(fontFamily: fontTheme, color: cream, fontSize: 16),
             bodyMedium: TextStyle(
-                fontFamily: 'Cinzel', color: subtleText, fontSize: 14),
+                fontFamily: fontTheme, color: subtleText, fontSize: 14),
             bodySmall: TextStyle(
-                fontFamily: 'Cinzel', color: subtleText, fontSize: 12),
+                fontFamily: fontTheme, color: subtleText, fontSize: 12),
             labelLarge: TextStyle(
-                fontFamily: 'Cinzel',
+                fontFamily: fontTheme,
                 color: cream,
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.8),
             labelMedium: TextStyle(
-                fontFamily: 'Cinzel',
+                fontFamily: fontTheme,
                 color: subtleText,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -128,9 +128,9 @@ class AppTheme {
           borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
         ),
         labelStyle: TextStyle(
-            fontFamily: 'Cinzel', color: Color(0xFF888888), fontSize: 14),
+            fontFamily: fontTheme, color: Color(0xFF888888), fontSize: 14),
         hintStyle: TextStyle(
-            fontFamily: 'Cinzel', color: Color(0xFF555555), fontSize: 14),
+            fontFamily: fontTheme, color: Color(0xFF555555), fontSize: 14),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
@@ -142,7 +142,7 @@ class AppTheme {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: TextStyle(
-              fontFamily: 'Cinzel',
+              fontFamily: fontTheme,
               fontSize: 15,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5),
@@ -156,7 +156,7 @@ class AppTheme {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: TextStyle(
-              fontFamily: 'Cinzel', fontSize: 14, fontWeight: FontWeight.w600),
+              fontFamily: fontTheme, fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -172,7 +172,8 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: darkSurface2,
         selectedColor: gold.withValues(alpha: 0.25),
-        labelStyle: TextStyle(fontFamily: 'Cinzel', fontSize: 12, color: cream),
+        labelStyle:
+            TextStyle(fontFamily: fontTheme, fontSize: 12, color: cream),
         side: const BorderSide(color: border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

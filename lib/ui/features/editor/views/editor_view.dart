@@ -11,7 +11,6 @@ import 'package:film_maker/ui/features/preview/view_models/preview_view_model.da
 import 'package:film_maker/ui/features/preview/views/preview_view.dart';
 import 'package:flutter/material.dart';
 
-
 // Returns the appropriate TextStyle for a given font style using bundled fonts.
 TextStyle slideLayerTextStyle(
   SlideFontStyle font, {
@@ -90,21 +89,27 @@ class _EditorViewState extends State<EditorView> {
         backgroundColor: AppTheme.darkSurface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('Unsaved Changes',
-            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream)),
+            style: TextStyle(
+                fontFamily: AppTheme.fontTheme, color: AppTheme.cream)),
         content: Text('Save your film before leaving?',
-            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText)),
+            style: TextStyle(
+                fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text('Discard',
-                style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText)),
+                style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    color: AppTheme.subtleText)),
           ),
           TextButton(
             onPressed: () async {
               await widget.viewModel.saveProject();
               if (ctx.mounted) Navigator.of(ctx).pop(true);
             },
-            child: Text('Save', style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold)),
+            child: Text('Save',
+                style: TextStyle(
+                    fontFamily: AppTheme.fontTheme, color: AppTheme.gold)),
           ),
         ],
       ),
@@ -186,7 +191,8 @@ class _EditorViewState extends State<EditorView> {
             final slide = widget.viewModel.selectedSlide;
             if (slide == null) {
               return const Center(
-                child: Text('No slides', style: TextStyle(color: AppTheme.subtleText)),
+                child: Text('No slides',
+                    style: TextStyle(color: AppTheme.subtleText)),
               );
             }
             return Column(
@@ -231,11 +237,16 @@ class _EditorViewState extends State<EditorView> {
             return TextField(
               controller: _titleController,
               autofocus: true,
-              style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream, fontSize: 18),
-              decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.zero),
+              style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.cream,
+                  fontSize: 18),
+              decoration: const InputDecoration(
+                  border: InputBorder.none, contentPadding: EdgeInsets.zero),
               onSubmitted: (v) {
-                widget.viewModel.updateProjectTitle(
-                    v.trim().isEmpty ? widget.viewModel.project.title : v.trim());
+                widget.viewModel.updateProjectTitle(v.trim().isEmpty
+                    ? widget.viewModel.project.title
+                    : v.trim());
                 setState(() => _editingTitle = false);
               },
             );
@@ -253,12 +264,16 @@ class _EditorViewState extends State<EditorView> {
                     widget.viewModel.project.title.isEmpty
                         ? 'Untitled Film'
                         : widget.viewModel.project.title,
-                    style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream, fontSize: 18),
+                    style: TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.cream,
+                        fontSize: 18),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(Icons.edit_outlined, color: AppTheme.subtleText, size: 14),
+                const Icon(Icons.edit_outlined,
+                    color: AppTheme.subtleText, size: 14),
               ],
             ),
           );
@@ -275,19 +290,31 @@ class _EditorViewState extends State<EditorView> {
                   tooltip: 'Save',
                   icon: widget.viewModel.isSaving
                       ? const SizedBox(
-                          width: 16, height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.gold),
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppTheme.gold),
                         )
                       : const Icon(Icons.save_outlined, color: AppTheme.gold),
-                  onPressed: widget.viewModel.isSaving ? null : () => widget.viewModel.saveProject(),
+                  onPressed: widget.viewModel.isSaving
+                      ? null
+                      : () => widget.viewModel.saveProject(),
                 ),
               TextButton(
                 onPressed: _openPreview,
-                child: Text('Preview', style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold, fontSize: 13)),
+                child: Text('Preview',
+                    style: TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.gold,
+                        fontSize: 13)),
               ),
               TextButton(
                 onPressed: _openExport,
-                child: Text('Export', style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream, fontSize: 13)),
+                child: Text('Export',
+                    style: TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.cream,
+                        fontSize: 13)),
               ),
             ],
           ),
@@ -335,7 +362,8 @@ class _EditorViewState extends State<EditorView> {
               tooltip: 'Delete slide',
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              icon: const Icon(Icons.delete_outline, color: Color(0xFFFF6B6B), size: 20),
+              icon: const Icon(Icons.delete_outline,
+                  color: Color(0xFFFF6B6B), size: 20),
             ),
         ],
       ),
@@ -449,13 +477,14 @@ class _SlideCanvasState extends State<_SlideCanvas> {
         if (hasPhoto) {
           Widget img = Image.file(
             File(slide.imagePath!),
-            fit: BoxFit.contain,   // show full photo, no crop
+            fit: BoxFit.contain, // show full photo, no crop
             width: w,
             height: h,
             errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           );
           final filter = slide.photoFilter.colorFilter;
-          if (filter != null) img = ColorFiltered(colorFilter: filter, child: img);
+          if (filter != null)
+            img = ColorFiltered(colorFilter: filter, child: img);
 
           // Photo acts as the interactive background: tap=deselect, drag/pinch=move+zoom.
           background = GestureDetector(
@@ -467,7 +496,8 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                 color: Color(slide.backgroundColor),
                 child: ClipRect(
                   child: Transform.translate(
-                    offset: Offset(slide.photoOffsetX * w, slide.photoOffsetY * h),
+                    offset:
+                        Offset(slide.photoOffsetX * w, slide.photoOffsetY * h),
                     child: Transform.scale(scale: slide.photoScale, child: img),
                   ),
                 ),
@@ -512,10 +542,12 @@ class _SlideCanvasState extends State<_SlideCanvas> {
             // Drag/pinch hint — shown on photo slides when no text layer is selected.
             if (hasPhoto && selectedLayerId == null)
               Positioned(
-                bottom: 6, right: 6,
+                bottom: 6,
+                right: 6,
                 child: IgnorePointer(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.45),
                       borderRadius: BorderRadius.circular(4),
@@ -523,10 +555,14 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.open_with, color: Colors.white54, size: 10),
+                        const Icon(Icons.open_with,
+                            color: Colors.white54, size: 10),
                         const SizedBox(width: 3),
                         Text('drag · pinch to zoom',
-                            style: TextStyle(fontFamily: 'Montserrat', color: Colors.white54, fontSize: 8)),
+                            style: TextStyle(
+                                fontFamily: AppTheme.fontTheme,
+                                color: Colors.white54,
+                                fontSize: 8)),
                       ],
                     ),
                   ),
@@ -538,7 +574,8 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                 child: Center(
                   child: Text(
                     'Tap "+ Main" or "+ Sub" to add text',
-                    style: TextStyle(fontFamily: 'Montserrat', 
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
                       color: AppTheme.subtleText.withValues(alpha: 0.5),
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
@@ -549,22 +586,30 @@ class _SlideCanvasState extends State<_SlideCanvas> {
             // Add photo chip.
             if (!hasPhoto)
               Positioned(
-                top: 6, right: 6,
+                top: 6,
+                right: 6,
                 child: GestureDetector(
                   onTap: widget.viewModel.pickImageForCurrentSlide,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppTheme.darkBg.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppTheme.gold.withValues(alpha: 0.5)),
+                      border: Border.all(
+                          color: AppTheme.gold.withValues(alpha: 0.5)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_photo_alternate_outlined, color: AppTheme.gold, size: 14),
+                        const Icon(Icons.add_photo_alternate_outlined,
+                            color: AppTheme.gold, size: 14),
                         const SizedBox(width: 4),
-                        Text('Add Photo', style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold, fontSize: 11)),
+                        Text('Add Photo',
+                            style: TextStyle(
+                                fontFamily: AppTheme.fontTheme,
+                                color: AppTheme.gold,
+                                fontSize: 11)),
                       ],
                     ),
                   ),
@@ -592,7 +637,10 @@ class _SlideCanvasState extends State<_SlideCanvas> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
+              colors: [
+                Colors.transparent,
+                Colors.black.withValues(alpha: 0.45)
+              ],
               stops: const [0.4, 1.0],
             ),
           ),
@@ -608,19 +656,24 @@ class _LayerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = layer.color.color;
-    final fontSize = layer.isSubtitle ? layer.size.subFontSize : layer.size.mainFontSize;
-    final shadows = [Shadow(color: Colors.black.withValues(alpha: 0.8), blurRadius: 10)];
+    final fontSize =
+        layer.isSubtitle ? layer.size.subFontSize : layer.size.mainFontSize;
+    final shadows = [
+      Shadow(color: Colors.black.withValues(alpha: 0.8), blurRadius: 10)
+    ];
     final style = slideLayerTextStyle(layer.fontStyle,
         fontSize: fontSize, color: color, shadows: shadows);
 
-    Widget content = Text(layer.text, style: style, textAlign: TextAlign.center);
+    Widget content =
+        Text(layer.text, style: style, textAlign: TextAlign.center);
 
     if (layer.isSubtitle) {
       content = IntrinsicWidth(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: layer.barColor.color, width: 2.5)),
+            border: Border(
+                left: BorderSide(color: layer.barColor.color, width: 2.5)),
           ),
           child: content,
         ),
@@ -701,24 +754,36 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                 const SizedBox(width: 6),
                 Text(
                   layer.isSubtitle ? 'Subtitle layer' : 'Main layer',
-                  style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold, fontSize: 12, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.gold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
                 GestureDetector(
                   onTap: widget.onDelete,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFF6B6B).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFFFF6B6B).withValues(alpha: 0.4)),
+                      border: Border.all(
+                          color:
+                              const Color(0xFFFF6B6B).withValues(alpha: 0.4)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.delete_outline, color: Color(0xFFFF6B6B), size: 13),
+                        const Icon(Icons.delete_outline,
+                            color: Color(0xFFFF6B6B), size: 13),
                         const SizedBox(width: 3),
-                        Text('Delete', style: TextStyle(fontFamily: 'Montserrat', color: const Color(0xFFFF6B6B), fontSize: 11)),
+                        Text('Delete',
+                            style: TextStyle(
+                                fontFamily: AppTheme.fontTheme,
+                                color: const Color(0xFFFF6B6B),
+                                fontSize: 11)),
                       ],
                     ),
                   ),
@@ -730,11 +795,14 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
             TextField(
               controller: _ctrl,
               style: slideLayerTextStyle(layer.fontStyle,
-                  fontSize: 16, color: AppTheme.cream, fontWeight: FontWeight.normal),
+                  fontSize: 16,
+                  color: AppTheme.cream,
+                  fontWeight: FontWeight.normal),
               maxLines: 2,
               decoration: const InputDecoration(
                 hintText: 'Enter text…',
-                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               ),
               onChanged: (v) => widget.onUpdate(widget.layer.copyWith(text: v)),
             ),
@@ -746,7 +814,8 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                   label: 'Main',
                   icon: Icons.title,
                   selected: !layer.isSubtitle,
-                  onTap: () => _applyStyle((l) => l.copyWith(isSubtitle: false)),
+                  onTap: () =>
+                      _applyStyle((l) => l.copyWith(isSubtitle: false)),
                 ),
                 const SizedBox(width: 6),
                 _TypeButton(
@@ -789,18 +858,24 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       margin: const EdgeInsets.only(right: 7),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
                       decoration: BoxDecoration(
-                        color: sel ? AppTheme.gold.withValues(alpha: 0.15) : AppTheme.darkSurface2,
+                        color: sel
+                            ? AppTheme.gold.withValues(alpha: 0.15)
+                            : AppTheme.darkSurface2,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                        border: Border.all(
+                            color: sel ? AppTheme.gold : AppTheme.border,
+                            width: sel ? 1.5 : 1),
                       ),
                       child: Text(
                         f.label,
                         style: slideLayerTextStyle(f,
                             fontSize: 13,
                             color: sel ? AppTheme.gold : AppTheme.subtleText,
-                            fontWeight: sel ? FontWeight.w700 : FontWeight.w400),
+                            fontWeight:
+                                sel ? FontWeight.w700 : FontWeight.w400),
                       ),
                     ),
                   );
@@ -823,17 +898,23 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                       height: 32,
                       margin: const EdgeInsets.only(right: 6),
                       decoration: BoxDecoration(
-                        color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+                        color: sel
+                            ? AppTheme.gold.withValues(alpha: 0.2)
+                            : AppTheme.darkSurface2,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                        border: Border.all(
+                            color: sel ? AppTheme.gold : AppTheme.border,
+                            width: sel ? 1.5 : 1),
                       ),
                       child: Center(
                         child: Text(
                           s.label,
-                          style: TextStyle(fontFamily: 'Montserrat', 
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontTheme,
                             color: sel ? AppTheme.gold : AppTheme.subtleText,
                             fontSize: 12,
-                            fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                            fontWeight:
+                                sel ? FontWeight.w700 : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -875,25 +956,36 @@ class _SlideEditPanel extends StatelessWidget {
                   const Spacer(),
                   Text(
                     '${slide.photoScale.toStringAsFixed(1)}×',
-                    style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.gold,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13),
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () => viewModel.updatePhotoTransform(scale: 1.0, offsetX: 0.0, offsetY: 0.0),
+                    onTap: () => viewModel.updatePhotoTransform(
+                        scale: 1.0, offsetX: 0.0, offsetY: 0.0),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: AppTheme.border),
                       ),
-                      child: Text('Reset', style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 11)),
+                      child: Text('Reset',
+                          style: TextStyle(
+                              fontFamily: AppTheme.fontTheme,
+                              color: AppTheme.subtleText,
+                              fontSize: 11)),
                     ),
                   ),
                 ],
               ),
               Row(
                 children: [
-                  const Icon(Icons.zoom_out, color: AppTheme.subtleText, size: 16),
+                  const Icon(Icons.zoom_out,
+                      color: AppTheme.subtleText, size: 16),
                   Expanded(
                     child: Slider(
                       value: slide.photoScale.clamp(0.1, 4.0),
@@ -906,7 +998,8 @@ class _SlideEditPanel extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Icon(Icons.zoom_in, color: AppTheme.subtleText, size: 16),
+                  const Icon(Icons.zoom_in,
+                      color: AppTheme.subtleText, size: 16),
                 ],
               ),
               const SizedBox(height: 6),
@@ -914,7 +1007,8 @@ class _SlideEditPanel extends StatelessWidget {
               const SizedBox(height: 6),
               _BackgroundColorPicker(
                 current: slide.backgroundColor,
-                onSelect: (c) => viewModel.updateSelectedSlide(slide.copyWith(backgroundColor: c)),
+                onSelect: (c) => viewModel
+                    .updateSelectedSlide(slide.copyWith(backgroundColor: c)),
               ),
               const SizedBox(height: 6),
             ],
@@ -927,19 +1021,26 @@ class _SlideEditPanel extends StatelessWidget {
                 children: PhotoFilter.values.map((filter) {
                   final sel = slide.photoFilter == filter;
                   return GestureDetector(
-                    onTap: () => viewModel.updateSelectedSlide(slide.copyWith(photoFilter: filter)),
+                    onTap: () => viewModel.updateSelectedSlide(
+                        slide.copyWith(photoFilter: filter)),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       margin: const EdgeInsets.only(right: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(7),
-                        color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
-                        border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                        color: sel
+                            ? AppTheme.gold.withValues(alpha: 0.2)
+                            : AppTheme.darkSurface2,
+                        border: Border.all(
+                            color: sel ? AppTheme.gold : AppTheme.border,
+                            width: sel ? 1.5 : 1),
                       ),
                       child: Text(
                         filter.label,
-                        style: TextStyle(fontFamily: 'Montserrat', 
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
                           color: sel ? AppTheme.gold : AppTheme.subtleText,
                           fontSize: 11,
                           fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
@@ -960,19 +1061,26 @@ class _SlideEditPanel extends StatelessWidget {
                 children: TransitionEffect.values.map((effect) {
                   final sel = slide.transition == effect;
                   return GestureDetector(
-                    onTap: () => viewModel.updateSelectedSlide(slide.copyWith(transition: effect)),
+                    onTap: () => viewModel.updateSelectedSlide(
+                        slide.copyWith(transition: effect)),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       margin: const EdgeInsets.only(right: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(7),
-                        color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
-                        border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                        color: sel
+                            ? AppTheme.gold.withValues(alpha: 0.2)
+                            : AppTheme.darkSurface2,
+                        border: Border.all(
+                            color: sel ? AppTheme.gold : AppTheme.border,
+                            width: sel ? 1.5 : 1),
                       ),
                       child: Text(
                         effect.label,
-                        style: TextStyle(fontFamily: 'Montserrat', 
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
                           color: sel ? AppTheme.gold : AppTheme.subtleText,
                           fontSize: 11,
                           fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
@@ -990,7 +1098,11 @@ class _SlideEditPanel extends StatelessWidget {
                 _Label('Duration'),
                 const Spacer(),
                 Text('${slide.durationSeconds}s',
-                    style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.gold, fontWeight: FontWeight.bold, fontSize: 13)),
+                    style: TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.gold,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13)),
               ],
             ),
             Slider(
@@ -998,7 +1110,8 @@ class _SlideEditPanel extends StatelessWidget {
               min: 2,
               max: 10,
               divisions: 8,
-              onChanged: (v) => viewModel.updateSelectedSlide(slide.copyWith(durationSeconds: v.round())),
+              onChanged: (v) => viewModel.updateSelectedSlide(
+                  slide.copyWith(durationSeconds: v.round())),
             ),
           ],
         ),
@@ -1018,7 +1131,8 @@ class _Label extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style: TextStyle(fontFamily: 'Montserrat', 
+        style: TextStyle(
+          fontFamily: AppTheme.fontTheme,
           color: AppTheme.subtleText,
           fontSize: 11,
           letterSpacing: 0.8,
@@ -1047,16 +1161,24 @@ class _ColorDots extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: c.color,
-              border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 2.5 : 1),
+              border: Border.all(
+                  color: sel ? AppTheme.gold : AppTheme.border,
+                  width: sel ? 2.5 : 1),
               boxShadow: sel
-                  ? [BoxShadow(color: AppTheme.gold.withValues(alpha: 0.5), blurRadius: 6)]
+                  ? [
+                      BoxShadow(
+                          color: AppTheme.gold.withValues(alpha: 0.5),
+                          blurRadius: 6)
+                    ]
                   : null,
             ),
             child: sel
-                ? Icon(Icons.check, size: 13,
-                    color: c == SlideTextColor.white || c == SlideTextColor.cream
-                        ? Colors.black
-                        : Colors.white)
+                ? Icon(Icons.check,
+                    size: 13,
+                    color:
+                        c == SlideTextColor.white || c == SlideTextColor.cream
+                            ? Colors.black
+                            : Colors.white)
                 : null,
           ),
         );
@@ -1140,12 +1262,19 @@ class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
                     width: sel ? 2.5 : 1,
                   ),
                   boxShadow: sel
-                      ? [BoxShadow(color: AppTheme.gold.withValues(alpha: 0.4), blurRadius: 5)]
+                      ? [
+                          BoxShadow(
+                              color: AppTheme.gold.withValues(alpha: 0.4),
+                              blurRadius: 5)
+                        ]
                       : null,
                 ),
                 child: sel
-                    ? Icon(Icons.check, size: 12,
-                        color: (c == 0xFFFFFFFF || c == 0xFFF5F0E8) ? Colors.black : Colors.white)
+                    ? Icon(Icons.check,
+                        size: 12,
+                        color: (c == 0xFFFFFFFF || c == 0xFFF5F0E8)
+                            ? Colors.black
+                            : Colors.white)
                     : null,
               ),
             );
@@ -1156,13 +1285,17 @@ class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
           height: 34,
           child: TextField(
             controller: _hex,
-            style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.cream, fontSize: 12),
+            style: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                color: AppTheme.cream,
+                fontSize: 12),
             decoration: const InputDecoration(
               hintText: '#000000',
               contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               prefixIcon: Padding(
                 padding: EdgeInsets.all(10),
-                child: Icon(Icons.palette_outlined, size: 14, color: AppTheme.subtleText),
+                child: Icon(Icons.palette_outlined,
+                    size: 14, color: AppTheme.subtleText),
               ),
             ),
             onSubmitted: (raw) {
@@ -1196,17 +1329,24 @@ class _TypeButton extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+          color: selected
+              ? AppTheme.gold.withValues(alpha: 0.2)
+              : AppTheme.darkSurface2,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: selected ? AppTheme.gold : AppTheme.border, width: selected ? 1.5 : 1),
+          border: Border.all(
+              color: selected ? AppTheme.gold : AppTheme.border,
+              width: selected ? 1.5 : 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 13, color: selected ? AppTheme.gold : AppTheme.subtleText),
+            Icon(icon,
+                size: 13,
+                color: selected ? AppTheme.gold : AppTheme.subtleText),
             const SizedBox(width: 4),
             Text(label,
-                style: TextStyle(fontFamily: 'Montserrat', 
+                style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
                   color: selected ? AppTheme.gold : AppTheme.subtleText,
                   fontSize: 12,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
@@ -1238,20 +1378,28 @@ class _ControlButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         decoration: BoxDecoration(
-          color: highlighted ? AppTheme.gold.withValues(alpha: 0.15) : AppTheme.darkSurface2,
+          color: highlighted
+              ? AppTheme.gold.withValues(alpha: 0.15)
+              : AppTheme.darkSurface2,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: highlighted ? AppTheme.gold.withValues(alpha: 0.4) : AppTheme.border),
+          border: Border.all(
+              color: highlighted
+                  ? AppTheme.gold.withValues(alpha: 0.4)
+                  : AppTheme.border),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: highlighted ? AppTheme.gold : AppTheme.subtleText, size: 14),
+            Icon(icon,
+                color: highlighted ? AppTheme.gold : AppTheme.subtleText,
+                size: 14),
             const SizedBox(width: 4),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 70),
               child: Text(
                 label,
-                style: TextStyle(fontFamily: 'Montserrat', 
+                style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
                   color: highlighted ? AppTheme.gold : AppTheme.subtleText,
                   fontSize: 11,
                 ),
@@ -1296,7 +1444,8 @@ class _SlideThumbnail extends StatelessWidget {
             color: isSelected ? AppTheme.gold : AppTheme.border,
             width: isSelected ? 2 : 1,
           ),
-          gradient: const LinearGradient(colors: [Color(0xFF1A1208), Color(0xFF0D0D0D)]),
+          gradient: const LinearGradient(
+              colors: [Color(0xFF1A1208), Color(0xFF0D0D0D)]),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(7),
@@ -1305,13 +1454,17 @@ class _SlideThumbnail extends StatelessWidget {
             children: [
               if (slide.imagePath != null)
                 Image.file(File(slide.imagePath!),
-                    fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink()),
               Positioned(
-                bottom: 2, left: 0, right: 0,
+                bottom: 2,
+                left: 0,
+                right: 0,
                 child: Center(
                   child: Text(
                     '${index + 1}',
-                    style: TextStyle(fontFamily: 'Montserrat', 
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
                       color: isSelected ? AppTheme.gold : AppTheme.subtleText,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -1364,12 +1517,17 @@ class _MusicTimelineButton extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: musicName != null ? AppTheme.gold.withValues(alpha: 0.5) : AppTheme.border,
+            color: musicName != null
+                ? AppTheme.gold.withValues(alpha: 0.5)
+                : AppTheme.border,
           ),
-          color: musicName != null ? AppTheme.gold.withValues(alpha: 0.08) : AppTheme.darkSurface,
+          color: musicName != null
+              ? AppTheme.gold.withValues(alpha: 0.08)
+              : AppTheme.darkSurface,
         ),
         child: Icon(Icons.music_note_outlined,
-            color: musicName != null ? AppTheme.gold : AppTheme.subtleText, size: 20),
+            color: musicName != null ? AppTheme.gold : AppTheme.subtleText,
+            size: 20),
       ),
     );
   }
@@ -1393,17 +1551,26 @@ class _TemplatePicker extends StatelessWidget {
         children: [
           Center(
             child: Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: AppTheme.border, borderRadius: BorderRadius.circular(2)),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: AppTheme.border,
+                  borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: 18),
           Text('Choose a Template',
-              style: TextStyle(fontFamily: 'Montserrat', 
-                  color: AppTheme.cream, fontSize: 20, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.cream,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
           Text('Start with a pre-designed layout',
-              style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 13)),
+              style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.subtleText,
+                  fontSize: 13)),
           const SizedBox(height: 16),
           GridView.count(
             crossAxisCount: 3,
@@ -1419,7 +1586,8 @@ class _TemplatePicker extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppTheme.darkSurface2,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.gold.withValues(alpha: 0.3)),
+                    border:
+                        Border.all(color: AppTheme.gold.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1427,10 +1595,16 @@ class _TemplatePicker extends StatelessWidget {
                       Text(t.emoji, style: const TextStyle(fontSize: 22)),
                       const SizedBox(height: 4),
                       Text(t.label,
-                          style: TextStyle(fontFamily: 'Montserrat', 
-                              color: AppTheme.cream, fontSize: 12, fontWeight: FontWeight.w600)),
+                          style: TextStyle(
+                              fontFamily: AppTheme.fontTheme,
+                              color: AppTheme.cream,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600)),
                       Text(t.description,
-                          style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 9),
+                          style: TextStyle(
+                              fontFamily: AppTheme.fontTheme,
+                              color: AppTheme.subtleText,
+                              fontSize: 9),
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis),
@@ -1476,16 +1650,22 @@ class _MusicPickerSheet extends StatelessWidget {
         children: [
           Center(
             child: Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: AppTheme.border, borderRadius: BorderRadius.circular(2)),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: AppTheme.border,
+                  borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: 20),
           Row(
             children: [
               Text('Choose a Song',
-                  style: TextStyle(fontFamily: 'Montserrat', 
-                      color: AppTheme.cream, fontSize: 20, fontWeight: FontWeight.w600)),
+                  style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.cream,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600)),
               const Spacer(),
               if (currentMusicName != null)
                 TextButton(
@@ -1494,7 +1674,10 @@ class _MusicPickerSheet extends StatelessWidget {
                     Navigator.of(context).pop();
                   },
                   child: Text('Remove',
-                      style: TextStyle(fontFamily: 'Montserrat', color: const Color(0xFFFF6B6B), fontSize: 13)),
+                      style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: const Color(0xFFFF6B6B),
+                          fontSize: 13)),
                 ),
             ],
           ),
@@ -1505,23 +1688,33 @@ class _MusicPickerSheet extends StatelessWidget {
               dense: true,
               contentPadding: EdgeInsets.zero,
               leading: Container(
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: isSel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+                  color: isSel
+                      ? AppTheme.gold.withValues(alpha: 0.2)
+                      : AppTheme.darkSurface2,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(isSel ? Icons.music_note : Icons.music_note_outlined,
-                    color: isSel ? AppTheme.gold : AppTheme.subtleText, size: 18),
+                child: Icon(
+                    isSel ? Icons.music_note : Icons.music_note_outlined,
+                    color: isSel ? AppTheme.gold : AppTheme.subtleText,
+                    size: 18),
               ),
               title: Text(song.$1,
-                  style: TextStyle(fontFamily: 'Montserrat', 
+                  style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
                       color: AppTheme.cream,
                       fontSize: 14,
                       fontWeight: isSel ? FontWeight.w700 : FontWeight.w400)),
               subtitle: Text(song.$2,
-                  style: TextStyle(fontFamily: 'Montserrat', color: AppTheme.subtleText, fontSize: 12)),
+                  style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.subtleText,
+                      fontSize: 12)),
               trailing: isSel
-                  ? const Icon(Icons.check_circle, color: AppTheme.gold, size: 18)
+                  ? const Icon(Icons.check_circle,
+                      color: AppTheme.gold, size: 18)
                   : null,
               onTap: () {
                 onSelect(song.$1);

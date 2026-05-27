@@ -7,7 +7,6 @@ import 'package:film_maker/ui/features/projects/view_models/projects_view_model.
 import 'package:film_maker/ui/features/projects/views/projects_view.dart';
 import 'package:flutter/material.dart';
 
-
 class HomeView extends StatefulWidget {
   const HomeView({
     super.key,
@@ -91,7 +90,8 @@ class _HomeViewState extends State<HomeView> {
       backgroundColor: AppTheme.darkBg,
       title: Text(
         'Film Maker',
-        style: TextStyle(fontFamily: 'Montserrat', 
+        style: TextStyle(
+          fontFamily: AppTheme.fontTheme,
           color: AppTheme.cream,
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -105,8 +105,10 @@ class _HomeViewState extends State<HomeView> {
             backgroundColor: AppTheme.darkSurface2,
             child: Text(
               widget.user.name[0].toUpperCase(),
-              style: TextStyle(fontFamily: 'Montserrat', 
-                  color: AppTheme.gold, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.gold,
+                  fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -133,8 +135,8 @@ class _HomeViewState extends State<HomeView> {
             top: -20,
             child: Opacity(
               opacity: 0.06,
-              child: Icon(Icons.movie_creation,
-                  size: 180, color: AppTheme.gold),
+              child:
+                  Icon(Icons.movie_creation, size: 180, color: AppTheme.gold),
             ),
           ),
           Padding(
@@ -145,14 +147,12 @@ class _HomeViewState extends State<HomeView> {
               children: [
                 Row(
                   children: [
-                    Container(
-                        width: 28,
-                        height: 1,
-                        color: AppTheme.gold),
+                    Container(width: 28, height: 1, color: AppTheme.gold),
                     const SizedBox(width: 8),
                     Text(
                       'Welcome back',
-                      style: TextStyle(fontFamily: 'Montserrat', 
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontTheme,
                         color: AppTheme.gold,
                         fontSize: 12,
                         letterSpacing: 1.5,
@@ -163,7 +163,8 @@ class _HomeViewState extends State<HomeView> {
                 const SizedBox(height: 6),
                 Text(
                   widget.user.name,
-                  style: TextStyle(fontFamily: 'Montserrat', 
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
                     color: AppTheme.cream,
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -172,7 +173,8 @@ class _HomeViewState extends State<HomeView> {
                 const SizedBox(height: 4),
                 Text(
                   'Tell your love story through film',
-                  style: TextStyle(fontFamily: 'Montserrat', 
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
                     color: AppTheme.subtleText,
                     fontSize: 13,
                   ),
@@ -233,7 +235,8 @@ class _HomeViewState extends State<HomeView> {
             const SizedBox(height: 6),
             Text(
               value,
-              style: TextStyle(fontFamily: 'Montserrat', 
+              style: TextStyle(
+                fontFamily: AppTheme.fontTheme,
                 color: AppTheme.cream,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -241,8 +244,10 @@ class _HomeViewState extends State<HomeView> {
             ),
             Text(
               label,
-              style: TextStyle(fontFamily: 'Montserrat', 
-                  color: AppTheme.subtleText, fontSize: 11),
+              style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.subtleText,
+                  fontSize: 11),
               textAlign: TextAlign.center,
             ),
           ],
@@ -258,7 +263,8 @@ class _HomeViewState extends State<HomeView> {
         const SizedBox(width: 10),
         Text(
           title,
-          style: TextStyle(fontFamily: 'Montserrat', 
+          style: TextStyle(
+            fontFamily: AppTheme.fontTheme,
             color: AppTheme.cream,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -319,8 +325,7 @@ class _HomeViewState extends State<HomeView> {
         decoration: BoxDecoration(
           gradient: gradient,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: iconColor.withValues(alpha: 0.3)),
+          border: Border.all(color: iconColor.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,7 +337,8 @@ class _HomeViewState extends State<HomeView> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontFamily: 'Montserrat', 
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
                     color: AppTheme.cream,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -340,8 +346,10 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(fontFamily: 'Montserrat', 
-                      color: AppTheme.subtleText, fontSize: 11),
+                  style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.subtleText,
+                      fontSize: 11),
                 ),
               ],
             ),
@@ -372,8 +380,10 @@ class _HomeViewState extends State<HomeView> {
                 const SizedBox(width: 12),
                 Text(
                   tip.$2,
-                  style: TextStyle(fontFamily: 'Montserrat', 
-                      color: AppTheme.subtleText, fontSize: 13),
+                  style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.subtleText,
+                      fontSize: 13),
                 ),
               ],
             ),
