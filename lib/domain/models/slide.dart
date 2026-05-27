@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum TransitionEffect { fade, slideLeft, slideRight, zoomIn, kenBurns }
+enum TransitionEffect { fade, slideLeft, slideRight, zoomIn, kenBurns, blurDissolve, wipeLeft, wipeRight }
 
 enum SlideTextColor { white, gold, cream, black, rose }
 
@@ -25,6 +25,9 @@ extension TransitionEffectLabel on TransitionEffect {
         return 'Zoom';
       case TransitionEffect.kenBurns:
         return 'Ken Burns';
+      case TransitionEffect.blurDissolve: return 'Blur';
+      case TransitionEffect.wipeLeft:     return 'Wipe ←';
+      case TransitionEffect.wipeRight:    return 'Wipe →';
     }
   }
 }
@@ -182,6 +185,32 @@ extension PhotoFilterX on PhotoFilter {
   }
 }
 
+enum SlideOverlay { none, vignette, filmGrain, lightLeak, bokeh }
+
+extension SlideOverlayX on SlideOverlay {
+  String get label {
+    switch (this) {
+      case SlideOverlay.none:      return 'None';
+      case SlideOverlay.vignette:  return 'Vignette';
+      case SlideOverlay.filmGrain: return 'Grain';
+      case SlideOverlay.lightLeak: return 'Light Leak';
+      case SlideOverlay.bokeh:     return 'Bokeh';
+    }
+  }
+}
+
+enum SlideTextBg { none, pill, box }
+
+extension SlideTextBgX on SlideTextBg {
+  String get label {
+    switch (this) {
+      case SlideTextBg.none: return 'None';
+      case SlideTextBg.pill: return 'Pill';
+      case SlideTextBg.box:  return 'Box';
+    }
+  }
+}
+
 extension SlideTemplateX on SlideTemplate {
   String get label {
     switch (this) {
@@ -242,6 +271,9 @@ class TextLayer {
     this.barColor = SlideTextColor.gold,
     this.size = SlideTextSize.medium,
     this.fontStyle = SlideFontStyle.serif,
+    this.textBg = SlideTextBg.none,
+    this.strokeWidth = 0.0,
+    this.letterSpacing = 0.0,
   });
 
   final String id;
@@ -253,6 +285,9 @@ class TextLayer {
   final SlideTextColor barColor;
   final SlideTextSize size;
   final SlideFontStyle fontStyle;
+  final SlideTextBg textBg;
+  final double strokeWidth;
+  final double letterSpacing;
 
   TextLayer copyWith({
     String? text,
@@ -263,6 +298,9 @@ class TextLayer {
     SlideTextColor? barColor,
     SlideTextSize? size,
     SlideFontStyle? fontStyle,
+    SlideTextBg? textBg,
+    double? strokeWidth,
+    double? letterSpacing,
   }) {
     return TextLayer(
       id: id,
@@ -274,6 +312,9 @@ class TextLayer {
       barColor: barColor ?? this.barColor,
       size: size ?? this.size,
       fontStyle: fontStyle ?? this.fontStyle,
+      textBg: textBg ?? this.textBg,
+      strokeWidth: strokeWidth ?? this.strokeWidth,
+      letterSpacing: letterSpacing ?? this.letterSpacing,
     );
   }
 }
@@ -338,6 +379,7 @@ class Slide {
     this.photoOffsetX = 0.0,
     this.photoOffsetY = 0.0,
     this.backgroundColor = 0xFF000000,
+    this.overlay = SlideOverlay.none,
   });
 
   final String id;
@@ -350,6 +392,7 @@ class Slide {
   final double photoOffsetX;    // fraction of canvas width, 0 = center
   final double photoOffsetY;    // fraction of canvas height, 0 = center
   final int backgroundColor;    // ARGB int shown behind the photo (default black)
+  final SlideOverlay overlay;
 
   Slide copyWith({
     String? imagePath,
@@ -361,6 +404,7 @@ class Slide {
     double? photoOffsetX,
     double? photoOffsetY,
     int? backgroundColor,
+    SlideOverlay? overlay,
   }) {
     return Slide(
       id: id,
@@ -373,6 +417,7 @@ class Slide {
       photoOffsetX: photoOffsetX ?? this.photoOffsetX,
       photoOffsetY: photoOffsetY ?? this.photoOffsetY,
       backgroundColor: backgroundColor ?? this.backgroundColor,
+      overlay: overlay ?? this.overlay,
     );
   }
 }
