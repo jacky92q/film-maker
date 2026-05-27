@@ -11,6 +11,7 @@ Widget buildShapedPhoto({
   required PhotoFrame frame,
   BoxFit fit = BoxFit.cover,
   ColorFilter? colorFilter,
+  double frameWidth = 4.0,      // ← add this parameter
 }) {
   if (imagePath == null) {
     return Container(color: Colors.black26);
@@ -56,9 +57,9 @@ Widget buildShapedPhoto({
     case PhotoFrame.none:
       return shaped;
     case PhotoFrame.white:
-      return _buildBorderFrame(shaped, Colors.white, shape);
+      return _buildBorderFrame(shaped, Colors.white, shape, frameWidth);
     case PhotoFrame.gold:
-      return _buildBorderFrame(shaped, const Color(0xFFD4AF37), shape);
+      return _buildBorderFrame(shaped, const Color(0xFFD4AF37), shape, frameWidth);
     case PhotoFrame.polaroid:
       return Container(
         decoration: const BoxDecoration(color: Colors.white),
@@ -68,16 +69,16 @@ Widget buildShapedPhoto({
   }
 }
 
-Widget _buildBorderFrame(Widget child, Color color, PhotoShape shape) {
+Widget _buildBorderFrame(Widget child, Color color, PhotoShape shape, double frameWidth) {
   BorderRadius? radius;
   if (shape == PhotoShape.rounded) radius = BorderRadius.circular(22);
   return Container(
     decoration: BoxDecoration(
-      border: Border.all(color: color, width: 4),
+      border: Border.all(color: color, width: frameWidth),
       borderRadius: radius,
       shape: shape == PhotoShape.circle ? BoxShape.circle : BoxShape.rectangle,
     ),
-    child: Padding(padding: const EdgeInsets.all(4), child: child),
+    child: Padding(padding: EdgeInsets.all(frameWidth), child: child),
   );
 }
 
