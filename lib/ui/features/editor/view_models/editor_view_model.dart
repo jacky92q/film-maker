@@ -155,6 +155,32 @@ class EditorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> pickImageForSlot(int slot) async {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    try {
+      final picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        requestFullMetadata: false,
+      );
+      if (picked != null) {
+        switch (slot) {
+          case 2:
+            _updateSlide(slide.copyWith(imagePath2: picked.path));
+            break;
+          case 3:
+            _updateSlide(slide.copyWith(imagePath3: picked.path));
+            break;
+          default:
+            _updateSlide(slide.copyWith(imagePath: picked.path));
+        }
+      }
+    } catch (_) {
+      // Image picker unavailable
+    }
+  }
+
   Future<void> pickImageForCurrentSlide() async {
     final slide = selectedSlide;
     if (slide == null) return;

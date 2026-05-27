@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:film_maker/data/repositories/export_repository.dart';
+import 'package:film_maker/ui/core/photo_frame_widget.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
@@ -476,34 +477,62 @@ class _SlideCanvasState extends State<_SlideCanvas> {
         Widget background;
         bool hasPhoto = slide.imagePath != null;
         if (hasPhoto) {
-          Widget img = Image.file(
-            File(slide.imagePath!),
-            fit: BoxFit.contain, // show full photo, no crop
-            width: w,
-            height: h,
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          );
-          final filter = slide.photoFilter.colorFilter;
-          if (filter != null)
-            img = ColorFiltered(colorFilter: filter, child: img);
+          Widget photoContent;
+          if (slide.layout != SlideLayout.single) {
+            // Editor canvas strip preview (static, no animation)
+            photoContent = ClipRect(
+              child: Row(
+                children: [
+                  Expanded(child: buildShapedPhoto(
+                    imagePath: slide.imagePath,
+                    shape: slide.photoShape,
+                    frame: slide.photoFrame,
+                    colorFilter: slide.photoFilter.colorFilter,
+                  )),
+                  if (slide.layout == SlideLayout.strip2 || slide.layout == SlideLayout.strip3)
+                    Expanded(child: buildShapedPhoto(
+                      imagePath: slide.imagePath2,
+                      shape: slide.photoShape,
+                      frame: slide.photoFrame,
+                      colorFilter: slide.photoFilter.colorFilter,
+                    )),
+                  if (slide.layout == SlideLayout.strip3)
+                    Expanded(child: buildShapedPhoto(
+                      imagePath: slide.imagePath3,
+                      shape: slide.photoShape,
+                      frame: slide.photoFrame,
+                      colorFilter: slide.photoFilter.colorFilter,
+                    )),
+                ],
+              ),
+            );
+          } else {
+            final photoWidget = buildShapedPhoto(
+              imagePath: slide.imagePath,
+              shape: slide.photoShape,
+              frame: slide.photoFrame,
+              fit: BoxFit.contain,
+              colorFilter: slide.photoFilter.colorFilter,
+            );
+            photoContent = ColoredBox(
+              color: Color(slide.backgroundColor),
+              child: ClipRect(
+                child: Transform.translate(
+                  offset: Offset(slide.photoOffsetX * w, slide.photoOffsetY * h),
+                  child: Transform.scale(scale: slide.photoScale, child: photoWidget),
+                ),
+              ),
+            );
+          }
 
           // Photo acts as the interactive background: tap=deselect, drag/pinch=move+zoom.
           background = GestureDetector(
             onTap: () => widget.viewModel.selectLayer(null),
-            onScaleStart: _onPhotoScaleStart,
-            onScaleUpdate: (d) => _onPhotoScaleUpdate(d, w, h),
-            child: SizedBox.expand(
-              child: ColoredBox(
-                color: Color(slide.backgroundColor),
-                child: ClipRect(
-                  child: Transform.translate(
-                    offset:
-                        Offset(slide.photoOffsetX * w, slide.photoOffsetY * h),
-                    child: Transform.scale(scale: slide.photoScale, child: img),
-                  ),
-                ),
-              ),
-            ),
+            onScaleStart: slide.layout == SlideLayout.single ? _onPhotoScaleStart : null,
+            onScaleUpdate: slide.layout == SlideLayout.single
+                ? (d) => _onPhotoScaleUpdate(d, w, h)
+                : null,
+            child: SizedBox.expand(child: photoContent),
           );
         } else {
           background = GestureDetector(
@@ -1289,6 +1318,86 @@ class _SlideEditPanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
+            // Layout picker
+            _Label('Layout'),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: SlideLayout.values.map((lay) {
+                final selected = slide.layout == lay;
+                return ChoiceChip(
+                  label: Text(lay.label),
+                  selected: selected,
+                  onSelected: (_) {
+                    viewModel.updateSelectedSlide(slide.copyWith(layout: lay));
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            if (slide.layout != SlideLayout.single) ...[
+              _Label('Photos'),
+              const SizedBox(height: 6),
+              // Photo 1 already handled by the main photo picker button above
+              // Photo 2
+              OutlinedButton.icon(
+                icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                label: Text(slide.imagePath2 != null ? 'Photo 2 ✓' : 'Add Photo 2'),
+                onPressed: () => viewModel.pickImageForSlot(2),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  side: const BorderSide(color: Colors.white24),
+                ),
+              ),
+              if (slide.layout == SlideLayout.strip3)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                  label: Text(slide.imagePath3 != null ? 'Photo 3 ✓' : 'Add Photo 3'),
+                  onPressed: () => viewModel.pickImageForSlot(3),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: const BorderSide(color: Colors.white24),
+                  ),
+                ),
+              const SizedBox(height: 16),
+            ],
+            // Shape picker
+            _Label('Shape'),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: PhotoShape.values.map((sh) {
+                final selected = slide.photoShape == sh;
+                return ChoiceChip(
+                  label: Text(sh.label),
+                  selected: selected,
+                  onSelected: (_) {
+                    viewModel.updateSelectedSlide(slide.copyWith(photoShape: sh));
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            // Frame picker
+            _Label('Frame'),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: PhotoFrame.values.map((fr) {
+                final selected = slide.photoFrame == fr;
+                return ChoiceChip(
+                  label: Text(fr.label),
+                  selected: selected,
+                  onSelected: (_) {
+                    viewModel.updateSelectedSlide(slide.copyWith(photoFrame: fr));
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
             // Duration slider
             Row(
               children: [

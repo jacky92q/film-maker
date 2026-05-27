@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/photo_frame_widget.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/preview/view_models/preview_view_model.dart';
@@ -147,52 +147,10 @@ class _PreviewViewState extends State<PreviewView>
   }
 
   Widget _buildSlideView(Slide slide) {
-    Widget background;
-
-    if (slide.imagePath != null) {
-      background = LayoutBuilder(
-        builder: (ctx, constraints) {
-          final w = constraints.maxWidth;
-          final h = constraints.maxHeight;
-          Widget img = Image.file(
-            File(slide.imagePath!),
-            fit: BoxFit.contain,
-            width: w,
-            height: h,
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          );
-          final filter = slide.photoFilter.colorFilter;
-          if (filter != null) img = ColorFiltered(colorFilter: filter, child: img);
-          return ColoredBox(
-            color: Color(slide.backgroundColor),
-            child: ClipRect(
-              child: Transform.translate(
-                offset: Offset(slide.photoOffsetX * w, slide.photoOffsetY * h),
-                child: Transform.scale(scale: slide.photoScale, child: img),
-              ),
-            ),
-          );
-        },
-      );
-    } else {
-      background = _buildGradientBg();
-    }
-
-    if (slide.transition == TransitionEffect.kenBurns) {
-      background = AnimatedBuilder(
-        animation: _kenBurnsController,
-        builder: (context, child) {
-          final scale = 1.0 + 0.08 * _kenBurnsController.value;
-          final dx = 0.03 * (_kenBurnsController.value - 0.5);
-          return Transform.scale(
-            scale: scale,
-            alignment: Alignment.center,
-            child: Transform.translate(offset: Offset(dx * 200, 0), child: child),
-          );
-        },
-        child: background,
-      );
-    }
+    final background = _SlidePhotoLayer(
+      slide: slide,
+      kenBurnsController: _kenBurnsController,
+    );
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 700),
@@ -329,25 +287,6 @@ class _PreviewViewState extends State<PreviewView>
           );
         };
     }
-  }
-
-  Widget _buildGradientBg() {
-    final index = widget.viewModel.currentIndex;
-    final gradients = [
-      [const Color(0xFF1A1208), const Color(0xFF0D0D0D)],
-      [const Color(0xFF0D1A18), const Color(0xFF0A1414)],
-      [const Color(0xFF1A0D1A), const Color(0xFF0D0D0D)],
-    ];
-    final colors = gradients[index % gradients.length];
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: colors,
-        ),
-      ),
-    );
   }
 
   Widget _buildGradientOverlay() {
@@ -522,6 +461,150 @@ class _PreviewViewState extends State<PreviewView>
           ),
         );
       }),
+    );
+  }
+}
+
+/// Handles single-photo (with ken-burns) and multi-photo strip animation.
+class _SlidePhotoLayer extends StatefulWidget {
+  const _SlidePhotoLayer({
+    required this.slide,
+    required this.kenBurnsController,
+  });
+
+  final Slide slide;
+  final AnimationController kenBurnsController;
+
+  @override
+  State<_SlidePhotoLayer> createState() => _SlidePhotoLayerState();
+}
+
+class _SlidePhotoLayerState extends State<_SlidePhotoLayer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _stripController;
+
+  @override
+  void initState() {
+    super.initState();
+    _stripController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: widget.slide.durationSeconds),
+    );
+    if (widget.slide.layout != SlideLayout.single) {
+      _stripController.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _stripController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final slide = widget.slide;
+
+    if (slide.imagePath == null && slide.layout == SlideLayout.single) {
+      return _buildGradientBg();
+    }
+
+    if (slide.layout != SlideLayout.single) {
+      return _buildStrip(slide);
+    }
+
+    // Single layout
+    return _buildSinglePhoto(slide);
+  }
+
+  Widget _buildSinglePhoto(Slide slide) {
+    return LayoutBuilder(builder: (ctx, constraints) {
+      final w = constraints.maxWidth;
+      final h = constraints.maxHeight;
+      Widget photo = buildShapedPhoto(
+        imagePath: slide.imagePath,
+        shape: slide.photoShape,
+        frame: slide.photoFrame,
+        fit: BoxFit.contain,
+        colorFilter: slide.photoFilter.colorFilter,
+      );
+
+      Widget positioned = ColoredBox(
+        color: Color(slide.backgroundColor),
+        child: ClipRect(
+          child: Transform.translate(
+            offset: Offset(slide.photoOffsetX * w, slide.photoOffsetY * h),
+            child: Transform.scale(scale: slide.photoScale, child: photo),
+          ),
+        ),
+      );
+
+      if (slide.transition == TransitionEffect.kenBurns) {
+        return AnimatedBuilder(
+          animation: widget.kenBurnsController,
+          builder: (context, child) {
+            final scale = 1.0 + 0.08 * widget.kenBurnsController.value;
+            final dx = 0.03 * (widget.kenBurnsController.value - 0.5);
+            return Transform.scale(
+              scale: scale,
+              alignment: Alignment.center,
+              child: Transform.translate(
+                  offset: Offset(dx * 200, 0), child: child),
+            );
+          },
+          child: positioned,
+        );
+      }
+      return positioned;
+    });
+  }
+
+  Widget _buildStrip(Slide slide) {
+    final photos = [slide.imagePath, slide.imagePath2];
+    if (slide.layout == SlideLayout.strip3) photos.add(slide.imagePath3);
+    final n = photos.length;
+
+    return ClipRect(
+      child: AnimatedBuilder(
+        animation: _stripController,
+        builder: (context, _) {
+          return LayoutBuilder(builder: (ctx, constraints) {
+            final w = constraints.maxWidth;
+            final h = constraints.maxHeight;
+            final offset = _stripController.value * (n - 1) * w;
+            return Transform.translate(
+              offset: Offset(-offset, 0),
+              child: Row(
+                children: photos.map((path) {
+                  return SizedBox(
+                    width: w,
+                    height: h,
+                    child: buildShapedPhoto(
+                      imagePath: path,
+                      shape: slide.photoShape,
+                      frame: slide.photoFrame,
+                      fit: BoxFit.cover,
+                      colorFilter: slide.photoFilter.colorFilter,
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildGradientBg() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1A1208), Color(0xFF0D0D0D)],
+        ),
+      ),
     );
   }
 }

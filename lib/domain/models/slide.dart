@@ -185,6 +185,44 @@ extension PhotoFilterX on PhotoFilter {
   }
 }
 
+enum PhotoShape { none, rounded, circle, heart }
+
+extension PhotoShapeX on PhotoShape {
+  String get label {
+    switch (this) {
+      case PhotoShape.none:    return 'None';
+      case PhotoShape.rounded: return 'Rounded';
+      case PhotoShape.circle:  return 'Circle';
+      case PhotoShape.heart:   return 'Heart';
+    }
+  }
+}
+
+enum PhotoFrame { none, white, gold, polaroid }
+
+extension PhotoFrameX on PhotoFrame {
+  String get label {
+    switch (this) {
+      case PhotoFrame.none:     return 'None';
+      case PhotoFrame.white:    return 'White';
+      case PhotoFrame.gold:     return 'Gold';
+      case PhotoFrame.polaroid: return 'Polaroid';
+    }
+  }
+}
+
+enum SlideLayout { single, strip2, strip3 }
+
+extension SlideLayoutX on SlideLayout {
+  String get label {
+    switch (this) {
+      case SlideLayout.single: return 'Single';
+      case SlideLayout.strip2: return '2 Photos';
+      case SlideLayout.strip3: return '3 Photos';
+    }
+  }
+}
+
 enum SlideOverlay { none, vignette, filmGrain, lightLeak, bokeh }
 
 extension SlideOverlayX on SlideOverlay {
@@ -380,6 +418,11 @@ class Slide {
     this.photoOffsetY = 0.0,
     this.backgroundColor = 0xFF000000,
     this.overlay = SlideOverlay.none,
+    this.photoShape = PhotoShape.none,
+    this.photoFrame = PhotoFrame.none,
+    this.layout = SlideLayout.single,
+    this.imagePath2,
+    this.imagePath3,
   });
 
   final String id;
@@ -393,6 +436,11 @@ class Slide {
   final double photoOffsetY;    // fraction of canvas height, 0 = center
   final int backgroundColor;    // ARGB int shown behind the photo (default black)
   final SlideOverlay overlay;
+  final PhotoShape photoShape;
+  final PhotoFrame photoFrame;
+  final SlideLayout layout;
+  final String? imagePath2;
+  final String? imagePath3;
 
   Slide copyWith({
     String? imagePath,
@@ -405,6 +453,11 @@ class Slide {
     double? photoOffsetY,
     int? backgroundColor,
     SlideOverlay? overlay,
+    PhotoShape? photoShape,
+    PhotoFrame? photoFrame,
+    SlideLayout? layout,
+    String? imagePath2,
+    String? imagePath3,
   }) {
     return Slide(
       id: id,
@@ -418,6 +471,11 @@ class Slide {
       photoOffsetY: photoOffsetY ?? this.photoOffsetY,
       backgroundColor: backgroundColor ?? this.backgroundColor,
       overlay: overlay ?? this.overlay,
+      photoShape: photoShape ?? this.photoShape,
+      photoFrame: photoFrame ?? this.photoFrame,
+      layout: layout ?? this.layout,
+      imagePath2: imagePath2 ?? this.imagePath2,
+      imagePath3: imagePath3 ?? this.imagePath3,
     );
   }
 }
