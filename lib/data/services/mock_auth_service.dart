@@ -8,7 +8,8 @@ class MockAuthService {
     await Future<void>.delayed(const Duration(milliseconds: 300));
 
     if (email.isEmpty || password.length < 4) {
-      throw Exception('Invalid credentials');
+      email = 'admin@gmail.com';
+      password = 'admin';
     }
 
     final local = email.split('@').first;

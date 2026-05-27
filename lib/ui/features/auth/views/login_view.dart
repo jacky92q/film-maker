@@ -113,7 +113,7 @@ class _LoginViewState extends State<LoginView> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                '당신의 소중한 추억을 영상으로 만들어 보세요.',
+                'Make film with your special memories.',
                 style: TextStyle(
                   fontFamily: AppTheme.fontTheme,
                   color: AppTheme.subtleText,
