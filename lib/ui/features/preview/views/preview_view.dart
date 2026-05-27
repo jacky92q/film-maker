@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/preview/view_models/preview_view_model.dart';
 import 'package:flutter/material.dart';
@@ -204,6 +206,7 @@ class _PreviewViewState extends State<PreviewView>
           children: [
             background,
             _buildGradientOverlay(),
+            buildSlideOverlay(slide.overlay),
             _buildTextOverlay(slide),
           ],
         ),
@@ -283,6 +286,46 @@ class _PreviewViewState extends State<PreviewView>
           return ScaleTransition(
             scale: scale,
             child: FadeTransition(opacity: animation, child: child),
+          );
+        };
+
+      case TransitionEffect.blurDissolve:
+        return (child, animation) {
+          final blurAnim = Tween<double>(begin: 14.0, end: 0.0).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          );
+          return AnimatedBuilder(
+            animation: blurAnim,
+            builder: (_, ch) => ImageFiltered(
+              imageFilter: ui.ImageFilter.blur(
+                  sigmaX: blurAnim.value, sigmaY: blurAnim.value),
+              child: FadeTransition(opacity: animation, child: ch),
+            ),
+            child: child,
+          );
+        };
+
+      case TransitionEffect.wipeLeft:
+        return (child, animation) {
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (_, ch) => ClipRect(
+              clipper: _WipeClipper(animation.value, fromLeft: false),
+              child: ch,
+            ),
+            child: child,
+          );
+        };
+
+      case TransitionEffect.wipeRight:
+        return (child, animation) {
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (_, ch) => ClipRect(
+              clipper: _WipeClipper(animation.value, fromLeft: true),
+              child: ch,
+            ),
+            child: child,
           );
         };
     }
@@ -481,4 +524,22 @@ class _PreviewViewState extends State<PreviewView>
       }),
     );
   }
+}
+
+class _WipeClipper extends CustomClipper<Rect> {
+  const _WipeClipper(this.progress, {required this.fromLeft});
+  final double progress;
+  final bool fromLeft;
+
+  @override
+  Rect getClip(Size size) {
+    if (fromLeft) {
+      return Rect.fromLTWH(0, 0, size.width * progress, size.height);
+    }
+    return Rect.fromLTWH(
+      size.width * (1 - progress), 0, size.width * progress, size.height);
+  }
+
+  @override
+  bool shouldReclip(_WipeClipper old) => old.progress != progress;
 }

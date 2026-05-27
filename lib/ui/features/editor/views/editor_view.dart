@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:film_maker/data/repositories/export_repository.dart';
+import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
@@ -516,6 +517,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
           children: [
             background,
             _gradientOverlay(),
+            buildSlideOverlay(slide.overlay),
             // Text layers — draggable, opaque (intercept their own touches before photo GD).
             for (final layer in slide.textLayers)
               Positioned.fill(
@@ -658,15 +660,36 @@ class _LayerWidget extends StatelessWidget {
     final color = layer.color.color;
     final fontSize =
         layer.isSubtitle ? layer.size.subFontSize : layer.size.mainFontSize;
-    final shadows = [
-      Shadow(color: Colors.black.withValues(alpha: 0.8), blurRadius: 10)
-    ];
-    final style = slideLayerTextStyle(layer.fontStyle,
-        fontSize: fontSize, color: color, shadows: shadows);
+    final style = slideLayerTextStyle(
+      layer.fontStyle,
+      fontSize: fontSize,
+      color: color,
+      shadows: [Shadow(color: Colors.black.withValues(alpha: 0.8), blurRadius: 10)],
+    ).copyWith(letterSpacing: layer.letterSpacing);
 
-    Widget content =
-        Text(layer.text, style: style, textAlign: TextAlign.center);
+    // Build text content — optionally with stroke outline
+    Widget textWidget;
+    if (layer.strokeWidth > 0) {
+      final strokeStyle = style.copyWith(
+        foreground: Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = layer.strokeWidth * 2.2
+          ..color = Colors.black.withValues(alpha: 0.9),
+        shadows: null,
+      );
+      textWidget = Stack(
+        children: [
+          Text(layer.text, style: strokeStyle, textAlign: TextAlign.center),
+          Text(layer.text, style: style, textAlign: TextAlign.center),
+        ],
+      );
+    } else {
+      textWidget = Text(layer.text, style: style, textAlign: TextAlign.center);
+    }
 
+    Widget content = textWidget;
+
+    // Subtitle bar decoration
     if (layer.isSubtitle) {
       content = IntrinsicWidth(
         child: Container(
@@ -677,6 +700,20 @@ class _LayerWidget extends StatelessWidget {
           ),
           child: content,
         ),
+      );
+    }
+
+    // Text background
+    if (layer.textBg != SlideTextBg.none) {
+      content = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.45),
+          borderRadius: layer.textBg == SlideTextBg.pill
+              ? BorderRadius.circular(20)
+              : BorderRadius.circular(4),
+        ),
+        child: content,
       );
     }
 
@@ -923,6 +960,127 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                 }),
               ],
             ),
+            const SizedBox(height: 10),
+            // Text background
+            _Label('Text Bg'),
+            const SizedBox(height: 6),
+            Row(
+              children: SlideTextBg.values.map((bg) {
+                final sel = widget.layer.textBg == bg;
+                return GestureDetector(
+                  onTap: () => _applyStyle((l) => l.copyWith(textBg: bg)),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 48,
+                    height: 30,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: sel
+                          ? AppTheme.gold.withValues(alpha: 0.2)
+                          : AppTheme.darkSurface2,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: sel ? AppTheme.gold : AppTheme.border,
+                          width: sel ? 1.5 : 1),
+                    ),
+                    child: Center(
+                      child: Text(
+                        bg.label,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          fontSize: 11,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
+            // Stroke width
+            _Label('Outline'),
+            const SizedBox(height: 6),
+            Row(
+              children: [0.0, 1.0, 2.0, 3.0].map((w) {
+                final sel = widget.layer.strokeWidth == w;
+                final label = w == 0 ? 'Off' : w == 1 ? 'Thin' : w == 2 ? 'Med' : 'Bold';
+                return GestureDetector(
+                  onTap: () => _applyStyle((l) => l.copyWith(strokeWidth: w)),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 44,
+                    height: 30,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: sel
+                          ? AppTheme.gold.withValues(alpha: 0.2)
+                          : AppTheme.darkSurface2,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: sel ? AppTheme.gold : AppTheme.border,
+                          width: sel ? 1.5 : 1),
+                    ),
+                    child: Center(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          fontSize: 11,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
+            // Letter spacing
+            _Label('Spacing'),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                (0.0, 'Normal'),
+                (1.0, 'Wide'),
+                (3.0, 'Wider'),
+                (6.0, 'Max'),
+              ].map(((double, String) entry) {
+                final (sp, label) = entry;
+                final sel = widget.layer.letterSpacing == sp;
+                return GestureDetector(
+                  onTap: () => _applyStyle((l) => l.copyWith(letterSpacing: sp)),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 52,
+                    height: 30,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: sel
+                          ? AppTheme.gold.withValues(alpha: 0.2)
+                          : AppTheme.darkSurface2,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: sel ? AppTheme.gold : AppTheme.border,
+                          width: sel ? 1.5 : 1),
+                    ),
+                    child: Center(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          fontSize: 11,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
           ],
         ),
       ),
@@ -1079,6 +1237,45 @@ class _SlideEditPanel extends StatelessWidget {
                       ),
                       child: Text(
                         effect.label,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          fontSize: 11,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Overlay picker
+            _Label('Overlay'),
+            const SizedBox(height: 6),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: SlideOverlay.values.map((ov) {
+                  final sel = slide.overlay == ov;
+                  return GestureDetector(
+                    onTap: () => viewModel.updateSelectedSlide(
+                        slide.copyWith(overlay: ov)),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(7),
+                        color: sel
+                            ? AppTheme.gold.withValues(alpha: 0.2)
+                            : AppTheme.darkSurface2,
+                        border: Border.all(
+                            color: sel ? AppTheme.gold : AppTheme.border,
+                            width: sel ? 1.5 : 1),
+                      ),
+                      child: Text(
+                        ov.label,
                         style: TextStyle(
                           fontFamily: AppTheme.fontTheme,
                           color: sel ? AppTheme.gold : AppTheme.subtleText,
