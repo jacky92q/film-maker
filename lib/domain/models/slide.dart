@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 
 enum TransitionEffect { fade, slideLeft, slideRight, zoomIn, kenBurns, blurDissolve, wipeLeft, wipeRight }
 
-enum SlideTextColor { white, gold, cream, black, rose }
-
-enum SlideTextSize { small, medium, large, xlarge }
+enum SlideTextColor { white, gold, cream, black, rose, silver, champagne, blush, dustyBlue, sage, lavender, warmGray, coral }
 
 enum SlideFontStyle { serif, sans, script, display, elegant, modern }
 
@@ -45,6 +43,22 @@ extension SlideTextColorX on SlideTextColor {
         return 'Black';
       case SlideTextColor.rose:
         return 'Rose';
+      case SlideTextColor.silver:
+        return 'Silver';
+      case SlideTextColor.champagne:
+        return 'Champagne';
+      case SlideTextColor.blush:
+        return 'Blush';
+      case SlideTextColor.dustyBlue:
+        return 'Blue';
+      case SlideTextColor.sage:
+        return 'Sage';
+      case SlideTextColor.lavender:
+        return 'Lavender';
+      case SlideTextColor.warmGray:
+        return 'Gray';
+      case SlideTextColor.coral:
+        return 'Coral';
     }
   }
 
@@ -60,47 +74,22 @@ extension SlideTextColorX on SlideTextColor {
         return const Color(0xFF0D0D0D);
       case SlideTextColor.rose:
         return const Color(0xFFE8B4B8);
-    }
-  }
-}
-
-extension SlideTextSizeX on SlideTextSize {
-  String get label {
-    switch (this) {
-      case SlideTextSize.small:
-        return 'S';
-      case SlideTextSize.medium:
-        return 'M';
-      case SlideTextSize.large:
-        return 'L';
-      case SlideTextSize.xlarge:
-        return 'XL';
-    }
-  }
-
-  double get mainFontSize {
-    switch (this) {
-      case SlideTextSize.small:
-        return 20;
-      case SlideTextSize.medium:
-        return 28;
-      case SlideTextSize.large:
-        return 38;
-      case SlideTextSize.xlarge:
-        return 52;
-    }
-  }
-
-  double get subFontSize {
-    switch (this) {
-      case SlideTextSize.small:
-        return 14;
-      case SlideTextSize.medium:
-        return 18;
-      case SlideTextSize.large:
-        return 22;
-      case SlideTextSize.xlarge:
-        return 28;
+      case SlideTextColor.silver:
+        return const Color(0xFFC0C0C0);
+      case SlideTextColor.champagne:
+        return const Color(0xFFF7E7CE);
+      case SlideTextColor.blush:
+        return const Color(0xFFE8A0B0);
+      case SlideTextColor.dustyBlue:
+        return const Color(0xFF88A8C0);
+      case SlideTextColor.sage:
+        return const Color(0xFF8FAF8F);
+      case SlideTextColor.lavender:
+        return const Color(0xFFB090C8);
+      case SlideTextColor.warmGray:
+        return const Color(0xFF999080);
+      case SlideTextColor.coral:
+        return const Color(0xFFE88070);
     }
   }
 }
@@ -224,18 +213,6 @@ extension SlideLayoutX on SlideLayout {
   }
 }
 
-enum SlideDesign { classic, editorial, invitation }
-
-extension SlideDesignX on SlideDesign {
-  String get label {
-    switch (this) {
-      case SlideDesign.classic:    return 'Classic';
-      case SlideDesign.editorial:  return 'Editorial';
-      case SlideDesign.invitation: return 'Invitation';
-    }
-  }
-}
-
 enum SlideOverlay { none, vignette, filmGrain, lightLeak, bokeh }
 
 extension SlideOverlayX on SlideOverlay {
@@ -320,7 +297,8 @@ class TextLayer {
     this.y = 0.75,
     this.color = SlideTextColor.white,
     this.barColor = SlideTextColor.gold,
-    this.size = SlideTextSize.medium,
+    this.fontSize = 32.0,
+    this.rotation = 0.0,
     this.fontStyle = SlideFontStyle.serif,
     this.textBg = SlideTextBg.none,
     this.strokeWidth = 0.0,
@@ -334,7 +312,8 @@ class TextLayer {
   final double y;
   final SlideTextColor color;
   final SlideTextColor barColor;
-  final SlideTextSize size;
+  final double fontSize;
+  final double rotation;
   final SlideFontStyle fontStyle;
   final SlideTextBg textBg;
   final double strokeWidth;
@@ -347,7 +326,8 @@ class TextLayer {
     double? y,
     SlideTextColor? color,
     SlideTextColor? barColor,
-    SlideTextSize? size,
+    double? fontSize,
+    double? rotation,
     SlideFontStyle? fontStyle,
     SlideTextBg? textBg,
     double? strokeWidth,
@@ -361,11 +341,63 @@ class TextLayer {
       y: y ?? this.y,
       color: color ?? this.color,
       barColor: barColor ?? this.barColor,
-      size: size ?? this.size,
+      fontSize: fontSize ?? this.fontSize,
+      rotation: rotation ?? this.rotation,
       fontStyle: fontStyle ?? this.fontStyle,
       textBg: textBg ?? this.textBg,
       strokeWidth: strokeWidth ?? this.strokeWidth,
       letterSpacing: letterSpacing ?? this.letterSpacing,
+    );
+  }
+}
+
+class PhotoLayer {
+  PhotoLayer({
+    required this.id,
+    this.imagePath,
+    this.x = 0.5,
+    this.y = 0.5,
+    this.widthFraction = 0.45,
+    this.heightFraction = 0.55,
+    this.rotation = 0.0,
+    this.shape = PhotoShape.none,
+    this.frame = PhotoFrame.none,
+    this.filter = PhotoFilter.none,
+  });
+
+  final String id;
+  final String? imagePath;
+  final double x;              // center-x as fraction of canvas width  (0–1)
+  final double y;              // center-y as fraction of canvas height (0–1)
+  final double widthFraction;  // width  as fraction of canvas width  (0–1)
+  final double heightFraction; // height as fraction of canvas height (0–1)
+  final double rotation;       // degrees
+  final PhotoShape shape;
+  final PhotoFrame frame;
+  final PhotoFilter filter;
+
+  PhotoLayer copyWith({
+    String? imagePath,
+    double? x,
+    double? y,
+    double? widthFraction,
+    double? heightFraction,
+    double? rotation,
+    PhotoShape? shape,
+    PhotoFrame? frame,
+    PhotoFilter? filter,
+  }) {
+    return PhotoLayer(
+      id: id,
+      imagePath: imagePath ?? this.imagePath,
+      x: x ?? this.x,
+      y: y ?? this.y,
+      widthFraction: widthFraction ?? this.widthFraction,
+      heightFraction: heightFraction ?? this.heightFraction,
+      rotation: rotation ?? this.rotation,
+      shape: shape ?? this.shape,
+      frame: frame ?? this.frame,
+      filter: filter ?? this.filter,
     );
   }
 }
@@ -380,8 +412,8 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_t', text: 'Our Story', x: 0.5, y: 0.50, size: SlideTextSize.large, fontStyle: SlideFontStyle.serif, color: SlideTextColor.cream),
-            TextLayer(id: '${id}_s', text: 'A Wedding Film', isSubtitle: true, x: 0.5, y: 0.66, size: SlideTextSize.small, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
+            TextLayer(id: '${id}_t', text: 'Our Story', x: 0.5, y: 0.50, fontSize: 32.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.cream),
+            TextLayer(id: '${id}_s', text: 'A Wedding Film', isSubtitle: true, x: 0.5, y: 0.66, fontSize: 18.0, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
           ],
           transition: TransitionEffect.fade,
           durationSeconds: 5,
@@ -390,7 +422,7 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_s', text: 'A cherished moment', isSubtitle: true, x: 0.5, y: 0.86, size: SlideTextSize.small, color: SlideTextColor.cream, barColor: SlideTextColor.cream),
+            TextLayer(id: '${id}_s', text: 'A cherished moment', isSubtitle: true, x: 0.5, y: 0.86, fontSize: 18.0, color: SlideTextColor.cream, barColor: SlideTextColor.cream),
           ],
           transition: TransitionEffect.kenBurns,
           durationSeconds: 5,
@@ -399,7 +431,7 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_t', text: '"You are my greatest adventure"', x: 0.5, y: 0.50, size: SlideTextSize.medium, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
+            TextLayer(id: '${id}_t', text: '"You are my greatest adventure"', x: 0.5, y: 0.50, fontSize: 32.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
           ],
           transition: TransitionEffect.fade,
           durationSeconds: 6,
@@ -408,8 +440,8 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_t', text: 'Forever & Always', x: 0.5, y: 0.46, size: SlideTextSize.large, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
-            TextLayer(id: '${id}_s', text: '${DateTime.now().year}', isSubtitle: true, x: 0.5, y: 0.62, size: SlideTextSize.small, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
+            TextLayer(id: '${id}_t', text: 'Forever & Always', x: 0.5, y: 0.46, fontSize: 32.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
+            TextLayer(id: '${id}_s', text: '${DateTime.now().year}', isSubtitle: true, x: 0.5, y: 0.62, fontSize: 18.0, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
           ],
           transition: TransitionEffect.fade,
           durationSeconds: 5,
@@ -423,6 +455,7 @@ class Slide {
     required this.id,
     this.imagePath,
     this.textLayers = const [],
+    this.photoLayers = const [],
     this.transition = TransitionEffect.fade,
     this.durationSeconds = 4,
     this.photoFilter = PhotoFilter.none,
@@ -436,15 +469,12 @@ class Slide {
     this.layout = SlideLayout.single,
     this.imagePath2,
     this.imagePath3,
-    this.design = SlideDesign.classic,
-    this.weddingDate = '',
-    this.groomName = '',
-    this.brideName = '',
   });
 
   final String id;
   final String? imagePath;
   final List<TextLayer> textLayers;
+  final List<PhotoLayer> photoLayers;
   final TransitionEffect transition;
   final int durationSeconds;
   final PhotoFilter photoFilter;
@@ -458,14 +488,11 @@ class Slide {
   final SlideLayout layout;
   final String? imagePath2;
   final String? imagePath3;
-  final SlideDesign design;
-  final String weddingDate;     // e.g. "2024.10.05"
-  final String groomName;       // e.g. "YUSILLANG"
-  final String brideName;       // e.g. "HANSINBU"
 
   Slide copyWith({
     String? imagePath,
     List<TextLayer>? textLayers,
+    List<PhotoLayer>? photoLayers,
     TransitionEffect? transition,
     int? durationSeconds,
     PhotoFilter? photoFilter,
@@ -479,15 +506,12 @@ class Slide {
     SlideLayout? layout,
     String? imagePath2,
     String? imagePath3,
-    SlideDesign? design,
-    String? weddingDate,
-    String? groomName,
-    String? brideName,
   }) {
     return Slide(
       id: id,
       imagePath: imagePath ?? this.imagePath,
       textLayers: textLayers ?? this.textLayers,
+      photoLayers: photoLayers ?? this.photoLayers,
       transition: transition ?? this.transition,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       photoFilter: photoFilter ?? this.photoFilter,
@@ -501,10 +525,6 @@ class Slide {
       layout: layout ?? this.layout,
       imagePath2: imagePath2 ?? this.imagePath2,
       imagePath3: imagePath3 ?? this.imagePath3,
-      design: design ?? this.design,
-      weddingDate: weddingDate ?? this.weddingDate,
-      groomName: groomName ?? this.groomName,
-      brideName: brideName ?? this.brideName,
     );
   }
 }

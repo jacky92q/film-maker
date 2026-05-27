@@ -13,8 +13,8 @@ class MockProjectService {
         Slide(
           id: 's1',
           textLayers: [
-            TextLayer(id: 's1_t', text: 'The Day We Met', x: 0.5, y: 0.48, size: SlideTextSize.large, fontStyle: SlideFontStyle.serif, color: SlideTextColor.cream),
-            TextLayer(id: 's1_s', text: 'Seoul, Spring 2024', isSubtitle: true, x: 0.5, y: 0.64, size: SlideTextSize.small, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
+            TextLayer(id: 's1_t', text: 'The Day We Met', x: 0.5, y: 0.48, fontSize: 38.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.cream),
+            TextLayer(id: 's1_s', text: 'Seoul, Spring 2024', isSubtitle: true, x: 0.5, y: 0.64, fontSize: 18.0, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
           ],
           transition: TransitionEffect.fade,
           durationSeconds: 5,
@@ -22,8 +22,8 @@ class MockProjectService {
         Slide(
           id: 's2',
           textLayers: [
-            TextLayer(id: 's2_t', text: 'First Date', x: 0.5, y: 0.50, size: SlideTextSize.large, fontStyle: SlideFontStyle.script, color: SlideTextColor.rose),
-            TextLayer(id: 's2_s', text: 'Hangang Park', isSubtitle: true, x: 0.5, y: 0.65, size: SlideTextSize.small, color: SlideTextColor.cream, barColor: SlideTextColor.rose),
+            TextLayer(id: 's2_t', text: 'First Date', x: 0.5, y: 0.50, fontSize: 38.0, fontStyle: SlideFontStyle.script, color: SlideTextColor.rose),
+            TextLayer(id: 's2_s', text: 'Hangang Park', isSubtitle: true, x: 0.5, y: 0.65, fontSize: 18.0, color: SlideTextColor.cream, barColor: SlideTextColor.rose),
           ],
           transition: TransitionEffect.slideLeft,
           durationSeconds: 4,
@@ -31,8 +31,8 @@ class MockProjectService {
         Slide(
           id: 's3',
           textLayers: [
-            TextLayer(id: 's3_t', text: 'Our Journey', x: 0.5, y: 0.46, size: SlideTextSize.large, fontStyle: SlideFontStyle.elegant, color: SlideTextColor.gold),
-            TextLayer(id: 's3_s', text: '365 days together', isSubtitle: true, x: 0.5, y: 0.62, size: SlideTextSize.small, color: SlideTextColor.cream, barColor: SlideTextColor.gold),
+            TextLayer(id: 's3_t', text: 'Our Journey', x: 0.5, y: 0.46, fontSize: 38.0, fontStyle: SlideFontStyle.elegant, color: SlideTextColor.gold),
+            TextLayer(id: 's3_s', text: '365 days together', isSubtitle: true, x: 0.5, y: 0.62, fontSize: 18.0, color: SlideTextColor.cream, barColor: SlideTextColor.gold),
           ],
           transition: TransitionEffect.kenBurns,
           durationSeconds: 6,
@@ -48,8 +48,8 @@ class MockProjectService {
         Slide(
           id: 's4',
           textLayers: [
-            TextLayer(id: 's4_t', text: 'Under the Rain', x: 0.5, y: 0.50, size: SlideTextSize.xlarge, fontStyle: SlideFontStyle.display, color: SlideTextColor.white),
-            TextLayer(id: 's4_s', text: 'Just us two', isSubtitle: true, x: 0.5, y: 0.68, size: SlideTextSize.small, color: SlideTextColor.cream, barColor: SlideTextColor.white),
+            TextLayer(id: 's4_t', text: 'Under the Rain', x: 0.5, y: 0.50, fontSize: 52.0, fontStyle: SlideFontStyle.display, color: SlideTextColor.white),
+            TextLayer(id: 's4_s', text: 'Just us two', isSubtitle: true, x: 0.5, y: 0.68, fontSize: 18.0, color: SlideTextColor.cream, barColor: SlideTextColor.white),
           ],
           transition: TransitionEffect.fade,
           durationSeconds: 4,
@@ -57,8 +57,8 @@ class MockProjectService {
         Slide(
           id: 's5',
           textLayers: [
-            TextLayer(id: 's5_t', text: 'Neon Lights', x: 0.5, y: 0.48, size: SlideTextSize.xlarge, fontStyle: SlideFontStyle.modern, color: SlideTextColor.rose),
-            TextLayer(id: 's5_s', text: 'Hongdae Street', isSubtitle: true, x: 0.5, y: 0.66, size: SlideTextSize.small, color: SlideTextColor.rose, barColor: SlideTextColor.rose),
+            TextLayer(id: 's5_t', text: 'Neon Lights', x: 0.5, y: 0.48, fontSize: 52.0, fontStyle: SlideFontStyle.modern, color: SlideTextColor.rose),
+            TextLayer(id: 's5_s', text: 'Hongdae Street', isSubtitle: true, x: 0.5, y: 0.66, fontSize: 18.0, color: SlideTextColor.rose, barColor: SlideTextColor.rose),
           ],
           transition: TransitionEffect.zoomIn,
           durationSeconds: 5,
