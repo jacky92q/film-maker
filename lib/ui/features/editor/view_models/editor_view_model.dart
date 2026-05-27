@@ -86,6 +86,7 @@ class EditorViewModel extends ChangeNotifier {
     );
     _updateSlide(slide.copyWith(textLayers: [...slide.textLayers, layer]));
     _selectedLayerId = layer.id;
+    _selectedPhotoLayerId = null;
   }
 
   void updateTextLayer(TextLayer layer) {
