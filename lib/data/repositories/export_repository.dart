@@ -7,15 +7,15 @@ class ExportRepository {
 
   final VideoExportService _exportService;
 
-  String? get lastOutputPath => _exportService.lastOutputPath;
-
-  Stream<double> exportProject({
+  Future<String> exportProject({
     required Project project,
     required String resolution,
+    required void Function(double) onProgress,
   }) {
     return _exportService.exportProject(
       project: project,
       resolution: resolution,
+      onProgress: onProgress,
     );
   }
 }

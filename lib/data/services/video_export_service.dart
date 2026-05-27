@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -12,20 +13,36 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 class VideoExportService {
-  String? _lastOutputPath;
-  String? get lastOutputPath => _lastOutputPath;
+  (int, int) _dimensions(String resolution) => switch (resolution) {
+        '4k' => (3840, 2160),
+        '1080p' => (1920, 1080),
+        _ => (1280, 720),
+      };
 
-  Stream<double> exportProject({
+  Future<String> exportProject({
     required Project project,
     required String resolution,
-  }) async* {
-    _lastOutputPath = null;
+    required void Function(double) onProgress,
+  }) async {
     final (w, h) = _dimensions(resolution);
     final size = Size(w.toDouble(), h.toDouble());
 
     final tmpDir = await getTemporaryDirectory();
-    final dir = Directory('${tmpDir.path}/export_${project.id}');
-    if (await dir.exists()) await dir.delete(recursive: true);
+    final docDir = await getApplicationDocumentsDirectory();
+    final exportsDir = Directory('${docDir.path}/exports');
+    if (!exportsDir.existsSync()) {
+      await exportsDir.create(recursive: true);
+    }
+
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final safe = project.title
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    final outputPath = '${exportsDir.path}/${safe}_$ts.mp4';
+
+    // Render each slide as a PNG at target resolution
+    final dir = Directory('${tmpDir.path}/export_${project.id}_$ts');
+    if (dir.existsSync()) await dir.delete(recursive: true);
     await dir.create(recursive: true);
 
     final slides = project.slides;
@@ -35,52 +52,110 @@ class VideoExportService {
       final bytes = await _renderSlide(slides[i], i, size);
       final framePath = '${dir.path}/f$i.png';
       await File(framePath).writeAsBytes(bytes);
-      concatLines.add("file '$framePath'");
-      concatLines.add("duration ${slides[i].durationSeconds}");
-      yield (i + 1) / slides.length * 0.70;
+      concatLines.add("file '${framePath.replaceAll("'", r"'\''")}'");
+      concatLines.add('duration ${slides[i].durationSeconds}');
+      onProgress((i + 1) / slides.length * 0.65);
     }
-    // Trailing entry required by concat demuxer to display last frame
-    concatLines.add("file '${dir.path}/f${slides.length - 1}.png'");
+    // Trailing entry required by the concat demuxer
+    concatLines.add("file '${dir.path}/f${slides.length - 1}.png'"
+        .replaceAll("'${dir.path}", "'${dir.path}"));
 
     final concatFile = File('${dir.path}/concat.txt');
     await concatFile.writeAsString(concatLines.join('\n'));
 
-    yield 0.75;
+    onProgress(0.70);
 
-    final outputPath = '${dir.path}/wedding_film.mp4';
-    final vf = 'scale=$w:$h:force_original_aspect_ratio=decrease,'
-        'pad=$w:$h:-1:-1:color=black,format=yuv420p';
+    final totalSecs = slides.fold(0, (s, sl) => s + sl.durationSeconds);
+    // Frames are already at the target resolution — only pixel format needed.
+    const vf = 'format=yuv420p';
 
-    final cmd = StringBuffer();
-    cmd.write('-y -f concat -safe 0 -i "${concatFile.path}" ');
-    if (project.musicPath != null) {
-      cmd.write('-i "${project.musicPath}" -c:a aac -shortest ');
+    // Try hardware H.264 first (low memory, fast); fall back to software.
+    final hwOk = await _runEncoder(
+      concatPath: concatFile.path,
+      musicPath: project.musicPath,
+      outputPath: outputPath,
+      vf: vf,
+      encoder: 'h264_mediacodec',
+      encoderFlags: '-b:v 4000k',
+      totalSecs: totalSecs,
+      onProgress: (p) => onProgress(0.70 + p * 0.28),
+    );
+
+    if (!hwOk) {
+      onProgress(0.70);
+      final swOk = await _runEncoder(
+        concatPath: concatFile.path,
+        musicPath: project.musicPath,
+        outputPath: outputPath,
+        vf: vf,
+        encoder: 'libx264',
+        encoderFlags: '-preset ultrafast -crf 28 -threads 2',
+        totalSecs: totalSecs,
+        onProgress: (p) => onProgress(0.70 + p * 0.28),
+      );
+      if (!swOk) {
+        throw Exception(
+          'Video encoding failed with both h264_mediacodec and libx264.',
+        );
+      }
     }
-    cmd.write('-vf "$vf" -c:v h264_mediacodec -b:v 2000k "$outputPath"');
 
-    final session = await FFmpegKit.execute(cmd.toString());
-    final rc = await session.getReturnCode();
-    if (rc == null || !ReturnCode.isSuccess(rc)) {
-      final logs = await session.getAllLogs();
-      final tail = logs.length > 5 ? logs.sublist(logs.length - 5) : logs;
-      final msg = tail.map((l) => l.getMessage()).join(' | ');
-      throw Exception('Encoding failed: $msg');
-    }
+    // Clean up temp frame dir
+    try {
+      await dir.delete(recursive: true);
+    } catch (_) {}
 
-    _lastOutputPath = outputPath;
-    yield 1.0;
+    onProgress(1.0);
+    return outputPath;
   }
 
-  (int, int) _dimensions(String resolution) => switch (resolution) {
-        '4k' => (3840, 2160),
-        '1080p' => (1920, 1080),
-        _ => (1280, 720),
-      };
+  Future<bool> _runEncoder({
+    required String concatPath,
+    required String? musicPath,
+    required String outputPath,
+    required String vf,
+    required String encoder,
+    required String encoderFlags,
+    required int totalSecs,
+    required void Function(double) onProgress,
+  }) async {
+    const fps = 30;
+    final totalFrames = totalSecs * fps;
+
+    final cmd = StringBuffer();
+    cmd.write('-y -f concat -safe 0 -i "$concatPath" ');
+    if (musicPath != null) cmd.write('-i "$musicPath" ');
+    cmd.write('-vf "$vf" -r $fps ');
+    cmd.write('-c:v $encoder $encoderFlags ');
+    if (musicPath != null) cmd.write('-c:a aac -b:a 192k -shortest ');
+    cmd.write('"$outputPath"');
+
+    final completer = Completer<bool>();
+
+    await FFmpegKit.executeAsync(
+      cmd.toString(),
+      (session) async {
+        final rc = await session.getReturnCode();
+        completer.complete(ReturnCode.isSuccess(rc));
+      },
+      null,
+      (stats) {
+        if (totalFrames > 0) {
+          final frame = stats.getVideoFrameNumber();
+          onProgress((frame / totalFrames).clamp(0.0, 0.99));
+        }
+      },
+    );
+
+    return completer.future;
+  }
 
   Future<Uint8List> _renderSlide(Slide slide, int index, Size size) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(
-        recorder, Rect.fromLTWH(0, 0, size.width, size.height));
+      recorder,
+      Rect.fromLTWH(0, 0, size.width, size.height),
+    );
 
     // Background
     if (slide.imagePath != null) {
@@ -93,7 +168,7 @@ class VideoExportService {
       _drawGradientBg(canvas, size, index);
     }
 
-    // Gradient overlay (matches preview_view)
+    // Gradient overlay (matches preview appearance)
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
       Paint()
@@ -110,8 +185,10 @@ class VideoExportService {
     }
 
     final picture = recorder.endRecording();
-    final image = await picture.toImage(size.width.toInt(), size.height.toInt());
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final image =
+        await picture.toImage(size.width.toInt(), size.height.toInt());
+    final byteData =
+        await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
     picture.dispose();
     if (byteData == null) throw Exception('Frame $index render failed');
@@ -138,11 +215,10 @@ class VideoExportService {
 
   Future<void> _drawImage(Canvas canvas, Slide slide, Size size) async {
     final file = File(slide.imagePath!);
-    if (!await file.exists()) return;
+    if (!file.existsSync()) return;
 
     final bytes = await file.readAsBytes();
-    // Decode at canvas resolution — prevents loading full 12MP camera images
-    // into GPU memory (which would OOM on most phones).
+    // Decode at canvas resolution — avoids loading full 12MP images into memory.
     final codec = await ui.instantiateImageCodec(
       bytes,
       targetWidth: size.width.toInt(),
@@ -187,7 +263,7 @@ class VideoExportService {
       fontSize: fontSize,
       color: layer.color.color,
       shadows: [
-        Shadow(color: Colors.black.withValues(alpha: 0.85), blurRadius: 12)
+        Shadow(color: Colors.black.withValues(alpha: 0.85), blurRadius: 12),
       ],
     );
 
@@ -205,12 +281,7 @@ class VideoExportService {
 
     if (layer.isSubtitle) {
       canvas.drawRect(
-        Rect.fromLTWH(
-          offset.dx - 12.5,
-          offset.dy - 4,
-          2.5,
-          tp.height + 8,
-        ),
+        Rect.fromLTWH(offset.dx - 12.5, offset.dy - 4, 2.5, tp.height + 8),
         Paint()..color = layer.barColor.color,
       );
     }

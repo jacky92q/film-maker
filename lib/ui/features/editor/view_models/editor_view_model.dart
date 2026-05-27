@@ -93,10 +93,20 @@ class EditorViewModel extends ChangeNotifier {
     if (_selectedLayerId == layerId) _selectedLayerId = null;
   }
 
-  void updatePhotoTransform({required double scale, required double offsetX, required double offsetY}) {
+  void updatePhotoTransform({
+    required double scale,
+    required double offsetX,
+    required double offsetY,
+  }) {
     final slide = selectedSlide;
     if (slide == null || slide.imagePath == null) return;
-    _updateSlide(slide.copyWith(photoScale: scale, photoOffsetX: offsetX, photoOffsetY: offsetY));
+    _updateSlide(
+      slide.copyWith(
+        photoScale: scale,
+        photoOffsetX: offsetX,
+        photoOffsetY: offsetY,
+      ),
+    );
   }
 
   void moveTextLayer(String layerId, double x, double y) {
@@ -167,7 +177,11 @@ class EditorViewModel extends ChangeNotifier {
     if (slide == null) return;
     _pickError = null;
     try {
-      final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
+      final picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        requestFullMetadata: false,
+      );
       if (picked != null) {
         _updateSlide(slide.copyWith(imagePath: picked.path));
       }

@@ -44,12 +44,13 @@ class ExportViewModel extends ChangeNotifier {
   ExportResolution _resolution = ExportResolution.hd;
   double _progress = 0;
   String? _error;
+  String? _outputPath;
 
   ExportStatus get status => _status;
   ExportResolution get resolution => _resolution;
   double get progress => _progress;
   String? get error => _error;
-  String? get outputPath => exportRepository.lastOutputPath;
+  String? get outputPath => _outputPath;
   bool get isExporting => _status == ExportStatus.exporting;
   bool get isDone => _status == ExportStatus.done;
 
@@ -62,26 +63,28 @@ class ExportViewModel extends ChangeNotifier {
     _status = ExportStatus.exporting;
     _progress = 0;
     _error = null;
+    _outputPath = null;
     notifyListeners();
 
     try {
-      await for (final p in exportRepository.exportProject(
+      _outputPath = await exportRepository.exportProject(
         project: project,
         resolution: _resolution.value,
-      )) {
-        _progress = p;
-        notifyListeners();
-      }
+        onProgress: (p) {
+          _progress = p;
+          notifyListeners();
+        },
+      );
       _status = ExportStatus.done;
     } catch (e) {
       _status = ExportStatus.error;
-      _error = 'Export failed: ${e.toString()}';
+      _error = 'Export failed. Please try again.';
     }
     notifyListeners();
   }
 
   Future<void> shareVideo() async {
-    final path = outputPath;
+    final path = _outputPath;
     if (path == null) return;
     await Share.shareXFiles(
       [XFile(path, mimeType: 'video/mp4')],
@@ -93,6 +96,7 @@ class ExportViewModel extends ChangeNotifier {
     _status = ExportStatus.idle;
     _progress = 0;
     _error = null;
+    _outputPath = null;
     notifyListeners();
   }
 }
