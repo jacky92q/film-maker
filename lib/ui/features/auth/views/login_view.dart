@@ -3,7 +3,6 @@ import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/auth/view_models/auth_view_model.dart';
 import 'package:flutter/material.dart';
 
-
 class LoginView extends StatefulWidget {
   const LoginView({
     super.key,
@@ -98,7 +97,8 @@ class _LoginViewState extends State<LoginView> {
         const SizedBox(height: 20),
         Text(
           'Film Maker',
-          style: TextStyle(fontFamily: AppTheme.fontTheme, 
+          style: TextStyle(
+            fontFamily: AppTheme.fontTheme,
             color: AppTheme.cream,
             fontSize: 36,
             fontWeight: FontWeight.bold,
@@ -113,8 +113,9 @@ class _LoginViewState extends State<LoginView> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                'Your love story, beautifully told',
-                style: TextStyle(fontFamily: AppTheme.fontTheme, 
+                '당신의 소중한 추억을 영상으로 만들어 보세요.',
+                style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
                   color: AppTheme.subtleText,
                   fontSize: 13,
                   letterSpacing: 0.5,
@@ -153,8 +154,8 @@ class _LoginViewState extends State<LoginView> {
               style: const TextStyle(color: AppTheme.cream),
               decoration: InputDecoration(
                 labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock_outline,
-                    color: AppTheme.subtleText),
+                prefixIcon:
+                    const Icon(Icons.lock_outline, color: AppTheme.subtleText),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword
@@ -201,8 +202,10 @@ class _LoginViewState extends State<LoginView> {
                     Expanded(
                       child: Text(
                         widget.viewModel.error!,
-                        style: TextStyle(fontFamily: AppTheme.fontTheme, 
-                            color: Color(0xFFFF6B6B), fontSize: 13),
+                        style: TextStyle(
+                            fontFamily: AppTheme.fontTheme,
+                            color: Color(0xFFFF6B6B),
+                            fontSize: 13),
                       ),
                     ),
                   ],
@@ -230,8 +233,10 @@ class _LoginViewState extends State<LoginView> {
           Expanded(
             child: Text(
               'Demo: enter any email + password (4+ chars)',
-              style: TextStyle(fontFamily: AppTheme.fontTheme, 
-                  color: AppTheme.subtleText, fontSize: 12),
+              style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.subtleText,
+                  fontSize: 12),
             ),
           ),
         ],
