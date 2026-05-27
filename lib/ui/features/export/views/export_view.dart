@@ -193,7 +193,7 @@ class ExportView extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (res == ExportResolution.hd)
+                    if (res == ExportResolution.fullHd)
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
@@ -220,9 +220,9 @@ class ExportView extends StatelessWidget {
   String _resolutionDescription(ExportResolution res) {
     switch (res) {
       case ExportResolution.hd:
-        return 'Recommended — great for sharing';
+        return 'Good for sharing on mobile';
       case ExportResolution.fullHd:
-        return 'Higher quality, uses more memory';
+        return 'Great for TV and displays';
       case ExportResolution.fourK:
         return 'Best for cinema-quality output';
     }
@@ -376,14 +376,24 @@ class ExportView extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 28),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: FilledButton.icon(
-            icon: const Icon(Icons.share_outlined, size: 20),
-            label: const Text('Share / Save Video'),
-            onPressed: viewModel.shareVideo,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.share_outlined, size: 18),
+                label: const Text('Share'),
+                onPressed: () => _showShareMessage(context),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.icon(
+                icon: const Icon(Icons.save_alt_outlined, size: 18),
+                label: const Text('Save'),
+                onPressed: () => _showSaveMessage(context),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         TextButton(
@@ -415,6 +425,31 @@ class ExportView extends StatelessWidget {
     );
   }
 
+  void _showShareMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Share functionality requires platform integration',
+          style: TextStyle(fontFamily: 'Montserrat', ),
+        ),
+        backgroundColor: AppTheme.darkSurface,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showSaveMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Film saved to ${viewModel.outputPath}',
+          style: TextStyle(fontFamily: 'Montserrat', ),
+        ),
+        backgroundColor: AppTheme.darkSurface,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 }
 
 class _InfoChip extends StatelessWidget {
