@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:film_maker/data/repositories/export_repository.dart';
 import 'package:film_maker/ui/core/photo_frame_widget.dart';
-import 'package:film_maker/ui/core/slide_design_widget.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
@@ -352,6 +351,15 @@ class _EditorViewState extends State<EditorView> {
             onTap: () => widget.viewModel.addTextLayer(isSubtitle: true),
           ),
           const SizedBox(width: 6),
+          IconButton(
+            tooltip: 'Add Photo Layer',
+            icon: const Icon(Icons.add_photo_alternate, size: 22),
+            onPressed: () => widget.viewModel.addPhotoLayer(),
+            color: AppTheme.subtleText,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 6),
           _ControlButton(
             icon: Icons.music_note_outlined,
             label: widget.viewModel.project.musicName ?? 'Music',
@@ -376,6 +384,15 @@ class _EditorViewState extends State<EditorView> {
   // ── Adaptive edit panel ───────────────────────────────────────────────────
 
   Widget _buildEditPanel() {
+    // Photo layer panel takes priority if a photo layer is selected
+    final photoLayer = widget.viewModel.selectedPhotoLayer;
+    if (photoLayer != null) {
+      return _PhotoLayerEditPanel(
+        key: ValueKey(photoLayer.id),
+        vm: widget.viewModel,
+        layer: photoLayer,
+      );
+    }
     final layer = widget.viewModel.selectedLayer;
     if (layer != null) {
       return _LayerEditPanel(
@@ -439,27 +456,12 @@ class _SlideCanvas extends StatefulWidget {
   State<_SlideCanvas> createState() => _SlideCanvasState();
 }
 
-class _SlideCanvasState extends State<_SlideCanvas>
-    with SingleTickerProviderStateMixin {
+class _SlideCanvasState extends State<_SlideCanvas> {
   // Saved at gesture start so we compute absolute (not cumulative) deltas.
   double _scaleStart = 1.0;
   double _offsetXStart = 0.0;
   double _offsetYStart = 0.0;
   Offset _focalStart = Offset.zero;
-
-  late AnimationController _designPreviewController;
-
-  @override
-  void initState() {
-    super.initState();
-    _designPreviewController = AnimationController(vsync: this, value: 0.5);
-  }
-
-  @override
-  void dispose() {
-    _designPreviewController.dispose();
-    super.dispose();
-  }
 
   void _onPhotoScaleStart(ScaleStartDetails d) {
     final slide = widget.viewModel.selectedSlide!;
@@ -486,8 +488,8 @@ class _SlideCanvasState extends State<_SlideCanvas>
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        final h = constraints.maxHeight;
+        final canvasW = constraints.maxWidth;
+        final canvasH = constraints.maxHeight;
 
         // Build photo widget with pan/zoom transform applied.
         Widget background;
@@ -534,7 +536,7 @@ class _SlideCanvasState extends State<_SlideCanvas>
               color: Color(slide.backgroundColor),
               child: ClipRect(
                 child: Transform.translate(
-                  offset: Offset(slide.photoOffsetX * w, slide.photoOffsetY * h),
+                  offset: Offset(slide.photoOffsetX * canvasW, slide.photoOffsetY * canvasH),
                   child: Transform.scale(scale: slide.photoScale, child: photoWidget),
                 ),
               ),
@@ -546,7 +548,7 @@ class _SlideCanvasState extends State<_SlideCanvas>
             onTap: () => widget.viewModel.selectLayer(null),
             onScaleStart: slide.layout == SlideLayout.single ? _onPhotoScaleStart : null,
             onScaleUpdate: slide.layout == SlideLayout.single
-                ? (d) => _onPhotoScaleUpdate(d, w, h)
+                ? (d) => _onPhotoScaleUpdate(d, canvasW, canvasH)
                 : null,
             child: SizedBox.expand(child: photoContent),
           );
@@ -557,25 +559,12 @@ class _SlideCanvasState extends State<_SlideCanvas>
           );
         }
 
-        // For non-classic designs, override the entire background with the design widget
-        if (slide.design == SlideDesign.editorial) {
-          background = buildEditorialDesign(
-            slide: slide,
-            stripController: _designPreviewController,
-          );
-        } else if (slide.design == SlideDesign.invitation) {
-          background = buildInvitationDesign(
-            slide: slide,
-            stripController: _designPreviewController,
-          );
-        }
-
         return Stack(
           fit: StackFit.expand,
           children: [
             background,
-            if (slide.design == SlideDesign.classic) _gradientOverlay(),
-            if (slide.design == SlideDesign.classic) buildSlideOverlay(slide.overlay),
+            _gradientOverlay(),
+            buildSlideOverlay(slide.overlay),
             // Text layers — draggable, opaque (intercept their own touches before photo GD).
             for (final layer in slide.textLayers)
               Positioned.fill(
@@ -589,8 +578,8 @@ class _SlideCanvasState extends State<_SlideCanvas>
                     onTap: () => widget.viewModel.selectLayer(layer.id),
                     onPanUpdate: (d) => widget.viewModel.moveTextLayer(
                       layer.id,
-                      (layer.x + d.delta.dx / w).clamp(0.05, 0.95),
-                      (layer.y + d.delta.dy / h).clamp(0.05, 0.95),
+                      (layer.x + d.delta.dx / canvasW).clamp(0.05, 0.95),
+                      (layer.y + d.delta.dy / canvasH).clamp(0.05, 0.95),
                     ),
                     child: _LayerWidget(
                       layer: layer,
@@ -599,6 +588,47 @@ class _SlideCanvasState extends State<_SlideCanvas>
                   ),
                 ),
               ),
+            // Photo layers
+            ...slide.photoLayers.map((pl) {
+              final isSelectedPL = widget.viewModel.selectedPhotoLayerId == pl.id;
+              return Positioned(
+                left: (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * canvasW,
+                top:  (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * canvasH,
+                width: pl.widthFraction * canvasW,
+                height: pl.heightFraction * canvasH,
+                child: GestureDetector(
+                  onTap: () => widget.viewModel.selectPhotoLayer(pl.id),
+                  onPanUpdate: (d) {
+                    final newX = (pl.x + d.delta.dx / canvasW).clamp(0.05, 0.95);
+                    final newY = (pl.y + d.delta.dy / canvasH).clamp(0.05, 0.95);
+                    widget.viewModel.movePhotoLayer(pl.id, newX, newY);
+                  },
+                  child: Transform.rotate(
+                    angle: pl.rotation * 3.14159265 / 180.0,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        buildShapedPhoto(
+                          imagePath: pl.imagePath,
+                          shape: pl.shape,
+                          frame: pl.frame,
+                          fit: BoxFit.cover,
+                          colorFilter: pl.filter.colorFilter,
+                        ),
+                        if (isSelectedPL)
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.blueAccent, width: 2),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
             // Drag/pinch hint — shown on photo slides when no text layer is selected.
             if (hasPhoto && selectedLayerId == null)
               Positioned(
@@ -716,8 +746,7 @@ class _LayerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = layer.color.color;
-    final fontSize =
-        layer.isSubtitle ? layer.size.subFontSize : layer.size.mainFontSize;
+    final double fontSize = layer.fontSize;
     final style = slideLayerTextStyle(
       layer.fontStyle,
       fontSize: fontSize,
@@ -775,19 +804,22 @@ class _LayerWidget extends StatelessWidget {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: selected
-          ? BoxDecoration(
-              border: Border.all(
-                color: AppTheme.gold.withValues(alpha: 0.7),
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(4),
-              color: AppTheme.gold.withValues(alpha: 0.05),
-            )
-          : null,
-      child: content,
+    return Transform.rotate(
+      angle: layer.rotation * 3.14159265 / 180.0,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: selected
+            ? BoxDecoration(
+                border: Border.all(
+                  color: AppTheme.gold.withValues(alpha: 0.7),
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(4),
+                color: AppTheme.gold.withValues(alpha: 0.05),
+              )
+            : null,
+        child: content,
+      ),
     );
   }
 }
@@ -835,6 +867,13 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
   @override
   Widget build(BuildContext context) {
     final layer = widget.layer;
+    const labelStyle = TextStyle(
+      fontFamily: 'PlayfairDisplay',
+      color: AppTheme.subtleText,
+      fontSize: 11,
+      letterSpacing: 0.8,
+      fontWeight: FontWeight.w600,
+    );
     return Container(
       color: AppTheme.darkSurface,
       child: SingleChildScrollView(
@@ -978,45 +1017,36 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
               ),
             ),
             const SizedBox(height: 10),
-            // Size picker
+            // Font size slider
+            const Text('Size', style: labelStyle),
             Row(
               children: [
-                _Label('Size'),
-                const SizedBox(width: 12),
-                ...SlideTextSize.values.map((s) {
-                  final sel = layer.size == s;
-                  return GestureDetector(
-                    onTap: () => _applyStyle((l) => l.copyWith(size: s)),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      width: 36,
-                      height: 32,
-                      margin: const EdgeInsets.only(right: 6),
-                      decoration: BoxDecoration(
-                        color: sel
-                            ? AppTheme.gold.withValues(alpha: 0.2)
-                            : AppTheme.darkSurface2,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: sel ? AppTheme.gold : AppTheme.border,
-                            width: sel ? 1.5 : 1),
-                      ),
-                      child: Center(
-                        child: Text(
-                          s.label,
-                          style: TextStyle(
-                            fontFamily: AppTheme.fontTheme,
-                            color: sel ? AppTheme.gold : AppTheme.subtleText,
-                            fontSize: 12,
-                            fontWeight:
-                                sel ? FontWeight.w700 : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
+                Expanded(
+                  child: Slider(
+                    value: layer.fontSize.clamp(8.0, 120.0),
+                    min: 8, max: 120, divisions: 56,
+                    label: '${layer.fontSize.round()}pt',
+                    onChanged: (v) => _applyStyle((l) => l.copyWith(fontSize: v)),
+                  ),
+                ),
+                SizedBox(
+                  width: 36,
+                  child: Text(
+                    '${layer.fontSize.round()}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ],
+            ),
+            const SizedBox(height: 10),
+            // Rotation
+            const Text('Rotation', style: labelStyle),
+            Slider(
+              value: layer.rotation.clamp(-180.0, 180.0),
+              min: -180, max: 180, divisions: 72,
+              label: '${layer.rotation.round()}°',
+              onChanged: (v) => _applyStyle((l) => l.copyWith(rotation: v)),
             ),
             const SizedBox(height: 10),
             // Text background
@@ -1139,6 +1169,119 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                 );
               }).toList(),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Photo layer edit panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PhotoLayerEditPanel extends StatelessWidget {
+  const _PhotoLayerEditPanel({super.key, required this.vm, required this.layer});
+  final EditorViewModel vm;
+  final PhotoLayer layer;
+
+  @override
+  Widget build(BuildContext context) {
+    const labelStyle = TextStyle(fontSize: 11, color: Colors.white54, letterSpacing: 1);
+    return Container(
+      color: const Color(0xFF1A1A1A),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header row
+            Row(
+              children: [
+                const Text('PHOTO LAYER', style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5)),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.image_outlined, size: 20, color: Colors.white54),
+                  tooltip: 'Change photo',
+                  onPressed: () => vm.pickImageForPhotoLayer(layer.id),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                  tooltip: 'Delete layer',
+                  onPressed: () => vm.deletePhotoLayer(layer.id),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Width slider
+            const Text('Width', style: labelStyle),
+            Slider(
+              value: layer.widthFraction.clamp(0.1, 1.0),
+              min: 0.1, max: 1.0, divisions: 18,
+              label: '${(layer.widthFraction * 100).round()}%',
+              onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(widthFraction: v)),
+            ),
+
+            // Height slider
+            const Text('Height', style: labelStyle),
+            Slider(
+              value: layer.heightFraction.clamp(0.1, 1.0),
+              min: 0.1, max: 1.0, divisions: 18,
+              label: '${(layer.heightFraction * 100).round()}%',
+              onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(heightFraction: v)),
+            ),
+
+            // Rotation slider
+            const Text('Rotation', style: labelStyle),
+            Slider(
+              value: layer.rotation.clamp(-180.0, 180.0),
+              min: -180, max: 180, divisions: 72,
+              label: '${layer.rotation.round()}°',
+              onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(rotation: v)),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Shape chips
+            const Text('Shape', style: labelStyle),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6, runSpacing: 6,
+              children: PhotoShape.values.map((sh) => ChoiceChip(
+                label: Text(sh.label),
+                selected: layer.shape == sh,
+                onSelected: (_) => vm.updatePhotoLayer(layer.copyWith(shape: sh)),
+              )).toList(),
+            ),
+            const SizedBox(height: 10),
+
+            // Frame chips
+            const Text('Frame', style: labelStyle),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6, runSpacing: 6,
+              children: PhotoFrame.values.map((fr) => ChoiceChip(
+                label: Text(fr.label),
+                selected: layer.frame == fr,
+                onSelected: (_) => vm.updatePhotoLayer(layer.copyWith(frame: fr)),
+              )).toList(),
+            ),
+            const SizedBox(height: 10),
+
+            // Filter chips
+            const Text('Filter', style: labelStyle),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6, runSpacing: 6,
+              children: PhotoFilter.values.map((f) => ChoiceChip(
+                label: Text(f.label),
+                selected: layer.filter == f,
+                onSelected: (_) => vm.updatePhotoLayer(layer.copyWith(filter: f)),
+              )).toList(),
+            ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -1427,86 +1570,6 @@ class _SlideEditPanel extends StatelessWidget {
               }).toList(),
             ),
             const SizedBox(height: 16),
-            // Design picker
-            _Label('Design'),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: SlideDesign.values.map((d) {
-                final selected = slide.design == d;
-                return ChoiceChip(
-                  label: Text(d.label),
-                  selected: selected,
-                  onSelected: (_) => viewModel.updateSelectedSlide(slide.copyWith(design: d)),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-            // Wedding date field (only when design is editorial or invitation)
-            if (slide.design != SlideDesign.classic) ...[
-              _Label('Wedding Date'),
-              const SizedBox(height: 6),
-              TextField(
-                controller: TextEditingController(text: slide.weddingDate),
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  hintText: '2024.10.05',
-                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-                  filled: true,
-                  fillColor: Colors.white10,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Colors.white24),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Colors.white24),
-                  ),
-                ),
-                onSubmitted: (v) => viewModel.updateSelectedSlide(slide.copyWith(weddingDate: v)),
-                onEditingComplete: () {},
-              ),
-              const SizedBox(height: 16),
-            ],
-            // Groom and Bride name fields (only when design is invitation)
-            if (slide.design == SlideDesign.invitation) ...[
-              _Label('Groom Name'),
-              const SizedBox(height: 6),
-              TextField(
-                controller: TextEditingController(text: slide.groomName),
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  hintText: 'GROOM',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  filled: true,
-                  fillColor: Colors.white10,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.white24)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.white24)),
-                ),
-                onSubmitted: (v) => viewModel.updateSelectedSlide(slide.copyWith(groomName: v)),
-              ),
-              const SizedBox(height: 8),
-              _Label('Bride Name'),
-              const SizedBox(height: 6),
-              TextField(
-                controller: TextEditingController(text: slide.brideName),
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  hintText: 'BRIDE',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  filled: true,
-                  fillColor: Colors.white10,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.white24)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.white24)),
-                ),
-                onSubmitted: (v) => viewModel.updateSelectedSlide(slide.copyWith(brideName: v)),
-              ),
-              const SizedBox(height: 16),
-            ],
             // Duration slider
             Row(
               children: [
@@ -1563,7 +1626,9 @@ class _ColorDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
       children: SlideTextColor.values.map((c) {
         final sel = c == current;
         return GestureDetector(
@@ -1572,7 +1637,6 @@ class _ColorDots extends StatelessWidget {
             duration: const Duration(milliseconds: 150),
             width: 28,
             height: 28,
-            margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: c.color,
@@ -1591,7 +1655,8 @@ class _ColorDots extends StatelessWidget {
                 ? Icon(Icons.check,
                     size: 13,
                     color:
-                        c == SlideTextColor.white || c == SlideTextColor.cream
+                        c == SlideTextColor.white || c == SlideTextColor.cream ||
+                        c == SlideTextColor.champagne || c == SlideTextColor.silver
                             ? Colors.black
                             : Colors.white)
                 : null,

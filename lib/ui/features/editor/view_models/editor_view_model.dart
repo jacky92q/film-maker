@@ -19,12 +19,14 @@ class EditorViewModel extends ChangeNotifier {
   Project _project;
   int _selectedSlideIndex;
   String? _selectedLayerId;
+  String? _selectedPhotoLayerId;
   bool _isSaving = false;
   bool _hasUnsavedChanges = false;
 
   Project get project => _project;
   int get selectedSlideIndex => _selectedSlideIndex;
   String? get selectedLayerId => _selectedLayerId;
+  String? get selectedPhotoLayerId => _selectedPhotoLayerId;
   bool get isSaving => _isSaving;
   bool get hasUnsavedChanges => _hasUnsavedChanges;
 
@@ -41,16 +43,34 @@ class EditorViewModel extends ChangeNotifier {
     }
   }
 
+  PhotoLayer? get selectedPhotoLayer {
+    final slide = selectedSlide;
+    if (slide == null || _selectedPhotoLayerId == null) return null;
+    try {
+      return slide.photoLayers.firstWhere((l) => l.id == _selectedPhotoLayerId);
+    } catch (_) {
+      return null;
+    }
+  }
+
   void selectSlide(int index) {
     if (index >= 0 && index < _project.slides.length) {
       _selectedSlideIndex = index;
       _selectedLayerId = null;
+      _selectedPhotoLayerId = null;
       notifyListeners();
     }
   }
 
   void selectLayer(String? id) {
     _selectedLayerId = id;
+    if (id != null) _selectedPhotoLayerId = null;
+    notifyListeners();
+  }
+
+  void selectPhotoLayer(String? id) {
+    _selectedPhotoLayerId = id;
+    if (id != null) _selectedLayerId = null; // deselect text layer
     notifyListeners();
   }
 
@@ -102,12 +122,83 @@ class EditorViewModel extends ChangeNotifier {
     _updateSlide(slide.copyWith(textLayers: layers));
   }
 
+  void movePhotoLayer(String layerId, double x, double y) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final layers = [
+      for (final l in slide.photoLayers)
+        if (l.id == layerId) l.copyWith(x: x, y: y) else l,
+    ];
+    _updateSlide(slide.copyWith(photoLayers: layers));
+  }
+
+  void updatePhotoLayer(PhotoLayer layer) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final layers = [
+      for (final l in slide.photoLayers)
+        if (l.id == layer.id) layer else l,
+    ];
+    _updateSlide(slide.copyWith(photoLayers: layers));
+  }
+
+  void deletePhotoLayer(String layerId) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final layers = slide.photoLayers.where((l) => l.id != layerId).toList();
+    _updateSlide(slide.copyWith(photoLayers: layers));
+    if (_selectedPhotoLayerId == layerId) _selectedPhotoLayerId = null;
+  }
+
+  Future<void> addPhotoLayer() async {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    try {
+      final picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        requestFullMetadata: false,
+      );
+      if (picked != null) {
+        final layer = PhotoLayer(
+          id: _uuid.v4(),
+          imagePath: picked.path,
+        );
+        _updateSlide(slide.copyWith(
+          photoLayers: [...slide.photoLayers, layer],
+        ));
+        _selectedPhotoLayerId = layer.id;
+        _selectedLayerId = null;
+      }
+    } catch (_) {}
+  }
+
+  Future<void> pickImageForPhotoLayer(String layerId) async {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    try {
+      final picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        requestFullMetadata: false,
+      );
+      if (picked != null) {
+        final layers = [
+          for (final l in slide.photoLayers)
+            if (l.id == layerId) l.copyWith(imagePath: picked.path) else l,
+        ];
+        _updateSlide(slide.copyWith(photoLayers: layers));
+      }
+    } catch (_) {}
+  }
+
   void addSlide({SlideTemplate template = SlideTemplate.blank}) {
     final newSlide = SlideDefaults.fromTemplate(_uuid.v4(), template);
     final slides = [..._project.slides, newSlide];
     _project = _project.copyWith(slides: slides);
     _selectedSlideIndex = slides.length - 1;
     _selectedLayerId = null;
+    _selectedPhotoLayerId = null;
     _hasUnsavedChanges = true;
     notifyListeners();
   }
@@ -120,6 +211,7 @@ class EditorViewModel extends ChangeNotifier {
       _selectedSlideIndex = slides.length - 1;
     }
     _selectedLayerId = null;
+    _selectedPhotoLayerId = null;
     _hasUnsavedChanges = true;
     notifyListeners();
   }

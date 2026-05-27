@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/core/photo_frame_widget.dart';
-import 'package:film_maker/ui/core/slide_design_widget.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/preview/view_models/preview_view_model.dart';
@@ -164,9 +163,10 @@ class _PreviewViewState extends State<PreviewView>
           fit: StackFit.expand,
           children: [
             background,
-            if (slide.design == SlideDesign.classic) _buildGradientOverlay(),
-            if (slide.design == SlideDesign.classic) buildSlideOverlay(slide.overlay),
-            if (slide.design == SlideDesign.classic) _buildTextOverlay(slide),
+            _buildGradientOverlay(),
+            buildSlideOverlay(slide.overlay),
+            _buildTextOverlay(slide),
+            _buildPhotoLayers(slide),
           ],
         ),
       ),
@@ -193,24 +193,60 @@ class _PreviewViewState extends State<PreviewView>
 
   Widget _buildLayerText(TextLayer layer) {
     final color = layer.color.color;
-    final fontSize = layer.isSubtitle ? layer.size.subFontSize : layer.size.mainFontSize;
+    final double fontSize = layer.fontSize;
     final shadows = [Shadow(color: Colors.black.withValues(alpha: 0.85), blurRadius: 12)];
     final style = slideLayerTextStyle(layer.fontStyle,
         fontSize: fontSize, color: color, shadows: shadows);
 
     final text = Text(layer.text, style: style, textAlign: TextAlign.center);
 
-    if (!layer.isSubtitle) return text;
-
-    return IntrinsicWidth(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          border: Border(left: BorderSide(color: layer.barColor.color, width: 2.5)),
+    Widget content;
+    if (!layer.isSubtitle) {
+      content = text;
+    } else {
+      content = IntrinsicWidth(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border(left: BorderSide(color: layer.barColor.color, width: 2.5)),
+          ),
+          child: text,
         ),
-        child: text,
-      ),
+      );
+    }
+
+    return Transform.rotate(
+      angle: layer.rotation * 3.14159265 / 180.0,
+      child: content,
     );
+  }
+
+  Widget _buildPhotoLayers(Slide slide) {
+    if (slide.photoLayers.isEmpty) return const SizedBox.shrink();
+    return LayoutBuilder(builder: (context, constraints) {
+      final w = constraints.maxWidth;
+      final h = constraints.maxHeight;
+      return Stack(
+        children: slide.photoLayers.map((pl) {
+          return Positioned(
+            left: (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * w,
+            top:  (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * h,
+            width: pl.widthFraction * w,
+            height: pl.heightFraction * h,
+            child: Transform.rotate(
+              angle: pl.rotation * 3.14159265 / 180.0,
+              child: buildShapedPhoto(
+                imagePath: pl.imagePath,
+                shape: pl.shape,
+                frame: pl.frame,
+                fit: BoxFit.cover,
+                colorFilter: pl.filter.colorFilter,
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    });
   }
 
   AnimatedSwitcherTransitionBuilder _buildTransition(TransitionEffect effect) {
@@ -337,7 +373,7 @@ class _PreviewViewState extends State<PreviewView>
             Expanded(
               child: Text(
                 widget.viewModel.project.title,
-                style: TextStyle(fontFamily: AppTheme.fontTheme, 
+                style: TextStyle(fontFamily: AppTheme.fontTheme,
                     color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
@@ -506,30 +542,6 @@ class _SlidePhotoLayerState extends State<_SlidePhotoLayer>
   Widget build(BuildContext context) {
     final slide = widget.slide;
 
-    final design = slide.design;
-
-    if (design == SlideDesign.editorial) {
-      // Start strip animation if not yet started
-      if (!_stripController.isAnimating && _stripController.value == 0) {
-        _stripController.forward();
-      }
-      return buildEditorialDesign(
-        slide: slide,
-        stripController: _stripController,
-      );
-    }
-
-    if (design == SlideDesign.invitation) {
-      if (!_stripController.isAnimating && _stripController.value == 0) {
-        _stripController.forward();
-      }
-      return buildInvitationDesign(
-        slide: slide,
-        stripController: _stripController,
-      );
-    }
-
-    // Otherwise fall through to existing single/strip logic
     if (slide.imagePath == null && slide.layout == SlideLayout.single) {
       return _buildGradientBg();
     }
