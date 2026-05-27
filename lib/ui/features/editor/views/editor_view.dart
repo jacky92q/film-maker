@@ -4,7 +4,6 @@ import 'package:film_maker/data/repositories/export_repository.dart';
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
-import 'package:film_maker/ui/core/slide_styles.dart';
 import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';
 import 'package:film_maker/ui/features/export/view_models/export_view_model.dart';
 import 'package:film_maker/ui/features/export/views/export_view.dart';
@@ -12,7 +11,46 @@ import 'package:film_maker/ui/features/preview/view_models/preview_view_model.da
 import 'package:film_maker/ui/features/preview/views/preview_view.dart';
 import 'package:flutter/material.dart';
 
-export 'package:film_maker/ui/core/slide_styles.dart' show slideLayerTextStyle;
+
+// Returns the appropriate TextStyle for a given font style using bundled fonts.
+TextStyle slideLayerTextStyle(
+  SlideFontStyle font, {
+  double fontSize = 20,
+  Color color = Colors.white,
+  FontWeight fontWeight = FontWeight.w600,
+  List<Shadow>? shadows,
+}) {
+  final String family;
+  final String koreanFamily;
+  switch (font) {
+    case SlideFontStyle.serif:
+      family = 'PlayfairDisplay';
+      koreanFamily = 'NotoSerifKR';
+    case SlideFontStyle.sans:
+      family = 'Lato';
+      koreanFamily = 'NotoSansKR';
+    case SlideFontStyle.script:
+      family = 'DancingScript';
+      koreanFamily = 'Gaegu';
+    case SlideFontStyle.display:
+      family = 'Cinzel';
+      koreanFamily = 'BlackHanSans';
+    case SlideFontStyle.elegant:
+      family = 'EBGaramond';
+      koreanFamily = 'GowunBatang';
+    case SlideFontStyle.modern:
+      family = 'Montserrat';
+      koreanFamily = 'DoHyeon';
+  }
+  return TextStyle(
+    fontFamily: family,
+    fontFamilyFallback: [koreanFamily],
+    fontSize: fontSize,
+    color: color,
+    fontWeight: fontWeight,
+    shadows: shadows,
+  );
+}
 
 class EditorView extends StatefulWidget {
   const EditorView({
@@ -36,26 +74,10 @@ class _EditorViewState extends State<EditorView> {
   void initState() {
     super.initState();
     _titleController.text = widget.viewModel.project.title;
-    widget.viewModel.addListener(_onViewModelChange);
-  }
-
-  void _onViewModelChange() {
-    final err = widget.viewModel.pickError;
-    if (err == null) return;
-    widget.viewModel.clearPickError();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Could not open photo picker: $err'),
-        backgroundColor: AppTheme.darkSurface,
-        behavior: SnackBarBehavior.floating,
-      ));
-    });
   }
 
   @override
   void dispose() {
-    widget.viewModel.removeListener(_onViewModelChange);
     _titleController.dispose();
     super.dispose();
   }

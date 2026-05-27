@@ -1,6 +1,6 @@
 import 'package:film_maker/data/repositories/export_repository.dart';
 import 'package:film_maker/data/repositories/project_repository.dart';
-import 'package:film_maker/data/services/video_export_service.dart';
+import 'package:film_maker/data/services/mock_export_service.dart';
 import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
@@ -90,7 +90,7 @@ class _ProjectsViewState extends State<ProjectsView> {
 
   void _openEditor(Project project) async {
     final exportRepo =
-        ExportRepository(exportService: VideoExportService());
+        ExportRepository(exportService: MockExportService());
     final updated = await Navigator.of(context).push<Project>(
       SlideUpPageRoute(
         builder: (_) => EditorView(
