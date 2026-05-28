@@ -22,6 +22,7 @@ class EditorViewModel extends ChangeNotifier {
   String? _selectedPhotoLayerId;
   bool _isSaving = false;
   bool _hasUnsavedChanges = false;
+  bool _cropMode = false;
 
   Project get project => _project;
   int get selectedSlideIndex => _selectedSlideIndex;
@@ -29,6 +30,7 @@ class EditorViewModel extends ChangeNotifier {
   String? get selectedPhotoLayerId => _selectedPhotoLayerId;
   bool get isSaving => _isSaving;
   bool get hasUnsavedChanges => _hasUnsavedChanges;
+  bool get cropMode => _cropMode;
 
   Slide? get selectedSlide =>
       _project.slides.isNotEmpty ? _project.slides[_selectedSlideIndex] : null;
@@ -58,19 +60,29 @@ class EditorViewModel extends ChangeNotifier {
       _selectedSlideIndex = index;
       _selectedLayerId = null;
       _selectedPhotoLayerId = null;
+      _cropMode = false;
       notifyListeners();
     }
   }
 
   void selectLayer(String? id) {
     _selectedLayerId = id;
-    if (id != null) _selectedPhotoLayerId = null;
+    if (id != null) {
+      _selectedPhotoLayerId = null;
+      _cropMode = false;
+    }
     notifyListeners();
   }
 
   void selectPhotoLayer(String? id) {
     _selectedPhotoLayerId = id;
-    if (id != null) _selectedLayerId = null; // deselect text layer
+    if (id != null) _selectedLayerId = null;
+    if (id == null) _cropMode = false;
+    notifyListeners();
+  }
+
+  void toggleCropMode() {
+    _cropMode = !_cropMode;
     notifyListeners();
   }
 
@@ -84,8 +96,11 @@ class EditorViewModel extends ChangeNotifier {
       x: 0.5,
       y: isSubtitle ? 0.70 : 0.50,
     );
-    _updateSlide(slide.copyWith(textLayers: [...slide.textLayers, layer]));
+    // Set selection state BEFORE _updateSlide() so notifyListeners sees them
     _selectedLayerId = layer.id;
+    _selectedPhotoLayerId = null;
+    _cropMode = false;
+    _updateSlide(slide.copyWith(textLayers: [...slide.textLayers, layer]));
   }
 
   void updateTextLayer(TextLayer layer) {
