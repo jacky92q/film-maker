@@ -364,6 +364,9 @@ class PhotoLayer {
     this.frame = PhotoFrame.none,
     this.filter = PhotoFilter.none,
     this.frameWidth = 4.0,
+    this.cropScale = 1.0,
+    this.cropOffsetX = 0.0,
+    this.cropOffsetY = 0.0,
   });
 
   final String id;
@@ -376,7 +379,10 @@ class PhotoLayer {
   final PhotoShape shape;
   final PhotoFrame frame;
   final PhotoFilter filter;
-  final double frameWidth;   // border thickness in logical pixels
+  final double frameWidth;     // border thickness in logical pixels
+  final double cropScale;      // zoom factor within frame (1.0 = no zoom)
+  final double cropOffsetX;    // horizontal pan as fraction of frame width  (-0.5..0.5)
+  final double cropOffsetY;    // vertical   pan as fraction of frame height (-0.5..0.5)
 
   PhotoLayer copyWith({
     String? imagePath,
@@ -389,6 +395,9 @@ class PhotoLayer {
     PhotoFrame? frame,
     PhotoFilter? filter,
     double? frameWidth,
+    double? cropScale,
+    double? cropOffsetX,
+    double? cropOffsetY,
   }) {
     return PhotoLayer(
       id: id,
@@ -402,6 +411,9 @@ class PhotoLayer {
       frame: frame ?? this.frame,
       filter: filter ?? this.filter,
       frameWidth: frameWidth ?? this.frameWidth,
+      cropScale: cropScale ?? this.cropScale,
+      cropOffsetX: cropOffsetX ?? this.cropOffsetX,
+      cropOffsetY: cropOffsetY ?? this.cropOffsetY,
     );
   }
 }

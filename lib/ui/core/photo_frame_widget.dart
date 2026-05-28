@@ -11,7 +11,10 @@ Widget buildShapedPhoto({
   required PhotoFrame frame,
   BoxFit fit = BoxFit.cover,
   ColorFilter? colorFilter,
-  double frameWidth = 4.0,      // ← add this parameter
+  double frameWidth = 4.0,
+  double cropScale = 1.0,
+  double cropOffsetX = 0.0,
+  double cropOffsetY = 0.0,
 }) {
   if (imagePath == null) {
     return Container(color: Colors.black26);
@@ -28,6 +31,17 @@ Widget buildShapedPhoto({
   if (colorFilter != null) {
     img = ColorFiltered(colorFilter: colorFilter, child: img);
   }
+
+  // Apply crop (pan + zoom within frame bounds)
+  img = ClipRect(
+    child: FractionalTranslation(
+      translation: Offset(cropOffsetX, cropOffsetY),
+      child: Transform.scale(
+        scale: cropScale,
+        child: img,
+      ),
+    ),
+  );
 
   // Apply shape
   Widget shaped;
