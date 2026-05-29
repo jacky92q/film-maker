@@ -25,7 +25,7 @@ class DefaultFirebaseOptions {
     measurementId: 'G-HD28W1DZMM',
   );
 
-  // Replace appId with real value from Firebase Console → Project Settings → Android app
+  // Replace appId with real value from Firebase Console → Project Settings → Android app (com.seoko.film_maker)
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBpY1dO8uZw1z6xekb66t0kEsTdg6OazLM',
     appId: '1:609658608834:android:0000000000000000',

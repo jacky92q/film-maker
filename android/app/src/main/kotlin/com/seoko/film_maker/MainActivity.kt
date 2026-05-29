@@ -1,4 +1,4 @@
-package com.example.film_maker
+package com.seoko.film_maker
 
 import io.flutter.embedding.android.FlutterActivity
 
