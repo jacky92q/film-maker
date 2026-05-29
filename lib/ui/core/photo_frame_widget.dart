@@ -77,7 +77,12 @@ Widget buildShapedPhoto({
     case PhotoFrame.polaroid:
       return Container(
         decoration: const BoxDecoration(color: Colors.white),
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 30),
+        padding: EdgeInsets.fromLTRB(
+          frameWidth * 2,
+          frameWidth * 2,
+          frameWidth * 2,
+          frameWidth * 7.5,
+        ),
         child: shaped,
       );
   }

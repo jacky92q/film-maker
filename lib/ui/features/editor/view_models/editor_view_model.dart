@@ -81,6 +81,48 @@ class EditorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  int _nextZOrder() {
+    final slide = selectedSlide;
+    if (slide == null) return 1;
+    int max = 0;
+    for (final l in slide.textLayers) { if (l.zOrder > max) max = l.zOrder; }
+    for (final l in slide.photoLayers) { if (l.zOrder > max) max = l.zOrder; }
+    return max + 1;
+  }
+
+  void bringToFront(String layerId, {required bool isPhoto}) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final newOrder = _nextZOrder();
+    if (isPhoto) {
+      _updateSlide(slide.copyWith(photoLayers: [
+        for (final l in slide.photoLayers) if (l.id == layerId) l.copyWith(zOrder: newOrder) else l,
+      ]));
+    } else {
+      _updateSlide(slide.copyWith(textLayers: [
+        for (final l in slide.textLayers) if (l.id == layerId) l.copyWith(zOrder: newOrder) else l,
+      ]));
+    }
+  }
+
+  void sendToBack(String layerId, {required bool isPhoto}) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    int minOrder = 0;
+    for (final l in slide.textLayers) { if (l.zOrder < minOrder) minOrder = l.zOrder; }
+    for (final l in slide.photoLayers) { if (l.zOrder < minOrder) minOrder = l.zOrder; }
+    final newOrder = minOrder - 1;
+    if (isPhoto) {
+      _updateSlide(slide.copyWith(photoLayers: [
+        for (final l in slide.photoLayers) if (l.id == layerId) l.copyWith(zOrder: newOrder) else l,
+      ]));
+    } else {
+      _updateSlide(slide.copyWith(textLayers: [
+        for (final l in slide.textLayers) if (l.id == layerId) l.copyWith(zOrder: newOrder) else l,
+      ]));
+    }
+  }
+
   void toggleCropMode() {
     _cropMode = !_cropMode;
     notifyListeners();
@@ -95,6 +137,7 @@ class EditorViewModel extends ChangeNotifier {
       isSubtitle: isSubtitle,
       x: 0.5,
       y: isSubtitle ? 0.70 : 0.50,
+      zOrder: _nextZOrder(),
     );
     // Set selection state BEFORE _updateSlide() so notifyListeners sees them
     _selectedLayerId = layer.id;
@@ -178,6 +221,7 @@ class EditorViewModel extends ChangeNotifier {
         final layer = PhotoLayer(
           id: _uuid.v4(),
           imagePath: picked.path,
+          zOrder: _nextZOrder(),
         );
         _updateSlide(slide.copyWith(
           photoLayers: [...slide.photoLayers, layer],
