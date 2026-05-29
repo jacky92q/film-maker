@@ -1,8 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:film_maker/domain/models/user.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_sign_in/google_sign_in.dart';
 
 class FirebaseAuthService {
   final _auth = fb.FirebaseAuth.instance;
+  final _googleSignIn = GoogleSignIn();
 
   Stream<User?> get authStateChanges {
     return _auth.authStateChanges().map(_toAppUser);
@@ -29,7 +32,29 @@ class FirebaseAuthService {
     return User(id: fbUser.uid, name: displayName, email: email);
   }
 
-  Future<void> signOut() => _auth.signOut();
+  Future<User?> signInWithGoogle() async {
+    if (kIsWeb) {
+      final provider = fb.GoogleAuthProvider();
+      final cred = await _auth.signInWithPopup(provider);
+      return _toAppUser(cred.user);
+    }
+
+    final googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) return null; // cancelled
+
+    final googleAuth = await googleUser.authentication;
+    final credential = fb.GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+    final cred = await _auth.signInWithCredential(credential);
+    return _toAppUser(cred.user);
+  }
+
+  Future<void> signOut() async {
+    await _googleSignIn.signOut().catchError((_) {});
+    await _auth.signOut();
+  }
 
   User? _toAppUser(fb.User? fbUser) {
     if (fbUser == null) return null;

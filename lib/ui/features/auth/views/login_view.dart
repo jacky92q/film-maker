@@ -57,6 +57,10 @@ class _LoginViewState extends State<LoginView> {
                   _buildLogo(),
                   const SizedBox(height: 48),
                   _buildForm(),
+                  const SizedBox(height: 20),
+                  _buildDivider(),
+                  const SizedBox(height: 20),
+                  _buildGoogleButton(),
                   const SizedBox(height: 28),
                   _buildRegisterLink(),
                 ],
@@ -194,6 +198,64 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        Expanded(child: Container(height: 1, color: AppTheme.border)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'or',
+            style: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                color: AppTheme.subtleText,
+                fontSize: 13),
+          ),
+        ),
+        Expanded(child: Container(height: 1, color: AppTheme.border)),
+      ],
+    );
+  }
+
+  Widget _buildGoogleButton() {
+    return ListenableBuilder(
+      listenable: widget.viewModel,
+      builder: (context, _) {
+        return SizedBox(
+          height: 52,
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: widget.viewModel.isLoading
+                ? null
+                : () => widget.viewModel.loginWithGoogle(),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFF3C3C3C)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              backgroundColor: const Color(0xFF1E1E1E),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _GoogleLogo(),
+                const SizedBox(width: 12),
+                Text(
+                  'Continue with Google',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    color: AppTheme.cream,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildRegisterLink() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -218,6 +280,31 @@ class _LoginViewState extends State<LoginView> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _GoogleLogo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+      ),
+      child: const Center(
+        child: Text(
+          'G',
+          style: TextStyle(
+            color: Color(0xFF4285F4),
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            height: 1,
+          ),
+        ),
+      ),
     );
   }
 }
