@@ -27,6 +27,21 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> loginWithGoogle() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _authRepository.loginWithGoogle();
+      // null means user cancelled — no error needed
+    } catch (e) {
+      _error = _mapError(e.toString());
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> register({required String email, required String password}) async {
     _isLoading = true;
     _error = null;
@@ -67,6 +82,14 @@ class AuthViewModel extends ChangeNotifier {
     }
     if (message.contains('too-many-requests')) {
       return 'Too many attempts. Please try again later.';
+    }
+    if (message.contains('operation-not-allowed')) {
+      return 'This sign-in method is not enabled. Contact the app admin.';
+    }
+    if (message.contains('sign_in_failed') ||
+        message.contains('ApiException') ||
+        message.contains('DEVELOPER_ERROR')) {
+      return 'Google Sign-In failed. Android SHA-1 fingerprint may need to be registered in Firebase Console.';
     }
     return 'Something went wrong. Please try again.';
   }

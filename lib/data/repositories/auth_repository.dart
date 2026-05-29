@@ -18,5 +18,7 @@ class AuthRepository {
     return _authService.register(email: email, password: password);
   }
 
+  Future<User?> loginWithGoogle() => _authService.signInWithGoogle();
+
   Future<void> logout() => _authService.signOut();
 }
