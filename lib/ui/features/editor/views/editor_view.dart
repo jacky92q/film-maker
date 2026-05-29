@@ -774,16 +774,6 @@ class _SlideCanvasState extends State<_SlideCanvas> {
     );
   }
 
-  Widget _gradientBg() => Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A1208), Color(0xFF0D0D0D)],
-          ),
-        ),
-      );
-
   Widget _gradientOverlay() => IgnorePointer(
         child: Container(
           decoration: BoxDecoration(

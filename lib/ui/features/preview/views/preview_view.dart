@@ -637,17 +637,6 @@ class _SlidePhotoLayerState extends State<_SlidePhotoLayer>
     );
   }
 
-  Widget _buildGradientBg() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1A1208), Color(0xFF0D0D0D)],
-        ),
-      ),
-    );
-  }
 }
 
 class _WipeClipper extends CustomClipper<Rect> {
