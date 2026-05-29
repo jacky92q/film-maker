@@ -335,8 +335,8 @@ class _EditorViewState extends State<EditorView> {
         children: [
           _ControlButton(
             icon: Icons.photo_camera_outlined,
-            label: 'Photo',
-            onTap: widget.viewModel.pickImageForCurrentSlide,
+            label: '+ Photo',
+            onTap: () => widget.viewModel.addPhotoLayer(),
           ),
           const SizedBox(width: 6),
           _ControlButton(
@@ -349,15 +349,6 @@ class _EditorViewState extends State<EditorView> {
             icon: Icons.short_text,
             label: '+ Sub',
             onTap: () => widget.viewModel.addTextLayer(isSubtitle: true),
-          ),
-          const SizedBox(width: 6),
-          IconButton(
-            tooltip: 'Add Photo Layer',
-            icon: const Icon(Icons.add_photo_alternate, size: 22),
-            onPressed: () => widget.viewModel.addPhotoLayer(),
-            color: AppTheme.subtleText,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
           ),
           const SizedBox(width: 6),
           _ControlButton(
@@ -400,6 +391,8 @@ class _EditorViewState extends State<EditorView> {
         layer: layer,
         onUpdate: widget.viewModel.updateTextLayer,
         onDelete: () => widget.viewModel.deleteTextLayer(layer.id),
+        onBringToFront: () => widget.viewModel.bringToFront(layer.id, isPhoto: false),
+        onSendToBack: () => widget.viewModel.sendToBack(layer.id, isPhoto: false),
       );
     }
     final slide = widget.viewModel.selectedSlide;
@@ -467,6 +460,132 @@ class _SlideCanvasState extends State<_SlideCanvas> {
   double _plStartW = 0.0;
   double _plStartH = 0.0;
   double _plStartCropScale = 1.0;
+
+  Widget _buildTextLayerItem(TextLayer layer, double canvasW, double canvasH, String? selectedLayerId) {
+    return Positioned.fill(
+      child: Align(
+        alignment: Alignment(
+          (layer.x * 2 - 1).clamp(-0.95, 0.95),
+          (layer.y * 2 - 1).clamp(-0.95, 0.95),
+        ),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => widget.viewModel.selectLayer(layer.id),
+          onPanUpdate: (d) => widget.viewModel.moveTextLayer(
+            layer.id,
+            (layer.x + d.delta.dx / canvasW).clamp(0.05, 0.95),
+            (layer.y + d.delta.dy / canvasH).clamp(0.05, 0.95),
+          ),
+          child: _LayerWidget(
+            layer: layer,
+            selected: layer.id == selectedLayerId,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoLayerItem(PhotoLayer pl, double canvasW, double canvasH) {
+    final isSelectedPL = widget.viewModel.selectedPhotoLayerId == pl.id;
+    final isCropMode = isSelectedPL && widget.viewModel.cropMode;
+    final left = (pl.x - pl.widthFraction / 2).clamp(0.0, 0.98) * canvasW;
+    final top  = (pl.y - pl.heightFraction / 2).clamp(0.0, 0.98) * canvasH;
+    final pw   = pl.widthFraction * canvasW;
+    final ph   = pl.heightFraction * canvasH;
+
+    return Positioned(
+      key: ValueKey('pl_${pl.id}'),
+      left: left, top: top, width: pw, height: ph,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          widget.viewModel.selectPhotoLayer(pl.id);
+          widget.viewModel.selectLayer(null);
+        },
+        onScaleStart: (_) {
+          _plStartW = pl.widthFraction;
+          _plStartH = pl.heightFraction;
+          _plStartCropScale = pl.cropScale;
+        },
+        onScaleUpdate: (d) {
+          if (!isSelectedPL) {
+            final newX = (pl.x + d.focalPointDelta.dx / canvasW).clamp(0.04, 0.96);
+            final newY = (pl.y + d.focalPointDelta.dy / canvasH).clamp(0.04, 0.96);
+            widget.viewModel.movePhotoLayer(pl.id, newX, newY);
+          } else if (isCropMode) {
+            final newOX = (pl.cropOffsetX + d.focalPointDelta.dx / pw).clamp(-0.5, 0.5);
+            final newOY = (pl.cropOffsetY + d.focalPointDelta.dy / ph).clamp(-0.5, 0.5);
+            final newCS = (_plStartCropScale * d.scale).clamp(1.0, 4.0);
+            widget.viewModel.updatePhotoLayer(
+              pl.copyWith(cropOffsetX: newOX, cropOffsetY: newOY, cropScale: newCS),
+            );
+          } else {
+            final newX = (pl.x + d.focalPointDelta.dx / canvasW).clamp(0.04, 0.96);
+            final newY = (pl.y + d.focalPointDelta.dy / canvasH).clamp(0.04, 0.96);
+            final newW = (_plStartW * d.scale).clamp(0.08, 1.0);
+            final newH = (_plStartH * d.scale).clamp(0.08, 1.0);
+            widget.viewModel.updatePhotoLayer(
+              pl.copyWith(x: newX, y: newY, widthFraction: newW, heightFraction: newH),
+            );
+          }
+        },
+        child: Transform.rotate(
+          angle: pl.rotation * 3.14159265 / 180.0,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              buildShapedPhoto(
+                imagePath: pl.imagePath,
+                shape: pl.shape,
+                frame: pl.frame,
+                fit: BoxFit.cover,
+                colorFilter: pl.filter.colorFilter,
+                frameWidth: pl.frameWidth,
+                cropScale: pl.cropScale,
+                cropOffsetX: pl.cropOffsetX,
+                cropOffsetY: pl.cropOffsetY,
+              ),
+              if (isSelectedPL)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: isCropMode ? Colors.orangeAccent : Colors.blueAccent,
+                        width: isCropMode ? 2.5 : 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              if (isCropMode)
+                Positioned(
+                  top: 4, left: 4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.orangeAccent,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text('CROP', style: TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildSortedLayers(Slide slide, double canvasW, double canvasH, String? selectedLayerId) {
+    final items = <({int z, Widget w})>[];
+    for (final layer in slide.textLayers) {
+      items.add((z: layer.zOrder, w: _buildTextLayerItem(layer, canvasW, canvasH, selectedLayerId)));
+    }
+    for (final pl in slide.photoLayers) {
+      items.add((z: pl.zOrder, w: _buildPhotoLayerItem(pl, canvasW, canvasH)));
+    }
+    items.sort((a, b) => a.z.compareTo(b.z));
+    return items.map((e) => e.w).toList();
+  }
 
   void _onPhotoScaleStart(ScaleStartDetails d) {
     final slide = widget.viewModel.selectedSlide!;
@@ -571,126 +690,8 @@ class _SlideCanvasState extends State<_SlideCanvas> {
             background,
             _gradientOverlay(),
             buildSlideOverlay(slide.overlay),
-            // Text layers — draggable, opaque (intercept their own touches before photo GD).
-            for (final layer in slide.textLayers)
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment(
-                    (layer.x * 2 - 1).clamp(-0.95, 0.95),
-                    (layer.y * 2 - 1).clamp(-0.95, 0.95),
-                  ),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => widget.viewModel.selectLayer(layer.id),
-                    onPanUpdate: (d) => widget.viewModel.moveTextLayer(
-                      layer.id,
-                      (layer.x + d.delta.dx / canvasW).clamp(0.05, 0.95),
-                      (layer.y + d.delta.dy / canvasH).clamp(0.05, 0.95),
-                    ),
-                    child: _LayerWidget(
-                      layer: layer,
-                      selected: layer.id == selectedLayerId,
-                    ),
-                  ),
-                ),
-              ),
-            // Photo layers — tap to select, drag to move, pinch to resize
-            // In crop mode: drag pans photo content, pinch zooms it
-            ...slide.photoLayers.map((pl) {
-              final isSelectedPL = widget.viewModel.selectedPhotoLayerId == pl.id;
-              final isCropMode = isSelectedPL && widget.viewModel.cropMode;
-              final left = (pl.x - pl.widthFraction / 2).clamp(0.0, 0.98) * canvasW;
-              final top  = (pl.y - pl.heightFraction / 2).clamp(0.0, 0.98) * canvasH;
-              final pw   = pl.widthFraction * canvasW;
-              final ph   = pl.heightFraction * canvasH;
-
-              return Positioned(
-                key: ValueKey('pl_${pl.id}'),
-                left: left,
-                top: top,
-                width: pw,
-                height: ph,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    widget.viewModel.selectPhotoLayer(pl.id);
-                    widget.viewModel.selectLayer(null);
-                  },
-                  onScaleStart: (_) {
-                    _plStartW = pl.widthFraction;
-                    _plStartH = pl.heightFraction;
-                    _plStartCropScale = pl.cropScale;
-                  },
-                  onScaleUpdate: (d) {
-                    if (!isSelectedPL) {
-                      // Unselected: tap selected it; subsequent drag after tap moves it
-                      final newX = (pl.x + d.focalPointDelta.dx / canvasW).clamp(0.04, 0.96);
-                      final newY = (pl.y + d.focalPointDelta.dy / canvasH).clamp(0.04, 0.96);
-                      widget.viewModel.movePhotoLayer(pl.id, newX, newY);
-                    } else if (isCropMode) {
-                      // Crop mode: drag pans photo content, pinch zooms it
-                      final newOX = (pl.cropOffsetX + d.focalPointDelta.dx / pw).clamp(-0.5, 0.5);
-                      final newOY = (pl.cropOffsetY + d.focalPointDelta.dy / ph).clamp(-0.5, 0.5);
-                      final newCS = (_plStartCropScale * d.scale).clamp(1.0, 4.0);
-                      widget.viewModel.updatePhotoLayer(
-                        pl.copyWith(cropOffsetX: newOX, cropOffsetY: newOY, cropScale: newCS),
-                      );
-                    } else {
-                      // Normal: drag moves frame, pinch resizes frame
-                      final newX = (pl.x + d.focalPointDelta.dx / canvasW).clamp(0.04, 0.96);
-                      final newY = (pl.y + d.focalPointDelta.dy / canvasH).clamp(0.04, 0.96);
-                      final newW = (_plStartW * d.scale).clamp(0.08, 1.0);
-                      final newH = (_plStartH * d.scale).clamp(0.08, 1.0);
-                      widget.viewModel.updatePhotoLayer(
-                        pl.copyWith(x: newX, y: newY, widthFraction: newW, heightFraction: newH),
-                      );
-                    }
-                  },
-                  child: Transform.rotate(
-                    angle: pl.rotation * 3.14159265 / 180.0,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        buildShapedPhoto(
-                          imagePath: pl.imagePath,
-                          shape: pl.shape,
-                          frame: pl.frame,
-                          fit: BoxFit.cover,
-                          colorFilter: pl.filter.colorFilter,
-                          frameWidth: pl.frameWidth,
-                          cropScale: pl.cropScale,
-                          cropOffsetX: pl.cropOffsetX,
-                          cropOffsetY: pl.cropOffsetY,
-                        ),
-                        if (isSelectedPL)
-                          Positioned.fill(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: isCropMode ? Colors.orangeAccent : Colors.blueAccent,
-                                  width: isCropMode ? 2.5 : 1.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (isCropMode)
-                          Positioned(
-                            top: 4, left: 4,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.orangeAccent,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text('CROP', style: TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
+            // All layers sorted by z-order (text and photo interleaved)
+            ..._buildSortedLayers(slide, canvasW, canvasH, selectedLayerId),
             // Drag/pinch hint — shown on photo slides when no text layer is selected.
             if (hasPhoto && selectedLayerId == null)
               Positioned(
@@ -896,10 +897,14 @@ class _LayerEditPanel extends StatefulWidget {
     required this.layer,
     required this.onUpdate,
     required this.onDelete,
+    required this.onBringToFront,
+    required this.onSendToBack,
   });
   final TextLayer layer;
   final void Function(TextLayer) onUpdate;
   final VoidCallback onDelete;
+  final VoidCallback onBringToFront;
+  final VoidCallback onSendToBack;
 
   @override
   State<_LayerEditPanel> createState() => _LayerEditPanelState();
@@ -957,6 +962,23 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                       fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.flip_to_front, size: 16),
+                  tooltip: 'Bring to front',
+                  color: Colors.white54,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: widget.onBringToFront,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.flip_to_back, size: 16),
+                  tooltip: 'Send to back',
+                  color: Colors.white54,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: widget.onSendToBack,
+                ),
+                const SizedBox(width: 4),
                 GestureDetector(
                   onTap: widget.onDelete,
                   child: Container(
@@ -1264,6 +1286,22 @@ class _PhotoLayerEditPanel extends StatelessWidget {
               children: [
                 const Text('PHOTO LAYER', style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5)),
                 const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.flip_to_front, size: 16),
+                  tooltip: 'Bring to front',
+                  color: Colors.white54,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => vm.bringToFront(layer.id, isPhoto: true),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.flip_to_back, size: 16),
+                  tooltip: 'Send to back',
+                  color: Colors.white54,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => vm.sendToBack(layer.id, isPhoto: true),
+                ),
                 // Crop mode toggle
                 TextButton.icon(
                   style: TextButton.styleFrom(

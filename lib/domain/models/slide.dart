@@ -303,6 +303,7 @@ class TextLayer {
     this.textBg = SlideTextBg.none,
     this.strokeWidth = 0.0,
     this.letterSpacing = 0.0,
+    this.zOrder = 0,
   });
 
   final String id;
@@ -318,6 +319,7 @@ class TextLayer {
   final SlideTextBg textBg;
   final double strokeWidth;
   final double letterSpacing;
+  final int zOrder;
 
   TextLayer copyWith({
     String? text,
@@ -332,6 +334,7 @@ class TextLayer {
     SlideTextBg? textBg,
     double? strokeWidth,
     double? letterSpacing,
+    int? zOrder,
   }) {
     return TextLayer(
       id: id,
@@ -347,6 +350,7 @@ class TextLayer {
       textBg: textBg ?? this.textBg,
       strokeWidth: strokeWidth ?? this.strokeWidth,
       letterSpacing: letterSpacing ?? this.letterSpacing,
+      zOrder: zOrder ?? this.zOrder,
     );
   }
 }
@@ -367,6 +371,7 @@ class PhotoLayer {
     this.cropScale = 1.0,
     this.cropOffsetX = 0.0,
     this.cropOffsetY = 0.0,
+    this.zOrder = 0,
   });
 
   final String id;
@@ -383,6 +388,7 @@ class PhotoLayer {
   final double cropScale;      // zoom factor within frame (1.0 = no zoom)
   final double cropOffsetX;    // horizontal pan as fraction of frame width  (-0.5..0.5)
   final double cropOffsetY;    // vertical   pan as fraction of frame height (-0.5..0.5)
+  final int zOrder;
 
   PhotoLayer copyWith({
     String? imagePath,
@@ -398,6 +404,7 @@ class PhotoLayer {
     double? cropScale,
     double? cropOffsetX,
     double? cropOffsetY,
+    int? zOrder,
   }) {
     return PhotoLayer(
       id: id,
@@ -414,6 +421,7 @@ class PhotoLayer {
       cropScale: cropScale ?? this.cropScale,
       cropOffsetX: cropOffsetX ?? this.cropOffsetX,
       cropOffsetY: cropOffsetY ?? this.cropOffsetY,
+      zOrder: zOrder ?? this.zOrder,
     );
   }
 }
