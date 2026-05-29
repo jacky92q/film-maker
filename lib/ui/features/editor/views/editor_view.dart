@@ -736,38 +736,6 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                   ),
                 ),
               ),
-            // Add photo chip.
-            if (!hasPhoto)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: GestureDetector(
-                  onTap: widget.viewModel.pickImageForCurrentSlide,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.darkBg.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                          color: AppTheme.gold.withValues(alpha: 0.5)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.add_photo_alternate_outlined,
-                            color: AppTheme.gold, size: 14),
-                        const SizedBox(width: 4),
-                        Text('Add Photo',
-                            style: TextStyle(
-                                fontFamily: AppTheme.fontTheme,
-                                color: AppTheme.gold,
-                                fontSize: 11)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
           ],
         );
       },
