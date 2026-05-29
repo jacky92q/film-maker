@@ -7,20 +7,30 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:609658608834:android:0000000000000000",
-        "android_info": {
+        "mobilesdk_app_id": "1:609658608834:android:eeb6bb9b53400b3d34ef5b",
+        "android_client_info": {
           "package_name": "com.seoko.film_maker"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "609658608834-2uebljieak5cev683vvjk78f826h37pd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyBpY1dO8uZw1z6xekb66t0kEsTdg6OazLM"
+          "current_key": "AIzaSyAu2jFsmsPGzeBVWp2GPsZa4VLwHqoH44g"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "609658608834-2uebljieak5cev683vvjk78f826h37pd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
