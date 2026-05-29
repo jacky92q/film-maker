@@ -1546,15 +1546,16 @@ class _SlideEditPanel extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              _Label('Background Color'),
-              const SizedBox(height: 6),
-              _BackgroundColorPicker(
-                current: slide.backgroundColor,
-                onSelect: (c) => viewModel
-                    .updateSelectedSlide(slide.copyWith(backgroundColor: c)),
-              ),
-              const SizedBox(height: 6),
             ],
+            // Background color (always visible)
+            _Label('Background Color'),
+            const SizedBox(height: 6),
+            _BackgroundColorPicker(
+              current: slide.backgroundColor,
+              onSelect: (c) => viewModel
+                  .updateSelectedSlide(slide.copyWith(backgroundColor: c)),
+            ),
+            const SizedBox(height: 6),
             // Photo filter strip
             _Label('Filter'),
             const SizedBox(height: 6),
