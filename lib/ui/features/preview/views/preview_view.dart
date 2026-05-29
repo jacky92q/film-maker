@@ -547,7 +547,7 @@ class _SlidePhotoLayerState extends State<_SlidePhotoLayer>
     final slide = widget.slide;
 
     if (slide.imagePath == null && slide.layout == SlideLayout.single) {
-      return _buildGradientBg();
+      return ColoredBox(color: Color(slide.backgroundColor));
     }
 
     if (slide.layout != SlideLayout.single) {

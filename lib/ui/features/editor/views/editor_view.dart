@@ -679,7 +679,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
         } else {
           background = GestureDetector(
             onTap: () => widget.viewModel.selectLayer(null),
-            child: _gradientBg(),
+            child: ColoredBox(color: Color(slide.backgroundColor)),
           );
         }
 
