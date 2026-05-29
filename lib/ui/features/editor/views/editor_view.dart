@@ -463,6 +463,11 @@ class _SlideCanvasState extends State<_SlideCanvas> {
   double _offsetYStart = 0.0;
   Offset _focalStart = Offset.zero;
 
+  // Photo-layer gesture start values
+  double _plStartW = 0.0;
+  double _plStartH = 0.0;
+  double _plStartCropScale = 1.0;
+
   void _onPhotoScaleStart(ScaleStartDetails d) {
     final slide = widget.viewModel.selectedSlide!;
     _scaleStart = slide.photoScale;
@@ -589,176 +594,101 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                   ),
                 ),
               ),
-            // Photo layers
+            // Photo layers — tap to select, drag to move, pinch to resize
+            // In crop mode: drag pans photo content, pinch zooms it
             ...slide.photoLayers.map((pl) {
               final isSelectedPL = widget.viewModel.selectedPhotoLayerId == pl.id;
               final isCropMode = isSelectedPL && widget.viewModel.cropMode;
-              final left   = (pl.x - pl.widthFraction / 2).clamp(0.0, 0.98) * canvasW;
-              final top    = (pl.y - pl.heightFraction / 2).clamp(0.0, 0.98) * canvasH;
-              final pw     = pl.widthFraction * canvasW;
-              final ph     = pl.heightFraction * canvasH;
+              final left = (pl.x - pl.widthFraction / 2).clamp(0.0, 0.98) * canvasW;
+              final top  = (pl.y - pl.heightFraction / 2).clamp(0.0, 0.98) * canvasH;
+              final pw   = pl.widthFraction * canvasW;
+              final ph   = pl.heightFraction * canvasH;
 
-              // Corner handle helper — returns a Positioned drag handle
-              Widget cornerHandle({
-                required double hLeft,
-                required double hTop,
-                required double signX,   // -1 or +1 — direction wf grows
-                required double signY,   // -1 or +1 — direction hf grows
-              }) {
-                const hs = 10.0; // handle size
-                return Positioned(
-                  left: hLeft - hs / 2,
-                  top:  hTop  - hs / 2,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onPanUpdate: (d) {
-                      final dx = d.delta.dx;
-                      final dy = d.delta.dy;
-                      final newWf = (pl.widthFraction  + signX * dx / canvasW).clamp(0.08, 1.0);
-                      final newHf = (pl.heightFraction + signY * dy / canvasH).clamp(0.08, 1.0);
-                      final newX  = (pl.x + dx / (2 * canvasW)).clamp(0.04, 0.96);
-                      final newY  = (pl.y + dy / (2 * canvasH)).clamp(0.04, 0.96);
-                      widget.viewModel.updatePhotoLayer(
-                        pl.copyWith(widthFraction: newWf, heightFraction: newHf, x: newX, y: newY),
-                      );
-                    },
-                    child: Container(
-                      width: hs,
-                      height: hs,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.blueAccent, width: 1.5),
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              return Stack(
+              return Positioned(
                 key: ValueKey('pl_${pl.id}'),
-                children: [
-                  // ── Main layer ───────────────────────────────────────────────────────
-                  Positioned(
-                    left: left,
-                    top: top,
-                    width: pw,
-                    height: ph,
-                    child: GestureDetector(
-                      onTap: () {
-                        widget.viewModel.selectPhotoLayer(pl.id);
-                        widget.viewModel.selectLayer(null);
-                      },
-                      // Outer drag: move layer when NOT selected
-                      onPanUpdate: isSelectedPL ? null : (d) {
-                        final newX = (pl.x + d.delta.dx / canvasW).clamp(0.04, 0.96);
-                        final newY = (pl.y + d.delta.dy / canvasH).clamp(0.04, 0.96);
-                        widget.viewModel.movePhotoLayer(pl.id, newX, newY);
-                      },
-                      child: GestureDetector(
-                        // Inner drag: crop-pan when crop mode, else move layer
-                        onPanUpdate: isSelectedPL
-                            ? (isCropMode
-                                ? (d) {
-                                    final newOX = (pl.cropOffsetX + d.delta.dx / pw).clamp(-0.5, 0.5);
-                                    final newOY = (pl.cropOffsetY + d.delta.dy / ph).clamp(-0.5, 0.5);
-                                    widget.viewModel.updatePhotoLayer(
-                                      pl.copyWith(cropOffsetX: newOX, cropOffsetY: newOY),
-                                    );
-                                  }
-                                : (d) {
-                                    final newX = (pl.x + d.delta.dx / canvasW).clamp(0.04, 0.96);
-                                    final newY = (pl.y + d.delta.dy / canvasH).clamp(0.04, 0.96);
-                                    widget.viewModel.movePhotoLayer(pl.id, newX, newY);
-                                  })
-                            : null,
-                        child: Transform.rotate(
-                          angle: pl.rotation * 3.14159265 / 180.0,
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              buildShapedPhoto(
-                                imagePath: pl.imagePath,
-                                shape: pl.shape,
-                                frame: pl.frame,
-                                fit: BoxFit.cover,
-                                colorFilter: pl.filter.colorFilter,
-                                frameWidth: pl.frameWidth,
-                                cropScale: pl.cropScale,
-                                cropOffsetX: pl.cropOffsetX,
-                                cropOffsetY: pl.cropOffsetY,
-                              ),
-                              // Selection / crop-mode border
-                              if (isSelectedPL)
-                                Positioned.fill(
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: isCropMode ? Colors.orangeAccent : Colors.blueAccent,
-                                        width: isCropMode ? 2.5 : 1.5,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              // Crop mode overlay label
-                              if (isCropMode)
-                                Positioned(
-                                  top: 4, left: 4,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orangeAccent,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: const Text('CROP', style: TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                            ],
-                          ),
+                left: left,
+                top: top,
+                width: pw,
+                height: ph,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    widget.viewModel.selectPhotoLayer(pl.id);
+                    widget.viewModel.selectLayer(null);
+                  },
+                  onScaleStart: (_) {
+                    _plStartW = pl.widthFraction;
+                    _plStartH = pl.heightFraction;
+                    _plStartCropScale = pl.cropScale;
+                  },
+                  onScaleUpdate: (d) {
+                    if (!isSelectedPL) {
+                      // Unselected: tap selected it; subsequent drag after tap moves it
+                      final newX = (pl.x + d.focalPointDelta.dx / canvasW).clamp(0.04, 0.96);
+                      final newY = (pl.y + d.focalPointDelta.dy / canvasH).clamp(0.04, 0.96);
+                      widget.viewModel.movePhotoLayer(pl.id, newX, newY);
+                    } else if (isCropMode) {
+                      // Crop mode: drag pans photo content, pinch zooms it
+                      final newOX = (pl.cropOffsetX + d.focalPointDelta.dx / pw).clamp(-0.5, 0.5);
+                      final newOY = (pl.cropOffsetY + d.focalPointDelta.dy / ph).clamp(-0.5, 0.5);
+                      final newCS = (_plStartCropScale * d.scale).clamp(1.0, 4.0);
+                      widget.viewModel.updatePhotoLayer(
+                        pl.copyWith(cropOffsetX: newOX, cropOffsetY: newOY, cropScale: newCS),
+                      );
+                    } else {
+                      // Normal: drag moves frame, pinch resizes frame
+                      final newX = (pl.x + d.focalPointDelta.dx / canvasW).clamp(0.04, 0.96);
+                      final newY = (pl.y + d.focalPointDelta.dy / canvasH).clamp(0.04, 0.96);
+                      final newW = (_plStartW * d.scale).clamp(0.08, 1.0);
+                      final newH = (_plStartH * d.scale).clamp(0.08, 1.0);
+                      widget.viewModel.updatePhotoLayer(
+                        pl.copyWith(x: newX, y: newY, widthFraction: newW, heightFraction: newH),
+                      );
+                    }
+                  },
+                  child: Transform.rotate(
+                    angle: pl.rotation * 3.14159265 / 180.0,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        buildShapedPhoto(
+                          imagePath: pl.imagePath,
+                          shape: pl.shape,
+                          frame: pl.frame,
+                          fit: BoxFit.cover,
+                          colorFilter: pl.filter.colorFilter,
+                          frameWidth: pl.frameWidth,
+                          cropScale: pl.cropScale,
+                          cropOffsetX: pl.cropOffsetX,
+                          cropOffsetY: pl.cropOffsetY,
                         ),
-                      ),
+                        if (isSelectedPL)
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: isCropMode ? Colors.orangeAccent : Colors.blueAccent,
+                                  width: isCropMode ? 2.5 : 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (isCropMode)
+                          Positioned(
+                            top: 4, left: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.orangeAccent,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('CROP', style: TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-
-                  // ── Corner + rotation handles (only when selected and NOT in crop mode) ─
-                  if (isSelectedPL && !isCropMode) ...[
-                    // Top-left
-                    cornerHandle(hLeft: left,      hTop: top,       signX: -1, signY: -1),
-                    // Top-right
-                    cornerHandle(hLeft: left + pw, hTop: top,       signX:  1, signY: -1),
-                    // Bottom-left
-                    cornerHandle(hLeft: left,      hTop: top + ph,  signX: -1, signY:  1),
-                    // Bottom-right
-                    cornerHandle(hLeft: left + pw, hTop: top + ph,  signX:  1, signY:  1),
-
-                    // ── Rotation handle (above top-center) ──────────────────────────────
-                    Positioned(
-                      left: left + pw / 2 - 10,
-                      top: (top - 30).clamp(-20.0, canvasH - 20),
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onPanUpdate: (d) {
-                          final newRot = (pl.rotation + d.delta.dx * 0.4)
-                              .clamp(-180.0, 180.0);
-                          widget.viewModel.updatePhotoLayer(pl.copyWith(rotation: newRot));
-                        },
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 20, height: 20,
-                              decoration: const BoxDecoration(
-                                color: Colors.blueAccent,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.rotate_right, size: 14, color: Colors.white),
-                            ),
-                            Container(width: 1.5, height: 10, color: Colors.blueAccent),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               );
             }),
             // Drag/pinch hint — shown on photo slides when no text layer is selected.
@@ -1373,13 +1303,14 @@ class _PhotoLayerEditPanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Hint
                     Row(
                       children: [
-                        const Icon(Icons.info_outline, size: 13, color: Colors.orangeAccent),
+                        const Icon(Icons.touch_app_outlined, size: 13, color: Colors.orangeAccent),
                         const SizedBox(width: 4),
                         const Expanded(
                           child: Text(
-                            'Drag photo on canvas to pan. Use slider to zoom.',
+                            'Drag on photo to pan · Pinch to zoom',
                             style: TextStyle(fontSize: 11, color: Colors.orangeAccent),
                           ),
                         ),
@@ -1387,8 +1318,8 @@ class _PhotoLayerEditPanel extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
 
-                    // Crop zoom slider
-                    const Text('Crop Zoom', style: labelStyle),
+                    // Zoom level display + slider for precision
+                    const Text('Zoom', style: labelStyle),
                     Slider(
                       value: layer.cropScale.clamp(1.0, 4.0),
                       min: 1.0, max: 4.0, divisions: 30,
@@ -1397,27 +1328,7 @@ class _PhotoLayerEditPanel extends StatelessWidget {
                       onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(cropScale: v)),
                     ),
 
-                    // Crop horizontal pan
-                    const Text('Horizontal Pan', style: labelStyle),
-                    Slider(
-                      value: layer.cropOffsetX.clamp(-0.5, 0.5),
-                      min: -0.5, max: 0.5, divisions: 20,
-                      label: '${(layer.cropOffsetX * 100).round()}%',
-                      activeColor: Colors.orangeAccent,
-                      onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(cropOffsetX: v)),
-                    ),
-
-                    // Crop vertical pan
-                    const Text('Vertical Pan', style: labelStyle),
-                    Slider(
-                      value: layer.cropOffsetY.clamp(-0.5, 0.5),
-                      min: -0.5, max: 0.5, divisions: 20,
-                      label: '${(layer.cropOffsetY * 100).round()}%',
-                      activeColor: Colors.orangeAccent,
-                      onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(cropOffsetY: v)),
-                    ),
-
-                    // Reset crop button
+                    // Reset crop
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton.icon(
@@ -1430,7 +1341,7 @@ class _PhotoLayerEditPanel extends StatelessWidget {
                           layer.copyWith(cropScale: 1.0, cropOffsetX: 0.0, cropOffsetY: 0.0),
                         ),
                         icon: const Icon(Icons.refresh, size: 14),
-                        label: const Text('Reset Crop', style: TextStyle(fontSize: 12)),
+                        label: const Text('Reset', style: TextStyle(fontSize: 12)),
                       ),
                     ),
                   ],
