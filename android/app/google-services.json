@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "609658608834",
+    "project_id": "film-maker-f2466",
+    "storage_bucket": "film-maker-f2466.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:609658608834:android:0000000000000000",
+        "android_info": {
+          "package_name": "com.example.film_maker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpY1dO8uZw1z6xekb66t0kEsTdg6OazLM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
