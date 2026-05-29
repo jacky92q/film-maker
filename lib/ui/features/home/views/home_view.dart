@@ -7,15 +7,19 @@ import 'package:film_maker/ui/features/projects/view_models/projects_view_model.
 import 'package:film_maker/ui/features/projects/views/projects_view.dart';
 import 'package:flutter/material.dart';
 
+enum _MenuAction { logout }
+
 class HomeView extends StatefulWidget {
   const HomeView({
     super.key,
     required this.user,
     required this.projectRepository,
+    required this.onLogout,
   });
 
   final User user;
   final ProjectRepository projectRepository;
+  final VoidCallback onLogout;
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -100,15 +104,43 @@ class _HomeViewState extends State<HomeView> {
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 8),
-          child: CircleAvatar(
-            radius: 18,
-            backgroundColor: AppTheme.darkSurface2,
-            child: Text(
-              widget.user.name[0].toUpperCase(),
-              style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.gold,
-                  fontWeight: FontWeight.bold),
+          child: PopupMenuButton<_MenuAction>(
+            onSelected: (action) {
+              if (action == _MenuAction.logout) widget.onLogout();
+            },
+            color: AppTheme.darkSurface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: AppTheme.border),
+            ),
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: _MenuAction.logout,
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout, color: AppTheme.subtleText, size: 18),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Sign Out',
+                      style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: AppTheme.cream,
+                          fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: AppTheme.darkSurface2,
+              child: Text(
+                widget.user.name[0].toUpperCase(),
+                style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    color: AppTheme.gold,
+                    fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ),

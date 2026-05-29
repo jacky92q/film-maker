@@ -1,9 +1,8 @@
 import 'package:film_maker/data/repositories/auth_repository.dart';
 import 'package:film_maker/data/repositories/project_repository.dart';
-import 'package:film_maker/data/services/mock_auth_service.dart';
+import 'package:film_maker/data/services/firebase_auth_service.dart';
 import 'package:film_maker/data/services/mock_project_service.dart';
 import 'package:film_maker/domain/models/user.dart';
-import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/auth/view_models/auth_view_model.dart';
 import 'package:film_maker/ui/features/auth/views/login_view.dart';
@@ -15,7 +14,7 @@ class FilmMakerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authRepository = AuthRepository(authService: MockAuthService());
+    final authRepository = AuthRepository(authService: FirebaseAuthService());
     final projectRepository =
         ProjectRepository(projectService: MockProjectService());
 
@@ -23,7 +22,7 @@ class FilmMakerApp extends StatelessWidget {
       title: 'Film Maker',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      home: _RootView(
+      home: _AuthGate(
         authRepository: authRepository,
         projectRepository: projectRepository,
       ),
@@ -31,8 +30,8 @@ class FilmMakerApp extends StatelessWidget {
   }
 }
 
-class _RootView extends StatelessWidget {
-  const _RootView({
+class _AuthGate extends StatefulWidget {
+  const _AuthGate({
     required this.authRepository,
     required this.projectRepository,
   });
@@ -40,22 +39,58 @@ class _RootView extends StatelessWidget {
   final AuthRepository authRepository;
   final ProjectRepository projectRepository;
 
-  void _onLoggedIn(BuildContext context, User user) {
-    Navigator.of(context).pushReplacement(
-      FadePageRoute(
-        builder: (_) => HomeView(
-          user: user,
-          projectRepository: projectRepository,
-        ),
-      ),
-    );
+  @override
+  State<_AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<_AuthGate> {
+  late final AuthViewModel _authViewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _authViewModel = AuthViewModel(authRepository: widget.authRepository);
+  }
+
+  @override
+  void dispose() {
+    _authViewModel.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return LoginView(
-      viewModel: AuthViewModel(authRepository: authRepository),
-      onLoggedIn: (user) => _onLoggedIn(context, user),
+    return StreamBuilder<User?>(
+      stream: widget.authRepository.authStateChanges,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _SplashScreen();
+        }
+        final user = snapshot.data;
+        if (user != null) {
+          return HomeView(
+            user: user,
+            projectRepository: widget.projectRepository,
+            onLogout: () => widget.authRepository.logout(),
+          );
+        }
+        return LoginView(viewModel: _authViewModel);
+      },
+    );
+  }
+}
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.darkBg,
+      body: const Center(
+        child: Icon(Icons.movie_creation_outlined,
+            color: AppTheme.gold, size: 52),
+      ),
     );
   }
 }

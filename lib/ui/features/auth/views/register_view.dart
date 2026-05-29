@@ -1,44 +1,48 @@
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/auth/view_models/auth_view_model.dart';
-import 'package:film_maker/ui/features/auth/views/register_view.dart';
 import 'package:flutter/material.dart';
 
-class LoginView extends StatefulWidget {
-  const LoginView({super.key, required this.viewModel});
+class RegisterView extends StatefulWidget {
+  const RegisterView({super.key, required this.viewModel});
 
   final AuthViewModel viewModel;
 
   @override
-  State<LoginView> createState() => _LoginViewState();
+  State<RegisterView> createState() => _RegisterViewState();
 }
 
-class _LoginViewState extends State<LoginView> {
+class _RegisterViewState extends State<RegisterView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    await widget.viewModel.login(
+  Future<void> _handleRegister() async {
+    final password = _passwordController.text;
+    final confirm = _confirmController.text;
+    if (password != confirm) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match.')),
+      );
+      return;
+    }
+    await widget.viewModel.register(
       email: _emailController.text.trim(),
-      password: _passwordController.text,
+      password: password,
     );
-    // Auth state stream in app.dart handles navigation on success
-  }
-
-  void _goToRegister() {
-    widget.viewModel.clearError();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => RegisterView(viewModel: widget.viewModel),
-      ),
-    );
+    // On success, auth state stream triggers navigation in app.dart
+    if (mounted && widget.viewModel.error == null) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -53,12 +57,10 @@ class _LoginViewState extends State<LoginView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 72),
-                  _buildLogo(),
                   const SizedBox(height: 48),
+                  _buildHeader(context),
+                  const SizedBox(height: 40),
                   _buildForm(),
-                  const SizedBox(height: 28),
-                  _buildRegisterLink(),
                 ],
               ),
             ),
@@ -80,50 +82,49 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Widget _buildLogo() {
+  Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
+        Row(
+          children: [
+            IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.arrow_back_ios_new,
+                  color: AppTheme.cream, size: 20),
+            ),
+            const Spacer(),
+          ],
+        ),
+        const SizedBox(height: 12),
         Container(
-          width: 72,
-          height: 72,
+          width: 64,
+          height: 64,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: AppTheme.gold, width: 1.5),
             color: AppTheme.darkSurface,
           ),
-          child: const Icon(Icons.movie_creation_outlined,
-              color: AppTheme.gold, size: 32),
+          child: const Icon(Icons.person_add_outlined,
+              color: AppTheme.gold, size: 28),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         Text(
-          'Film Maker',
+          'Create Account',
           style: TextStyle(
             fontFamily: AppTheme.fontTheme,
             color: AppTheme.cream,
-            fontSize: 36,
+            fontSize: 28,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.0,
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(width: 24, height: 1, color: AppTheme.gold),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                'Make film with your special memories.',
-                style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.subtleText,
-                  fontSize: 13,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            Container(width: 24, height: 1, color: AppTheme.gold),
-          ],
+        const SizedBox(height: 6),
+        Text(
+          'Start telling your story',
+          style: TextStyle(
+            fontFamily: AppTheme.fontTheme,
+            color: AppTheme.subtleText,
+            fontSize: 13,
+          ),
         ),
       ],
     );
@@ -145,7 +146,6 @@ class _LoginViewState extends State<LoginView> {
                 prefixIcon:
                     Icon(Icons.email_outlined, color: AppTheme.subtleText),
               ),
-              onSubmitted: (_) => _handleLogin(),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -154,6 +154,9 @@ class _LoginViewState extends State<LoginView> {
               style: const TextStyle(color: AppTheme.cream),
               decoration: InputDecoration(
                 labelText: 'Password',
+                hintText: 'At least 6 characters',
+                hintStyle:
+                    const TextStyle(color: AppTheme.subtleText, fontSize: 12),
                 prefixIcon:
                     const Icon(Icons.lock_outline, color: AppTheme.subtleText),
                 suffixIcon: IconButton(
@@ -167,13 +170,34 @@ class _LoginViewState extends State<LoginView> {
                       setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
-              onSubmitted: (_) => _handleLogin(),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _confirmController,
+              obscureText: _obscureConfirm,
+              style: const TextStyle(color: AppTheme.cream),
+              decoration: InputDecoration(
+                labelText: 'Confirm Password',
+                prefixIcon:
+                    const Icon(Icons.lock_outline, color: AppTheme.subtleText),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirm
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: AppTheme.subtleText,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscureConfirm = !_obscureConfirm),
+                ),
+              ),
+              onSubmitted: (_) => _handleRegister(),
             ),
             const SizedBox(height: 28),
             SizedBox(
               height: 52,
               child: FilledButton(
-                onPressed: widget.viewModel.isLoading ? null : _handleLogin,
+                onPressed: widget.viewModel.isLoading ? null : _handleRegister,
                 child: widget.viewModel.isLoading
                     ? const SizedBox(
                         width: 20,
@@ -181,43 +205,41 @@ class _LoginViewState extends State<LoginView> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: AppTheme.darkBg),
                       )
-                    : const Text('Sign In'),
+                    : const Text('Create Account'),
               ),
             ),
             if (widget.viewModel.error != null) ...[
               const SizedBox(height: 16),
               _ErrorBanner(message: widget.viewModel.error!),
             ],
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Already have an account? ',
+                  style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.subtleText,
+                      fontSize: 14),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Sign In',
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.gold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         );
       },
-    );
-  }
-
-  Widget _buildRegisterLink() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          "Don't have an account? ",
-          style: TextStyle(
-              fontFamily: AppTheme.fontTheme,
-              color: AppTheme.subtleText,
-              fontSize: 14),
-        ),
-        GestureDetector(
-          onTap: _goToRegister,
-          child: Text(
-            'Register',
-            style: TextStyle(
-              fontFamily: AppTheme.fontTheme,
-              color: AppTheme.gold,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
