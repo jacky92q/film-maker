@@ -1,7 +1,11 @@
+import 'package:film_maker/data/repositories/export_repository.dart';
 import 'package:film_maker/data/repositories/project_repository.dart';
+import 'package:film_maker/data/services/mock_export_service.dart';
 import 'package:film_maker/domain/models/user.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';
+import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/home/view_models/home_view_model.dart';
 import 'package:film_maker/ui/features/projects/view_models/projects_view_model.dart';
 import 'package:film_maker/ui/features/projects/views/projects_view.dart';
@@ -55,6 +59,82 @@ class _HomeViewState extends State<HomeView> {
         ),
       ),
     );
+  }
+
+  Future<void> _showNewFilmDialog() async {
+    final controller = TextEditingController();
+    final title = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.darkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'New Wedding Film',
+          style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.cream),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Give your film a title to remember',
+              style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.subtleText,
+                  fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              style: const TextStyle(color: AppTheme.cream),
+              decoration: const InputDecoration(
+                hintText: 'e.g. Our Love Story',
+                prefixIcon: Icon(Icons.movie_creation_outlined,
+                    color: AppTheme.subtleText),
+              ),
+              onSubmitted: (v) {
+                if (v.trim().isNotEmpty) Navigator.of(ctx).pop(v.trim());
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Cancel',
+                style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    color: AppTheme.subtleText)),
+          ),
+          FilledButton(
+            onPressed: () {
+              final t = controller.text.trim();
+              if (t.isNotEmpty) Navigator.of(ctx).pop(t);
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (title == null || title.isEmpty || !mounted) return;
+
+    final vm = ProjectsViewModel(projectRepository: widget.projectRepository);
+    final project = await vm.createProject(title);
+    if (project == null || !mounted) return;
+
+    await Navigator.of(context).push(
+      SlideUpPageRoute(
+        builder: (_) => EditorView(
+          viewModel: EditorViewModel(
+            project: project,
+            projectRepository: widget.projectRepository,
+          ),
+          exportRepository: ExportRepository(exportService: MockExportService()),
+        ),
+      ),
+    );
+    _viewModel.loadStats();
   }
 
   @override
@@ -333,7 +413,7 @@ class _HomeViewState extends State<HomeView> {
             icon: Icons.add_circle_outline,
             title: 'New Film',
             subtitle: 'Start a new story',
-            onTap: _goToProjects,
+            onTap: _showNewFilmDialog,
             iconColor: const Color(0xFF4CC9A8),
           ),
         ),
