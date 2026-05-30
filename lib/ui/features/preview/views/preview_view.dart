@@ -161,14 +161,21 @@ class _PreviewViewState extends State<PreviewView>
         key: ValueKey(slide.id),
         child: AspectRatio(
           aspectRatio: 16 / 9,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              background,
-              _buildGradientOverlay(),
-              buildSlideOverlay(slide.overlay),
-              ..._buildSortedLayers(slide),
-            ],
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: SizedBox(
+              width: 1280,
+              height: 720,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  background,
+                  _buildGradientOverlay(),
+                  buildSlideOverlay(slide.overlay),
+                  ..._buildSortedLayers(slide),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -201,34 +208,32 @@ class _PreviewViewState extends State<PreviewView>
   }
 
   Widget _buildPhotoLayerWidget(PhotoLayer pl) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final w = constraints.maxWidth;
-      final h = constraints.maxHeight;
-      return Stack(
-        children: [
-          Positioned(
-            left: (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * w,
-            top: (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * h,
-            width: pl.widthFraction * w,
-            height: pl.heightFraction * h,
-            child: Transform.rotate(
-              angle: pl.rotation * 3.14159265 / 180.0,
-              child: buildShapedPhoto(
-                imagePath: pl.imagePath,
-                shape: pl.shape,
-                frame: pl.frame,
-                fit: BoxFit.cover,
-                colorFilter: pl.filter.colorFilter,
-                frameWidth: pl.frameWidth,
-                cropScale: pl.cropScale,
-                cropOffsetX: pl.cropOffsetX,
-                cropOffsetY: pl.cropOffsetY,
-              ),
+    const w = 1280.0;
+    const h = 720.0;
+    return Stack(
+      children: [
+        Positioned(
+          left: (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * w,
+          top: (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * h,
+          width: pl.widthFraction * w,
+          height: pl.heightFraction * h,
+          child: Transform.rotate(
+            angle: pl.rotation * 3.14159265 / 180.0,
+            child: buildShapedPhoto(
+              imagePath: pl.imagePath,
+              shape: pl.shape,
+              frame: pl.frame,
+              fit: BoxFit.cover,
+              colorFilter: pl.filter.colorFilter,
+              frameWidth: pl.frameWidth,
+              cropScale: pl.cropScale,
+              cropOffsetX: pl.cropOffsetX,
+              cropOffsetY: pl.cropOffsetY,
             ),
           ),
-        ],
-      );
-    });
+        ),
+      ],
+    );
   }
 
   Widget _buildLayerText(TextLayer layer) {

@@ -626,92 +626,97 @@ class _SlideCanvasState extends State<_SlideCanvas> {
 
   @override
   Widget build(BuildContext context) {
+    // All layers rendered in a canonical 1280×720 space so that positions,
+    // sizes, and font sizes are identical between editor and preview at any
+    // screen resolution or orientation. FittedBox scales the whole canvas.
+    const canonicalW = 1280.0;
+    const canonicalH = 720.0;
+
     final slide = widget.viewModel.selectedSlide!;
     final selectedLayerId = widget.viewModel.selectedLayerId;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final canvasW = constraints.maxWidth;
-        final canvasH = constraints.maxHeight;
+    // Build photo widget with pan/zoom transform applied.
+    Widget background;
+    bool hasPhoto = slide.imagePath != null;
+    if (hasPhoto) {
+      Widget photoContent;
+      if (slide.layout != SlideLayout.single) {
+        // Editor canvas strip preview (static, no animation)
+        photoContent = ClipRect(
+          child: Row(
+            children: [
+              Expanded(child: buildShapedPhoto(
+                imagePath: slide.imagePath,
+                shape: slide.photoShape,
+                frame: slide.photoFrame,
+                colorFilter: slide.photoFilter.colorFilter,
+              )),
+              if (slide.layout == SlideLayout.strip2 || slide.layout == SlideLayout.strip3)
+                Expanded(child: buildShapedPhoto(
+                  imagePath: slide.imagePath2,
+                  shape: slide.photoShape,
+                  frame: slide.photoFrame,
+                  colorFilter: slide.photoFilter.colorFilter,
+                )),
+              if (slide.layout == SlideLayout.strip3)
+                Expanded(child: buildShapedPhoto(
+                  imagePath: slide.imagePath3,
+                  shape: slide.photoShape,
+                  frame: slide.photoFrame,
+                  colorFilter: slide.photoFilter.colorFilter,
+                )),
+            ],
+          ),
+        );
+      } else {
+        final photoWidget = buildShapedPhoto(
+          imagePath: slide.imagePath,
+          shape: slide.photoShape,
+          frame: slide.photoFrame,
+          fit: BoxFit.contain,
+          colorFilter: slide.photoFilter.colorFilter,
+        );
+        photoContent = ColoredBox(
+          color: Color(slide.backgroundColor),
+          child: ClipRect(
+            child: Transform.translate(
+              offset: Offset(slide.photoOffsetX * canonicalW, slide.photoOffsetY * canonicalH),
+              child: Transform.scale(scale: slide.photoScale, child: photoWidget),
+            ),
+          ),
+        );
+      }
 
-        // Build photo widget with pan/zoom transform applied.
-        Widget background;
-        bool hasPhoto = slide.imagePath != null;
-        if (hasPhoto) {
-          Widget photoContent;
-          if (slide.layout != SlideLayout.single) {
-            // Editor canvas strip preview (static, no animation)
-            photoContent = ClipRect(
-              child: Row(
-                children: [
-                  Expanded(child: buildShapedPhoto(
-                    imagePath: slide.imagePath,
-                    shape: slide.photoShape,
-                    frame: slide.photoFrame,
-                    colorFilter: slide.photoFilter.colorFilter,
-                  )),
-                  if (slide.layout == SlideLayout.strip2 || slide.layout == SlideLayout.strip3)
-                    Expanded(child: buildShapedPhoto(
-                      imagePath: slide.imagePath2,
-                      shape: slide.photoShape,
-                      frame: slide.photoFrame,
-                      colorFilter: slide.photoFilter.colorFilter,
-                    )),
-                  if (slide.layout == SlideLayout.strip3)
-                    Expanded(child: buildShapedPhoto(
-                      imagePath: slide.imagePath3,
-                      shape: slide.photoShape,
-                      frame: slide.photoFrame,
-                      colorFilter: slide.photoFilter.colorFilter,
-                    )),
-                ],
-              ),
-            );
-          } else {
-            final photoWidget = buildShapedPhoto(
-              imagePath: slide.imagePath,
-              shape: slide.photoShape,
-              frame: slide.photoFrame,
-              fit: BoxFit.contain,
-              colorFilter: slide.photoFilter.colorFilter,
-            );
-            photoContent = ColoredBox(
-              color: Color(slide.backgroundColor),
-              child: ClipRect(
-                child: Transform.translate(
-                  offset: Offset(slide.photoOffsetX * canvasW, slide.photoOffsetY * canvasH),
-                  child: Transform.scale(scale: slide.photoScale, child: photoWidget),
-                ),
-              ),
-            );
-          }
+      // Photo acts as the interactive background: tap=deselect, drag/pinch=move+zoom.
+      // Gesture deltas are in canonical space because GestureDetector is inside FittedBox.
+      background = GestureDetector(
+        onTap: () => widget.viewModel.selectLayer(null),
+        onScaleStart: slide.layout == SlideLayout.single ? _onPhotoScaleStart : null,
+        onScaleUpdate: slide.layout == SlideLayout.single
+            ? (d) => _onPhotoScaleUpdate(d, canonicalW, canonicalH)
+            : null,
+        child: SizedBox.expand(child: photoContent),
+      );
+    } else {
+      background = GestureDetector(
+        onTap: () => widget.viewModel.selectLayer(null),
+        child: ColoredBox(color: Color(slide.backgroundColor)),
+      );
+    }
 
-          // Photo acts as the interactive background: tap=deselect, drag/pinch=move+zoom.
-          background = GestureDetector(
-            onTap: () => widget.viewModel.selectLayer(null),
-            onScaleStart: slide.layout == SlideLayout.single ? _onPhotoScaleStart : null,
-            onScaleUpdate: slide.layout == SlideLayout.single
-                ? (d) => _onPhotoScaleUpdate(d, canvasW, canvasH)
-                : null,
-            child: SizedBox.expand(child: photoContent),
-          );
-        } else {
-          background = GestureDetector(
-            onTap: () => widget.viewModel.selectLayer(null),
-            child: ColoredBox(color: Color(slide.backgroundColor)),
-          );
-        }
-
-        return Stack(
+    return FittedBox(
+      fit: BoxFit.contain,
+      child: SizedBox(
+        width: canonicalW,
+        height: canonicalH,
+        child: Stack(
           fit: StackFit.expand,
           clipBehavior: Clip.none,
           children: [
             background,
             _gradientOverlay(),
             buildSlideOverlay(slide.overlay),
-            // All layers sorted by z-order (text and photo interleaved)
-            ..._buildSortedLayers(slide, canvasW, canvasH, selectedLayerId),
-            // Drag/pinch hint — shown on photo slides when no text layer is selected.
+            ..._buildSortedLayers(slide, canonicalW, canonicalH, selectedLayerId),
             if (hasPhoto && selectedLayerId == null)
               Positioned(
                 bottom: 6,
@@ -740,7 +745,6 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                   ),
                 ),
               ),
-            // Empty canvas hint.
             if (slide.textLayers.isEmpty)
               IgnorePointer(
                 child: Center(
@@ -756,8 +760,8 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                 ),
               ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
