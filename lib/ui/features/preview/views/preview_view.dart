@@ -157,17 +157,20 @@ class _PreviewViewState extends State<PreviewView>
       switchInCurve: Curves.easeInOut,
       switchOutCurve: Curves.easeInOut,
       transitionBuilder: _buildTransition(slide.transition),
-      child: SizedBox.expand(
+      child: Center(
         key: ValueKey(slide.id),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            background,
-            _buildGradientOverlay(),
-            buildSlideOverlay(slide.overlay),
-            _buildTextOverlay(slide),
-            _buildPhotoLayers(slide),
-          ],
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              background,
+              _buildGradientOverlay(),
+              buildSlideOverlay(slide.overlay),
+              _buildTextOverlay(slide),
+              _buildPhotoLayers(slide),
+            ],
+          ),
         ),
       ),
     );
@@ -181,8 +184,8 @@ class _PreviewViewState extends State<PreviewView>
         return Positioned.fill(
           child: Align(
             alignment: Alignment(
-              (layer.x * 2 - 1).clamp(-0.92, 0.92),
-              (layer.y * 2 - 1).clamp(-0.92, 0.92),
+              (layer.x * 2 - 1).clamp(-0.95, 0.95),
+              (layer.y * 2 - 1).clamp(-0.95, 0.92),
             ),
             child: _buildLayerText(layer),
           ),
