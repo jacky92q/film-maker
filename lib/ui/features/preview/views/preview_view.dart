@@ -167,8 +167,7 @@ class _PreviewViewState extends State<PreviewView>
               background,
               _buildGradientOverlay(),
               buildSlideOverlay(slide.overlay),
-              _buildTextOverlay(slide),
-              _buildPhotoLayers(slide),
+              ..._buildSortedLayers(slide),
             ],
           ),
         ),
@@ -176,22 +175,60 @@ class _PreviewViewState extends State<PreviewView>
     );
   }
 
-  Widget _buildTextOverlay(Slide slide) {
-    if (slide.textLayers.isEmpty) return const SizedBox.shrink();
-    return Stack(
-      fit: StackFit.expand,
-      children: slide.textLayers.map((layer) {
-        return Positioned.fill(
-          child: Align(
-            alignment: Alignment(
-              (layer.x * 2 - 1).clamp(-0.95, 0.95),
-              (layer.y * 2 - 1).clamp(-0.95, 0.92),
-            ),
-            child: _buildLayerText(layer),
-          ),
-        );
-      }).toList(),
+  // Merge text + photo layers sorted by zOrder — matches editor rendering order
+  List<Widget> _buildSortedLayers(Slide slide) {
+    final items = <({int z, Widget w})>[];
+    for (final layer in slide.textLayers) {
+      items.add((z: layer.zOrder, w: _buildTextLayerWidget(layer)));
+    }
+    for (final pl in slide.photoLayers) {
+      items.add((z: pl.zOrder, w: _buildPhotoLayerWidget(pl)));
+    }
+    items.sort((a, b) => a.z.compareTo(b.z));
+    return items.map((e) => e.w).toList();
+  }
+
+  Widget _buildTextLayerWidget(TextLayer layer) {
+    return Positioned.fill(
+      child: Align(
+        alignment: Alignment(
+          (layer.x * 2 - 1).clamp(-0.95, 0.95),
+          (layer.y * 2 - 1).clamp(-0.95, 0.92),
+        ),
+        child: _buildLayerText(layer),
+      ),
     );
+  }
+
+  Widget _buildPhotoLayerWidget(PhotoLayer pl) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final w = constraints.maxWidth;
+      final h = constraints.maxHeight;
+      return Stack(
+        children: [
+          Positioned(
+            left: (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * w,
+            top: (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * h,
+            width: pl.widthFraction * w,
+            height: pl.heightFraction * h,
+            child: Transform.rotate(
+              angle: pl.rotation * 3.14159265 / 180.0,
+              child: buildShapedPhoto(
+                imagePath: pl.imagePath,
+                shape: pl.shape,
+                frame: pl.frame,
+                fit: BoxFit.cover,
+                colorFilter: pl.filter.colorFilter,
+                frameWidth: pl.frameWidth,
+                cropScale: pl.cropScale,
+                cropOffsetX: pl.cropOffsetX,
+                cropOffsetY: pl.cropOffsetY,
+              ),
+            ),
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildLayerText(TextLayer layer) {
@@ -224,37 +261,6 @@ class _PreviewViewState extends State<PreviewView>
     );
   }
 
-  Widget _buildPhotoLayers(Slide slide) {
-    if (slide.photoLayers.isEmpty) return const SizedBox.shrink();
-    return LayoutBuilder(builder: (context, constraints) {
-      final w = constraints.maxWidth;
-      final h = constraints.maxHeight;
-      return Stack(
-        children: slide.photoLayers.map((pl) {
-          return Positioned(
-            left: (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * w,
-            top:  (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * h,
-            width: pl.widthFraction * w,
-            height: pl.heightFraction * h,
-            child: Transform.rotate(
-              angle: pl.rotation * 3.14159265 / 180.0,
-              child: buildShapedPhoto(
-                imagePath: pl.imagePath,
-                shape: pl.shape,
-                frame: pl.frame,
-                fit: BoxFit.cover,
-                colorFilter: pl.filter.colorFilter,
-                frameWidth: pl.frameWidth,
-                cropScale: pl.cropScale,
-                cropOffsetX: pl.cropOffsetX,
-                cropOffsetY: pl.cropOffsetY,
-              ),
-            ),
-          );
-        }).toList(),
-      );
-    });
-  }
 
   AnimatedSwitcherTransitionBuilder _buildTransition(TransitionEffect effect) {
     switch (effect) {
