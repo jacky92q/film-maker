@@ -197,20 +197,39 @@ class _EditorViewState extends State<EditorView> {
                     style: TextStyle(color: AppTheme.subtleText)),
               );
             }
-            return Column(
-              children: [
-                // 16:9 interactive canvas
-                AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: _SlideCanvas(viewModel: widget.viewModel),
-                ),
-                // Control row: photo, add text, music, delete slide
-                _buildControlsRow(slide),
-                // Adaptive edit panel (layer vs. slide level)
-                Expanded(child: _buildEditPanel()),
-                // Timeline
-                _buildTimeline(),
-              ],
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                // Reserve height for controls row + timeline so canvas
+                // never overflows in landscape mode.
+                const reservedH = 48.0 + 60.0 + 160.0; // controls + timeline + min panel
+                final maxCanvasH = (constraints.maxHeight - reservedH).clamp(60.0, double.infinity);
+                final maxCanvasW = constraints.maxWidth;
+                // Pick canvas size that fits 16:9 within both constraints
+                double canvasW = maxCanvasW;
+                double canvasH = canvasW / (16 / 9);
+                if (canvasH > maxCanvasH) {
+                  canvasH = maxCanvasH;
+                  canvasW = canvasH * (16 / 9);
+                }
+                return Column(
+                  children: [
+                    // 16:9 interactive canvas — bounded so it never overflows in landscape
+                    Center(
+                      child: SizedBox(
+                        width: canvasW,
+                        height: canvasH,
+                        child: _SlideCanvas(viewModel: widget.viewModel),
+                      ),
+                    ),
+                    // Control row: photo, add text, music, delete slide
+                    _buildControlsRow(slide),
+                    // Adaptive edit panel (layer vs. slide level)
+                    Expanded(child: _buildEditPanel()),
+                    // Timeline
+                    _buildTimeline(),
+                  ],
+                );
+              },
             );
           },
         ),
