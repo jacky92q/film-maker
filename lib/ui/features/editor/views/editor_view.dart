@@ -1088,9 +1088,9 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
               children: [
                 Expanded(
                   child: Slider(
-                    value: layer.fontSize.clamp(8.0, 120.0),
-                    min: 8, max: 120, divisions: 56,
-                    label: '${layer.fontSize.round()}pt',
+                    value: layer.fontSize.clamp(12.0, 300.0),
+                    min: 12, max: 300, divisions: 72,
+                    label: '${layer.fontSize.round()}px',
                     onChanged: (v) => _applyStyle((l) => l.copyWith(fontSize: v)),
                   ),
                 ),
@@ -1401,9 +1401,9 @@ class _PhotoLayerEditPanel extends StatelessWidget {
               // Frame Width
               const Text('Border Width', style: labelStyle),
               Slider(
-                value: layer.frameWidth.clamp(1.0, 20.0),
-                min: 1, max: 20, divisions: 19,
-                label: '${layer.frameWidth.round()}px',
+                value: layer.frameWidth.clamp(4.0, 80.0),
+                min: 4, max: 80, divisions: 38,
+                label: '${layer.frameWidth.round()}',
                 onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(frameWidth: v)),
               ),
               const SizedBox(height: 8),

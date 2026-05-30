@@ -297,7 +297,7 @@ class TextLayer {
     this.y = 0.75,
     this.color = SlideTextColor.white,
     this.barColor = SlideTextColor.gold,
-    this.fontSize = 32.0,
+    this.fontSize = 96.0,
     this.rotation = 0.0,
     this.fontStyle = SlideFontStyle.serif,
     this.textBg = SlideTextBg.none,
@@ -367,7 +367,7 @@ class PhotoLayer {
     this.shape = PhotoShape.none,
     this.frame = PhotoFrame.none,
     this.filter = PhotoFilter.none,
-    this.frameWidth = 4.0,
+    this.frameWidth = 16.0,
     this.cropScale = 1.0,
     this.cropOffsetX = 0.0,
     this.cropOffsetY = 0.0,
@@ -436,8 +436,8 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_t', text: 'Our Story', x: 0.5, y: 0.50, fontSize: 32.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.cream),
-            TextLayer(id: '${id}_s', text: 'A Wedding Film', isSubtitle: true, x: 0.5, y: 0.66, fontSize: 18.0, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
+            TextLayer(id: '${id}_t', text: 'Our Story', x: 0.5, y: 0.50, fontSize: 96.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.cream),
+            TextLayer(id: '${id}_s', text: 'A Wedding Film', isSubtitle: true, x: 0.5, y: 0.66, fontSize: 56.0, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
           ],
           transition: TransitionEffect.fade,
           durationSeconds: 5,
@@ -446,7 +446,7 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_s', text: 'A cherished moment', isSubtitle: true, x: 0.5, y: 0.86, fontSize: 18.0, color: SlideTextColor.cream, barColor: SlideTextColor.cream),
+            TextLayer(id: '${id}_s', text: 'A cherished moment', isSubtitle: true, x: 0.5, y: 0.86, fontSize: 56.0, color: SlideTextColor.cream, barColor: SlideTextColor.cream),
           ],
           transition: TransitionEffect.kenBurns,
           durationSeconds: 5,
@@ -455,7 +455,7 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_t', text: '"You are my greatest adventure"', x: 0.5, y: 0.50, fontSize: 32.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
+            TextLayer(id: '${id}_t', text: '"You are my greatest adventure"', x: 0.5, y: 0.50, fontSize: 96.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
           ],
           transition: TransitionEffect.fade,
           durationSeconds: 6,
@@ -464,8 +464,8 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_t', text: 'Forever & Always', x: 0.5, y: 0.46, fontSize: 32.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
-            TextLayer(id: '${id}_s', text: '${DateTime.now().year}', isSubtitle: true, x: 0.5, y: 0.62, fontSize: 18.0, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
+            TextLayer(id: '${id}_t', text: 'Forever & Always', x: 0.5, y: 0.46, fontSize: 96.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
+            TextLayer(id: '${id}_s', text: '${DateTime.now().year}', isSubtitle: true, x: 0.5, y: 0.62, fontSize: 56.0, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
           ],
           transition: TransitionEffect.fade,
           durationSeconds: 5,

@@ -135,6 +135,7 @@ class EditorViewModel extends ChangeNotifier {
       id: _uuid.v4(),
       text: isSubtitle ? 'Subtitle text' : 'Main title',
       isSubtitle: isSubtitle,
+      fontSize: isSubtitle ? 56.0 : 96.0,
       x: 0.5,
       y: isSubtitle ? 0.70 : 0.50,
       zOrder: _nextZOrder(),
