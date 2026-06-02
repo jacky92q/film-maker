@@ -2078,11 +2078,19 @@ class _SlideThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Best image to show: background photo > first photo layer > nothing (show bg color)
+    final thumbPath = slide.imagePath ??
+        slide.photoLayers
+            .where((pl) => pl.imagePath != null)
+            .map((pl) => pl.imagePath!)
+            .firstOrNull;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 64,
+        height: 72,
         margin: const EdgeInsets.only(right: 6),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
@@ -2090,20 +2098,32 @@ class _SlideThumbnail extends StatelessWidget {
             color: isSelected ? AppTheme.gold : AppTheme.border,
             width: isSelected ? 2 : 1,
           ),
-          gradient: const LinearGradient(
-              colors: [Color(0xFF1A1208), Color(0xFF0D0D0D)]),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(7),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (slide.imagePath != null)
-                Image.file(File(slide.imagePath!),
+              // Background color always shown
+              ColoredBox(color: Color(slide.backgroundColor)),
+              // Best photo preview
+              if (thumbPath != null)
+                Image.file(File(thumbPath),
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+              // Subtle dark gradient so the number stays readable
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Color(0x99000000)],
+                    stops: [0.5, 1.0],
+                  ),
+                ),
+              ),
               Positioned(
-                bottom: 2,
+                bottom: 3,
                 left: 0,
                 right: 0,
                 child: Center(
@@ -2111,7 +2131,7 @@ class _SlideThumbnail extends StatelessWidget {
                     '${index + 1}',
                     style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
-                      color: isSelected ? AppTheme.gold : AppTheme.subtleText,
+                      color: isSelected ? AppTheme.gold : Colors.white70,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
