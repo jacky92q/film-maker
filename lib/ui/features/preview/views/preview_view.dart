@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
@@ -22,7 +21,6 @@ class PreviewView extends StatefulWidget {
 
 class _PreviewViewState extends State<PreviewView>
     with TickerProviderStateMixin {
-  late AnimationController _transitionController;
   late AnimationController _kenBurnsController;
   Timer? _autoAdvanceTimer;
   bool _showControls = true;
@@ -33,10 +31,6 @@ class _PreviewViewState extends State<PreviewView>
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-    _transitionController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
     _kenBurnsController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
@@ -49,7 +43,6 @@ class _PreviewViewState extends State<PreviewView>
   @override
   void dispose() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    _transitionController.dispose();
     _kenBurnsController.dispose();
     _autoAdvanceTimer?.cancel();
     _hideControlsTimer?.cancel();
@@ -65,7 +58,6 @@ class _PreviewViewState extends State<PreviewView>
       _stopAutoAdvance();
       _kenBurnsController.stop();
     }
-    _transitionController.forward(from: 0);
   }
 
   void _startAutoAdvance() {
@@ -123,18 +115,9 @@ class _PreviewViewState extends State<PreviewView>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            ListenableBuilder(
-              listenable: widget.viewModel,
-              builder: (context, _) {
-                final slide = widget.viewModel.currentSlide;
-                if (slide == null) {
-                  return const Center(
-                    child: Text('No slides', style: TextStyle(color: AppTheme.subtleText)),
-                  );
-                }
-                return _buildSlideView(slide);
-              },
-            ),
+            // All slides pre-rendered so photos load instantly on open.
+            // Only the current slide is visible (opacity 1); others are 0.
+            _buildAllSlides(),
             AnimatedOpacity(
               opacity: _showControls ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 300),
@@ -146,35 +129,58 @@ class _PreviewViewState extends State<PreviewView>
     );
   }
 
-  Widget _buildSlideView(Slide slide) {
+  // Pre-renders every slide in the project at once so photos are fully loaded
+  // before the user navigates to them. The current slide is opacity 1; all
+  // others are 0. Switching slides is a simple AnimatedOpacity cross-fade —
+  // no rebuild, no image-decode delay.
+  Widget _buildAllSlides() {
+    return ListenableBuilder(
+      listenable: widget.viewModel,
+      builder: (context, _) {
+        final slides = widget.viewModel.project.slides;
+        final currentIndex = widget.viewModel.currentIndex;
+        if (slides.isEmpty) {
+          return const Center(
+            child: Text('No slides', style: TextStyle(color: AppTheme.subtleText)),
+          );
+        }
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            for (int i = 0; i < slides.length; i++)
+              AnimatedOpacity(
+                opacity: i == currentIndex ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeInOut,
+                child: _buildSingleSlideCanvas(slides[i]),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSingleSlideCanvas(Slide slide) {
     final background = _SlidePhotoLayer(
       slide: slide,
       kenBurnsController: _kenBurnsController,
     );
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 700),
-      switchInCurve: Curves.easeInOut,
-      switchOutCurve: Curves.easeInOut,
-      transitionBuilder: _buildTransition(slide.transition),
-      child: Center(
-        key: ValueKey(slide.id),
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: SizedBox(
-              width: 1280,
-              height: 720,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  background,
-                  _buildGradientOverlay(),
-                  buildSlideOverlay(slide.overlay),
-                  ..._buildSortedLayers(slide),
-                ],
-              ),
+    return Center(
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: SizedBox(
+            width: 1280,
+            height: 720,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                background,
+                _buildGradientOverlay(),
+                buildSlideOverlay(slide.overlay),
+                ..._buildSortedLayers(slide),
+              ],
             ),
           ),
         ),
@@ -267,82 +273,6 @@ class _PreviewViewState extends State<PreviewView>
   }
 
 
-  AnimatedSwitcherTransitionBuilder _buildTransition(TransitionEffect effect) {
-    switch (effect) {
-      case TransitionEffect.fade:
-      case TransitionEffect.kenBurns:
-        return AnimatedSwitcher.defaultTransitionBuilder;
-
-      case TransitionEffect.slideLeft:
-        return (child, animation) {
-          final offset = Tween<Offset>(
-            begin: const Offset(1.0, 0.0),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
-          return SlideTransition(position: offset, child: child);
-        };
-
-      case TransitionEffect.slideRight:
-        return (child, animation) {
-          final offset = Tween<Offset>(
-            begin: const Offset(-1.0, 0.0),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
-          return SlideTransition(position: offset, child: child);
-        };
-
-      case TransitionEffect.zoomIn:
-        return (child, animation) {
-          final scale = Tween<double>(begin: 1.15, end: 1.0).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOut),
-          );
-          return ScaleTransition(
-            scale: scale,
-            child: FadeTransition(opacity: animation, child: child),
-          );
-        };
-
-      case TransitionEffect.blurDissolve:
-        return (child, animation) {
-          final blurAnim = Tween<double>(begin: 14.0, end: 0.0).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOut),
-          );
-          return AnimatedBuilder(
-            animation: blurAnim,
-            builder: (_, ch) => ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(
-                  sigmaX: blurAnim.value, sigmaY: blurAnim.value),
-              child: FadeTransition(opacity: animation, child: ch),
-            ),
-            child: child,
-          );
-        };
-
-      case TransitionEffect.wipeLeft:
-        return (child, animation) {
-          return AnimatedBuilder(
-            animation: animation,
-            builder: (_, ch) => ClipRect(
-              clipper: _WipeClipper(animation.value, fromLeft: false),
-              child: ch,
-            ),
-            child: child,
-          );
-        };
-
-      case TransitionEffect.wipeRight:
-        return (child, animation) {
-          return AnimatedBuilder(
-            animation: animation,
-            builder: (_, ch) => ClipRect(
-              clipper: _WipeClipper(animation.value, fromLeft: true),
-              child: ch,
-            ),
-            child: child,
-          );
-        };
-    }
-  }
 
   Widget _buildGradientOverlay() {
     return Container(
@@ -653,20 +583,3 @@ class _SlidePhotoLayerState extends State<_SlidePhotoLayer>
 
 }
 
-class _WipeClipper extends CustomClipper<Rect> {
-  const _WipeClipper(this.progress, {required this.fromLeft});
-  final double progress;
-  final bool fromLeft;
-
-  @override
-  Rect getClip(Size size) {
-    if (fromLeft) {
-      return Rect.fromLTWH(0, 0, size.width * progress, size.height);
-    }
-    return Rect.fromLTWH(
-      size.width * (1 - progress), 0, size.width * progress, size.height);
-  }
-
-  @override
-  bool shouldReclip(_WipeClipper old) => old.progress != progress;
-}
