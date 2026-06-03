@@ -199,9 +199,9 @@ class _EditorViewState extends State<EditorView> {
             }
             return LayoutBuilder(
               builder: (context, constraints) {
-                // Reserve height for controls row + timeline so canvas
+                // Reserve height for add bar + timeline so canvas
                 // never overflows in landscape mode.
-                const reservedH = 48.0 + 60.0 + 160.0; // controls + timeline + min panel
+                const reservedH = 52.0 + 100.0 + 160.0; // add bar + timeline + min panel
                 final maxCanvasH = (constraints.maxHeight - reservedH).clamp(60.0, double.infinity);
                 final maxCanvasW = constraints.maxWidth;
                 // Pick canvas size that fits 16:9 within both constraints
@@ -221,9 +221,19 @@ class _EditorViewState extends State<EditorView> {
                         child: _SlideCanvas(viewModel: widget.viewModel),
                       ),
                     ),
-                    // Control row: photo, add text, music, delete slide
-                    _buildControlsRow(slide),
-                    // Adaptive edit panel (layer vs. slide level)
+                    // Floating add-content bar
+                    _AddContentBar(
+                      viewModel: widget.viewModel,
+                      slide: slide,
+                      onAddPhoto: () => widget.viewModel.addPhotoLayer(),
+                      onAddTitle: () => widget.viewModel.addTextLayer(isSubtitle: false),
+                      onAddSubtitle: () => widget.viewModel.addTextLayer(isSubtitle: true),
+                      onMusic: _showMusicPicker,
+                      onDeleteSlide: widget.viewModel.project.slides.length > 1
+                          ? widget.viewModel.deleteSelectedSlide
+                          : null,
+                    ),
+                    // Tab-based edit panel (layer vs. slide level)
                     Expanded(child: _buildEditPanel()),
                     // Timeline
                     _buildTimeline(),
@@ -344,60 +354,12 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  // ── Controls row ──────────────────────────────────────────────────────────
-
-  Widget _buildControlsRow(Slide slide) {
-    return Container(
-      color: AppTheme.darkSurface,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        children: [
-          _ControlButton(
-            icon: Icons.photo_camera_outlined,
-            label: '+ Photo',
-            onTap: () => widget.viewModel.addPhotoLayer(),
-          ),
-          const SizedBox(width: 6),
-          _ControlButton(
-            icon: Icons.title,
-            label: '+ Main',
-            onTap: () => widget.viewModel.addTextLayer(isSubtitle: false),
-          ),
-          const SizedBox(width: 6),
-          _ControlButton(
-            icon: Icons.short_text,
-            label: '+ Sub',
-            onTap: () => widget.viewModel.addTextLayer(isSubtitle: true),
-          ),
-          const SizedBox(width: 6),
-          _ControlButton(
-            icon: Icons.music_note_outlined,
-            label: widget.viewModel.project.musicName ?? 'Music',
-            onTap: _showMusicPicker,
-            highlighted: widget.viewModel.project.musicName != null,
-          ),
-          const Spacer(),
-          if (widget.viewModel.project.slides.length > 1)
-            IconButton(
-              onPressed: widget.viewModel.deleteSelectedSlide,
-              tooltip: 'Delete slide',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: const Icon(Icons.delete_outline,
-                  color: Color(0xFFFF6B6B), size: 20),
-            ),
-        ],
-      ),
-    );
-  }
-
   // ── Adaptive edit panel ───────────────────────────────────────────────────
 
   Widget _buildEditPanel() {
-    // Photo layer panel takes priority if a photo layer is selected
     final photoLayer = widget.viewModel.selectedPhotoLayer;
     if (photoLayer != null) {
-      return _PhotoLayerEditPanel(
+      return _PhotoLayerTabs(
         key: ValueKey(photoLayer.id),
         vm: widget.viewModel,
         layer: photoLayer,
@@ -405,7 +367,7 @@ class _EditorViewState extends State<EditorView> {
     }
     final layer = widget.viewModel.selectedLayer;
     if (layer != null) {
-      return _LayerEditPanel(
+      return _TextLayerTabs(
         key: ValueKey(layer.id),
         layer: layer,
         onUpdate: widget.viewModel.updateTextLayer,
@@ -416,14 +378,15 @@ class _EditorViewState extends State<EditorView> {
     }
     final slide = widget.viewModel.selectedSlide;
     if (slide == null) return const SizedBox.shrink();
-    return _SlideEditPanel(slide: slide, viewModel: widget.viewModel);
+    return _SlideTabs(slide: slide, viewModel: widget.viewModel);
   }
 
   // ── Timeline ──────────────────────────────────────────────────────────────
 
   Widget _buildTimeline() {
+    final slides = widget.viewModel.project.slides;
     return Container(
-      height: 88,
+      height: 100,
       color: AppTheme.darkBg,
       child: Row(
         children: [
@@ -432,22 +395,29 @@ class _EditorViewState extends State<EditorView> {
             onTap: _showMusicPicker,
           ),
           Expanded(
-            child: ListView.builder(
+            child: ReorderableListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-              itemCount: widget.viewModel.project.slides.length + 1,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              itemCount: slides.length,
+              buildDefaultDragHandles: false,
+              onReorder: (oldIndex, newIndex) {
+                widget.viewModel.reorderSlide(oldIndex, newIndex);
+              },
+              proxyDecorator: (child, index, animation) => child,
               itemBuilder: (context, index) {
-                if (index == widget.viewModel.project.slides.length) {
-                  return _AddSlideButton(onTap: _showTemplatePickerForNewSlide);
-                }
-                final slide = widget.viewModel.project.slides[index];
-                return _SlideThumbnail(
-                  slide: slide,
+                final slide = slides[index];
+                return ReorderableDragStartListener(
+                  key: ValueKey(slide.id),
                   index: index,
-                  isSelected: index == widget.viewModel.selectedSlideIndex,
-                  onTap: () => widget.viewModel.selectSlide(index),
+                  child: _SlideThumbnail(
+                    slide: slide,
+                    index: index,
+                    isSelected: index == widget.viewModel.selectedSlideIndex,
+                    onTap: () => widget.viewModel.selectSlide(index),
+                  ),
                 );
               },
+              footer: _AddSlideButton(onTap: _showTemplatePickerForNewSlide),
             ),
           ),
         ],
