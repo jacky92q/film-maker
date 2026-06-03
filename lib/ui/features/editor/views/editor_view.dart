@@ -407,7 +407,6 @@ class _EditorViewState extends State<EditorView> {
     if (layer != null) {
       return _LayerEditPanel(
         key: ValueKey(layer.id),
-        vm: widget.viewModel,
         layer: layer,
         onUpdate: widget.viewModel.updateTextLayer,
         onDelete: () => widget.viewModel.deleteTextLayer(layer.id),
@@ -882,14 +881,12 @@ class _LayerWidget extends StatelessWidget {
 class _LayerEditPanel extends StatefulWidget {
   const _LayerEditPanel({
     super.key,
-    required this.vm,
     required this.layer,
     required this.onUpdate,
     required this.onDelete,
     required this.onBringToFront,
     required this.onSendToBack,
   });
-  final EditorViewModel vm;
   final TextLayer layer;
   final void Function(TextLayer) onUpdate;
   final VoidCallback onDelete;
@@ -921,12 +918,11 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
     widget.onUpdate(fn(widget.layer.copyWith(text: _ctrl.text)));
   }
 
-  Widget _buildAnimationRow(EditorViewModel vm) {
-    final slide = vm.selectedSlide;
-    if (slide == null) return const SizedBox.shrink();
+  Widget _buildAnimationRow() {
     return _AnimationPickerRow(
-      current: slide.contentAnimation,
-      onSelect: (anim) => vm.updateSelectedSlide(slide.copyWith(contentAnimation: anim)),
+      current: widget.layer.contentAnimation,
+      onSelect: (anim) => widget.onUpdate(widget.layer.copyWith(contentAnimation: anim)),
+      allowed: SlideContentAnimationX.textAnimations,
     );
   }
 
@@ -1008,8 +1004,8 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
               ],
             ),
             const SizedBox(height: 8),
-            // Slide animation quick-access row
-            _buildAnimationRow(widget.vm),
+            // Animation picker for this text layer
+            _buildAnimationRow(),
             const SizedBox(height: 8),
             // Text input
             TextField(
@@ -1272,11 +1268,10 @@ class _PhotoLayerEditPanel extends StatelessWidget {
   final PhotoLayer layer;
 
   Widget _buildPhotoAnimRow() {
-    final slide = vm.selectedSlide;
-    if (slide == null) return const SizedBox.shrink();
     return _AnimationPickerRow(
-      current: slide.contentAnimation,
-      onSelect: (anim) => vm.updateSelectedSlide(slide.copyWith(contentAnimation: anim)),
+      current: layer.contentAnimation,
+      onSelect: (anim) => vm.updatePhotoLayer(layer.copyWith(contentAnimation: anim)),
+      allowed: SlideContentAnimationX.photoAnimations,
     );
   }
 
@@ -1561,12 +1556,6 @@ class _SlideEditPanel extends StatelessWidget {
               ),
               const SizedBox(height: 6),
             ],
-            // Animation (top so it's easy to find)
-            _AnimationPickerRow(
-              current: slide.contentAnimation,
-              onSelect: (anim) => viewModel.updateSelectedSlide(slide.copyWith(contentAnimation: anim)),
-            ),
-            const SizedBox(height: 10),
             // Background color (always visible)
             _Label('Background Color'),
             const SizedBox(height: 6),
@@ -1810,12 +1799,18 @@ class _SlideEditPanel extends StatelessWidget {
 // Compact animation picker row — shown in all three edit panels so the user
 // can always access the slide-level entrance animation regardless of selection.
 class _AnimationPickerRow extends StatelessWidget {
-  const _AnimationPickerRow({required this.current, required this.onSelect});
+  const _AnimationPickerRow({
+    required this.current,
+    required this.onSelect,
+    this.allowed,
+  });
   final SlideContentAnimation current;
   final void Function(SlideContentAnimation) onSelect;
+  final List<SlideContentAnimation>? allowed;
 
   @override
   Widget build(BuildContext context) {
+    final animations = allowed ?? SlideContentAnimation.values;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1839,7 +1834,7 @@ class _AnimationPickerRow extends StatelessWidget {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: SlideContentAnimation.values.map((anim) {
+            children: animations.map((anim) {
               final sel = current == anim;
               return GestureDetector(
                 onTap: () => onSelect(anim),

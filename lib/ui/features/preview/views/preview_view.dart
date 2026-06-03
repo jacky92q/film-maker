@@ -320,8 +320,8 @@ class _PreviewViewState extends State<PreviewView>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Animated slide canvas — pre-rendered, visibility driven by AnimatedOpacity,
-// content animations driven by a per-instance AnimationController.
+// Animated slide canvas — pre-rendered, visibility driven by AnimatedOpacity.
+// Each layer widget has its own AnimationController for independent animations.
 // ─────────────────────────────────────────────────────────────────────────────
 
 Widget _gradientOverlay() => IgnorePointer(
@@ -337,7 +337,49 @@ Widget _gradientOverlay() => IgnorePointer(
       ),
     );
 
-class _AnimatedSlideCanvas extends StatefulWidget {
+Duration _durForAnim(SlideContentAnimation a) => switch (a) {
+  SlideContentAnimation.none        => const Duration(milliseconds: 100),
+  SlideContentAnimation.typewriter  => const Duration(milliseconds: 2800),
+  SlideContentAnimation.slideUp ||
+  SlideContentAnimation.slideIn     => const Duration(milliseconds: 1200),
+  SlideContentAnimation.fadeStagger => const Duration(milliseconds: 2000),
+  SlideContentAnimation.float       => const Duration(milliseconds: 2200),
+  SlideContentAnimation.zoomPulse   => const Duration(milliseconds: 3000),
+  SlideContentAnimation.wipeReveal  => const Duration(milliseconds: 2200),
+};
+
+Alignment _textLayerAlign(TextLayer l) => Alignment(
+  (l.x * 2 - 1).clamp(-0.95, 0.95),
+  (l.y * 2 - 1).clamp(-0.95, 0.92),
+);
+
+Widget _buildLayerText(TextLayer layer, {String? text}) {
+  final displayText = text ?? layer.text;
+  final style = slideLayerTextStyle(
+    layer.fontStyle,
+    fontSize: layer.fontSize,
+    color: layer.color.color,
+    shadows: [Shadow(color: Colors.black.withValues(alpha: 0.85), blurRadius: 12)],
+  );
+  Widget content = Text(displayText, style: style, textAlign: TextAlign.center);
+  if (layer.isSubtitle) {
+    content = IntrinsicWidth(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          border: Border(left: BorderSide(color: layer.barColor.color, width: 2.5)),
+        ),
+        child: content,
+      ),
+    );
+  }
+  return Transform.rotate(
+    angle: layer.rotation * 3.14159265 / 180.0,
+    child: content,
+  );
+}
+
+class _AnimatedSlideCanvas extends StatelessWidget {
   const _AnimatedSlideCanvas({
     super.key,
     required this.slide,
@@ -348,128 +390,7 @@ class _AnimatedSlideCanvas extends StatefulWidget {
   final AnimationController kenBurnsController;
   final bool isActive;
 
-  @override
-  State<_AnimatedSlideCanvas> createState() => _AnimatedSlideCanvasState();
-}
-
-class _AnimatedSlideCanvasState extends State<_AnimatedSlideCanvas>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  Duration get _dur => switch (widget.slide.contentAnimation) {
-    SlideContentAnimation.none        => const Duration(milliseconds: 100),
-    SlideContentAnimation.typewriter  => const Duration(milliseconds: 2800),
-    SlideContentAnimation.slideUp ||
-    SlideContentAnimation.slideIn     => const Duration(milliseconds: 1200),
-    SlideContentAnimation.fadeStagger => const Duration(milliseconds: 2000),
-    SlideContentAnimation.float       => const Duration(milliseconds: 2200),
-    SlideContentAnimation.zoomPulse   => const Duration(milliseconds: 3000),
-    SlideContentAnimation.wipeReveal  => const Duration(milliseconds: 2200),
-  };
-
-  bool get _looping =>
-      widget.slide.contentAnimation == SlideContentAnimation.float ||
-      widget.slide.contentAnimation == SlideContentAnimation.zoomPulse;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: _dur);
-    if (widget.isActive) _play();
-  }
-
-  @override
-  void didUpdateWidget(_AnimatedSlideCanvas old) {
-    super.didUpdateWidget(old);
-    if (!old.isActive && widget.isActive) {
-      _ctrl.duration = _dur;
-      _play();
-    } else if (old.isActive && !widget.isActive) {
-      _ctrl.stop();
-      if (!_looping) _ctrl.reset();
-    }
-  }
-
-  void _play() {
-    if (_looping) {
-      _ctrl.repeat(reverse: true);
-    } else {
-      _ctrl.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  // ── Layer helpers ─────────────────────────────────────────────────────────
-
-  Widget _layerText(TextLayer layer, String text) {
-    final style = slideLayerTextStyle(
-      layer.fontStyle,
-      fontSize: layer.fontSize,
-      color: layer.color.color,
-      shadows: [Shadow(color: Colors.black.withValues(alpha: 0.85), blurRadius: 12)],
-    );
-    Widget content = Text(text, style: style, textAlign: TextAlign.center);
-    if (layer.isSubtitle) {
-      content = IntrinsicWidth(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: layer.barColor.color, width: 2.5)),
-          ),
-          child: content,
-        ),
-      );
-    }
-    return Transform.rotate(
-      angle: layer.rotation * 3.14159265 / 180.0,
-      child: content,
-    );
-  }
-
-  Alignment _align(TextLayer l) => Alignment(
-        (l.x * 2 - 1).clamp(-0.95, 0.95),
-        (l.y * 2 - 1).clamp(-0.95, 0.92),
-      );
-
-  Widget _staticText(TextLayer l) => Positioned.fill(
-        child: Align(alignment: _align(l), child: _layerText(l, l.text)),
-      );
-
-  Widget _staticPhoto(PhotoLayer pl) {
-    const w = 1280.0, h = 720.0;
-    return Stack(children: [
-      Positioned(
-        left: (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * w,
-        top: (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * h,
-        width: pl.widthFraction * w,
-        height: pl.heightFraction * h,
-        child: Transform.rotate(
-          angle: pl.rotation * 3.14159265 / 180.0,
-          child: buildShapedPhoto(
-            imagePath: pl.imagePath,
-            shape: pl.shape,
-            frame: pl.frame,
-            fit: BoxFit.cover,
-            colorFilter: pl.filter.colorFilter,
-            frameWidth: pl.frameWidth,
-            cropScale: pl.cropScale,
-            cropOffsetX: pl.cropOffsetX,
-            cropOffsetY: pl.cropOffsetY,
-          ),
-        ),
-      ),
-    ]);
-  }
-
-  // ── Sorted layer builder ──────────────────────────────────────────────────
-
   List<Widget> _buildLayers() {
-    final slide = widget.slide;
     final items = <({int z, bool isText, Object layer})>[];
     for (final l in slide.textLayers) {
       items.add((z: l.zOrder, isText: true, layer: l));
@@ -479,272 +400,26 @@ class _AnimatedSlideCanvasState extends State<_AnimatedSlideCanvas>
     }
     items.sort((a, b) => a.z.compareTo(b.z));
     return [
-      for (int i = 0; i < items.length; i++)
-        if (items[i].isText)
-          _animText(items[i].layer as TextLayer, i)
+      for (final item in items)
+        if (item.isText)
+          _AnimatedTextLayer(
+            key: ValueKey((item.layer as TextLayer).id),
+            layer: item.layer as TextLayer,
+            isActive: isActive,
+          )
         else
-          _animPhoto(items[i].layer as PhotoLayer, i),
+          _AnimatedPhotoLayer(
+            key: ValueKey((item.layer as PhotoLayer).id),
+            pl: item.layer as PhotoLayer,
+            isActive: isActive,
+          ),
     ];
   }
-
-  // ── Text animation ────────────────────────────────────────────────────────
-
-  Widget _animText(TextLayer layer, int idx) {
-    final anim = widget.slide.contentAnimation;
-    switch (anim) {
-      case SlideContentAnimation.none:
-        return _staticText(layer);
-
-      case SlideContentAnimation.typewriter:
-        final tIdx = widget.slide.textLayers.indexOf(layer);
-        final total = widget.slide.textLayers.length;
-        final start = total <= 1 ? 0.0 : tIdx / total * 0.45;
-        final end = (start + (total <= 1 ? 0.95 : 0.55)).clamp(0.0, 1.0);
-        return AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, __) {
-            final t = ((_ctrl.value - start) / (end - start)).clamp(0.0, 1.0);
-            final n = (layer.text.length * t).round().clamp(0, layer.text.length);
-            return Positioned.fill(
-              child: Opacity(
-                opacity: t > 0 ? 1.0 : 0.0,
-                child: Align(
-                  alignment: _align(layer),
-                  child: _layerText(layer, layer.text.substring(0, n)),
-                ),
-              ),
-            );
-          },
-        );
-
-      case SlideContentAnimation.slideUp:
-        return AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, __) {
-            final start = idx * 0.14;
-            final end = (start + 0.5).clamp(0.0, 1.0);
-            final t = Curves.easeOutCubic.transform(
-                ((_ctrl.value - start) / (end - start)).clamp(0.0, 1.0));
-            return Positioned.fill(
-              child: Opacity(
-                opacity: t,
-                child: Transform.translate(
-                  offset: Offset(0, 100 * (1 - t)),
-                  child: Align(alignment: _align(layer), child: _layerText(layer, layer.text)),
-                ),
-              ),
-            );
-          },
-        );
-
-      case SlideContentAnimation.slideIn:
-        return AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, __) {
-            final start = idx * 0.14;
-            final end = (start + 0.5).clamp(0.0, 1.0);
-            final t = Curves.easeOutCubic.transform(
-                ((_ctrl.value - start) / (end - start)).clamp(0.0, 1.0));
-            return Positioned.fill(
-              child: Opacity(
-                opacity: t,
-                child: Transform.translate(
-                  offset: Offset(-200 * (1 - t), 0),
-                  child: Align(alignment: _align(layer), child: _layerText(layer, layer.text)),
-                ),
-              ),
-            );
-          },
-        );
-
-      case SlideContentAnimation.fadeStagger:
-        return AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, __) {
-            final start = idx * 0.2;
-            final end = (start + 0.4).clamp(0.0, 1.0);
-            final t = ((_ctrl.value - start) / (end - start)).clamp(0.0, 1.0);
-            return Positioned.fill(
-              child: Opacity(
-                opacity: t,
-                child: Align(alignment: _align(layer), child: _layerText(layer, layer.text)),
-              ),
-            );
-          },
-        );
-
-      case SlideContentAnimation.float:
-        return AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, __) {
-            final t = Curves.easeInOut.transform(_ctrl.value);
-            return Positioned.fill(
-              child: Align(
-                alignment: _align(layer),
-                child: Transform.translate(
-                  offset: Offset(0, -16 * t + 8),
-                  child: _layerText(layer, layer.text),
-                ),
-              ),
-            );
-          },
-        );
-
-      case SlideContentAnimation.zoomPulse:
-        return _staticText(layer);
-
-      case SlideContentAnimation.wipeReveal:
-        final tIdx = widget.slide.textLayers.indexOf(layer);
-        final total = widget.slide.textLayers.length;
-        final start = total <= 1 ? 0.0 : tIdx / total * 0.5;
-        final end = (start + (total <= 1 ? 1.0 : 0.5 / total + 0.5)).clamp(0.0, 1.0);
-        return AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, __) {
-            final t = Curves.easeOut.transform(
-                ((_ctrl.value - start) / (end - start)).clamp(0.0, 1.0));
-            return Positioned.fill(
-              child: Align(
-                alignment: _align(layer),
-                child: ClipRect(
-                  clipper: _WipeRevealClipper(t),
-                  child: _layerText(layer, layer.text),
-                ),
-              ),
-            );
-          },
-        );
-    }
-  }
-
-  // ── Photo animation ───────────────────────────────────────────────────────
-
-  Widget _animPhoto(PhotoLayer pl, int idx) {
-    const w = 1280.0, h = 720.0;
-    final left = (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * w;
-    final top  = (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * h;
-    final pw   = pl.widthFraction * w;
-    final ph   = pl.heightFraction * h;
-
-    final photo = Transform.rotate(
-      angle: pl.rotation * 3.14159265 / 180.0,
-      child: buildShapedPhoto(
-        imagePath: pl.imagePath,
-        shape: pl.shape,
-        frame: pl.frame,
-        fit: BoxFit.cover,
-        colorFilter: pl.filter.colorFilter,
-        frameWidth: pl.frameWidth,
-        cropScale: pl.cropScale,
-        cropOffsetX: pl.cropOffsetX,
-        cropOffsetY: pl.cropOffsetY,
-      ),
-    );
-
-    switch (widget.slide.contentAnimation) {
-      case SlideContentAnimation.none:
-      case SlideContentAnimation.typewriter:
-      case SlideContentAnimation.wipeReveal:
-        return _staticPhoto(pl);
-
-      case SlideContentAnimation.slideUp:
-        return AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, child) {
-            final start = idx * 0.14;
-            final end = (start + 0.5).clamp(0.0, 1.0);
-            final t = Curves.easeOutCubic.transform(
-                ((_ctrl.value - start) / (end - start)).clamp(0.0, 1.0));
-            return Stack(children: [
-              Positioned(
-                left: left, top: top + 100 * (1 - t),
-                width: pw, height: ph,
-                child: Opacity(opacity: t, child: child),
-              ),
-            ]);
-          },
-          child: photo,
-        );
-
-      case SlideContentAnimation.slideIn:
-        return AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, child) {
-            final start = idx * 0.14;
-            final end = (start + 0.5).clamp(0.0, 1.0);
-            final t = Curves.easeOutCubic.transform(
-                ((_ctrl.value - start) / (end - start)).clamp(0.0, 1.0));
-            return Stack(children: [
-              Positioned(
-                left: left - 200 * (1 - t), top: top,
-                width: pw, height: ph,
-                child: Opacity(opacity: t, child: child),
-              ),
-            ]);
-          },
-          child: photo,
-        );
-
-      case SlideContentAnimation.fadeStagger:
-        return AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, child) {
-            final start = idx * 0.2;
-            final end = (start + 0.4).clamp(0.0, 1.0);
-            final t = ((_ctrl.value - start) / (end - start)).clamp(0.0, 1.0);
-            return Stack(children: [
-              Positioned(
-                left: left, top: top, width: pw, height: ph,
-                child: Opacity(opacity: t, child: child),
-              ),
-            ]);
-          },
-          child: photo,
-        );
-
-      case SlideContentAnimation.float:
-        return AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, child) {
-            final t = Curves.easeInOut.transform(_ctrl.value);
-            final dy = -16 * t + 8;
-            return Stack(children: [
-              Positioned(
-                left: left, top: top + dy, width: pw, height: ph,
-                child: child!,
-              ),
-            ]);
-          },
-          child: photo,
-        );
-
-      case SlideContentAnimation.zoomPulse:
-        return AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, child) {
-            final t = Curves.easeInOut.transform(_ctrl.value);
-            final scale = 1.0 + 0.08 * t;
-            final dw = pw * (scale - 1) / 2;
-            final dh = ph * (scale - 1) / 2;
-            return Stack(children: [
-              Positioned(
-                left: left - dw, top: top - dh,
-                width: pw * scale, height: ph * scale,
-                child: child!,
-              ),
-            ]);
-          },
-          child: photo,
-        );
-    }
-  }
-
-  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return AnimatedOpacity(
-      opacity: widget.isActive ? 1.0 : 0.0,
+      opacity: isActive ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 600),
       curve: Curves.easeInOut,
       child: Center(
@@ -758,12 +433,9 @@ class _AnimatedSlideCanvasState extends State<_AnimatedSlideCanvas>
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  _SlidePhotoLayer(
-                    slide: widget.slide,
-                    kenBurnsController: widget.kenBurnsController,
-                  ),
+                  _SlidePhotoLayer(slide: slide, kenBurnsController: kenBurnsController),
                   _gradientOverlay(),
-                  buildSlideOverlay(widget.slide.overlay),
+                  buildSlideOverlay(slide.overlay),
                   ..._buildLayers(),
                 ],
               ),
@@ -772,6 +444,310 @@ class _AnimatedSlideCanvasState extends State<_AnimatedSlideCanvas>
         ),
       ),
     );
+  }
+}
+
+// ── Per-layer animated text widget ───────────────────────────────────────────
+
+class _AnimatedTextLayer extends StatefulWidget {
+  const _AnimatedTextLayer({super.key, required this.layer, required this.isActive});
+  final TextLayer layer;
+  final bool isActive;
+
+  @override
+  State<_AnimatedTextLayer> createState() => _AnimatedTextLayerState();
+}
+
+class _AnimatedTextLayerState extends State<_AnimatedTextLayer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  bool get _looping => widget.layer.contentAnimation == SlideContentAnimation.float;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: _durForAnim(widget.layer.contentAnimation));
+    if (widget.isActive) _play();
+  }
+
+  @override
+  void didUpdateWidget(_AnimatedTextLayer old) {
+    super.didUpdateWidget(old);
+    if (!old.isActive && widget.isActive) {
+      _ctrl.duration = _durForAnim(widget.layer.contentAnimation);
+      _play();
+    } else if (old.isActive && !widget.isActive) {
+      _ctrl.stop();
+      if (!_looping) _ctrl.reset();
+    }
+  }
+
+  void _play() => _looping ? _ctrl.repeat(reverse: true) : _ctrl.forward(from: 0);
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    final layer = widget.layer;
+    switch (layer.contentAnimation) {
+      case SlideContentAnimation.none:
+      case SlideContentAnimation.zoomPulse:
+        return Positioned.fill(
+          child: Align(alignment: _textLayerAlign(layer), child: _buildLayerText(layer)),
+        );
+
+      case SlideContentAnimation.typewriter:
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, __) {
+            final t = _ctrl.value;
+            final n = (layer.text.length * t).round().clamp(0, layer.text.length);
+            return Positioned.fill(
+              child: Opacity(
+                opacity: t > 0 ? 1.0 : 0.0,
+                child: Align(
+                  alignment: _textLayerAlign(layer),
+                  child: _buildLayerText(layer, text: layer.text.substring(0, n)),
+                ),
+              ),
+            );
+          },
+        );
+
+      case SlideContentAnimation.slideUp:
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, __) {
+            final t = Curves.easeOutCubic.transform(_ctrl.value);
+            return Positioned.fill(
+              child: Opacity(
+                opacity: t,
+                child: Transform.translate(
+                  offset: Offset(0, 100 * (1 - t)),
+                  child: Align(alignment: _textLayerAlign(layer), child: _buildLayerText(layer)),
+                ),
+              ),
+            );
+          },
+        );
+
+      case SlideContentAnimation.slideIn:
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, __) {
+            final t = Curves.easeOutCubic.transform(_ctrl.value);
+            return Positioned.fill(
+              child: Opacity(
+                opacity: t,
+                child: Transform.translate(
+                  offset: Offset(-200 * (1 - t), 0),
+                  child: Align(alignment: _textLayerAlign(layer), child: _buildLayerText(layer)),
+                ),
+              ),
+            );
+          },
+        );
+
+      case SlideContentAnimation.fadeStagger:
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, __) => Positioned.fill(
+            child: Opacity(
+              opacity: _ctrl.value,
+              child: Align(alignment: _textLayerAlign(layer), child: _buildLayerText(layer)),
+            ),
+          ),
+        );
+
+      case SlideContentAnimation.float:
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, __) {
+            final t = Curves.easeInOut.transform(_ctrl.value);
+            return Positioned.fill(
+              child: Align(
+                alignment: _textLayerAlign(layer),
+                child: Transform.translate(
+                  offset: Offset(0, -16 * t + 8),
+                  child: _buildLayerText(layer),
+                ),
+              ),
+            );
+          },
+        );
+
+      case SlideContentAnimation.wipeReveal:
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, __) {
+            final t = Curves.easeOut.transform(_ctrl.value);
+            return Positioned.fill(
+              child: Align(
+                alignment: _textLayerAlign(layer),
+                child: ClipRect(
+                  clipper: _WipeRevealClipper(t),
+                  child: _buildLayerText(layer),
+                ),
+              ),
+            );
+          },
+        );
+    }
+  }
+}
+
+// ── Per-layer animated photo widget ──────────────────────────────────────────
+
+class _AnimatedPhotoLayer extends StatefulWidget {
+  const _AnimatedPhotoLayer({super.key, required this.pl, required this.isActive});
+  final PhotoLayer pl;
+  final bool isActive;
+
+  @override
+  State<_AnimatedPhotoLayer> createState() => _AnimatedPhotoLayerState();
+}
+
+class _AnimatedPhotoLayerState extends State<_AnimatedPhotoLayer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  bool get _looping =>
+      widget.pl.contentAnimation == SlideContentAnimation.float ||
+      widget.pl.contentAnimation == SlideContentAnimation.zoomPulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: _durForAnim(widget.pl.contentAnimation));
+    if (widget.isActive) _play();
+  }
+
+  @override
+  void didUpdateWidget(_AnimatedPhotoLayer old) {
+    super.didUpdateWidget(old);
+    if (!old.isActive && widget.isActive) {
+      _ctrl.duration = _durForAnim(widget.pl.contentAnimation);
+      _play();
+    } else if (old.isActive && !widget.isActive) {
+      _ctrl.stop();
+      if (!_looping) _ctrl.reset();
+    }
+  }
+
+  void _play() => _looping ? _ctrl.repeat(reverse: true) : _ctrl.forward(from: 0);
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  Widget _photoWidget() {
+    final pl = widget.pl;
+    return Transform.rotate(
+      angle: pl.rotation * 3.14159265 / 180.0,
+      child: buildShapedPhoto(
+        imagePath: pl.imagePath,
+        shape: pl.shape,
+        frame: pl.frame,
+        fit: BoxFit.cover,
+        colorFilter: pl.filter.colorFilter,
+        frameWidth: pl.frameWidth,
+        cropScale: pl.cropScale,
+        cropOffsetX: pl.cropOffsetX,
+        cropOffsetY: pl.cropOffsetY,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pl = widget.pl;
+    const w = 1280.0, h = 720.0;
+    final left = (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * w;
+    final top  = (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * h;
+    final pw   = pl.widthFraction * w;
+    final ph   = pl.heightFraction * h;
+
+    switch (pl.contentAnimation) {
+      case SlideContentAnimation.none:
+      case SlideContentAnimation.typewriter:
+      case SlideContentAnimation.wipeReveal:
+        return Stack(children: [
+          Positioned(left: left, top: top, width: pw, height: ph, child: _photoWidget()),
+        ]);
+
+      case SlideContentAnimation.slideUp:
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, child) {
+            final t = Curves.easeOutCubic.transform(_ctrl.value);
+            return Stack(children: [
+              Positioned(
+                left: left, top: top + 100 * (1 - t), width: pw, height: ph,
+                child: Opacity(opacity: t, child: child),
+              ),
+            ]);
+          },
+          child: _photoWidget(),
+        );
+
+      case SlideContentAnimation.slideIn:
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, child) {
+            final t = Curves.easeOutCubic.transform(_ctrl.value);
+            return Stack(children: [
+              Positioned(
+                left: left - 200 * (1 - t), top: top, width: pw, height: ph,
+                child: Opacity(opacity: t, child: child),
+              ),
+            ]);
+          },
+          child: _photoWidget(),
+        );
+
+      case SlideContentAnimation.fadeStagger:
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, child) => Stack(children: [
+            Positioned(
+              left: left, top: top, width: pw, height: ph,
+              child: Opacity(opacity: _ctrl.value, child: child),
+            ),
+          ]),
+          child: _photoWidget(),
+        );
+
+      case SlideContentAnimation.float:
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, child) {
+            final dy = -16 * Curves.easeInOut.transform(_ctrl.value) + 8;
+            return Stack(children: [
+              Positioned(left: left, top: top + dy, width: pw, height: ph, child: child!),
+            ]);
+          },
+          child: _photoWidget(),
+        );
+
+      case SlideContentAnimation.zoomPulse:
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, child) {
+            final scale = 1.0 + 0.08 * Curves.easeInOut.transform(_ctrl.value);
+            final dw = pw * (scale - 1) / 2;
+            final dh = ph * (scale - 1) / 2;
+            return Stack(children: [
+              Positioned(
+                left: left - dw, top: top - dh,
+                width: pw * scale, height: ph * scale,
+                child: child!,
+              ),
+            ]);
+          },
+          child: _photoWidget(),
+        );
+    }
   }
 }
 
