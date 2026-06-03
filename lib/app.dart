@@ -80,16 +80,81 @@ class _AuthGateState extends State<_AuthGate> {
   }
 }
 
-class _SplashScreen extends StatelessWidget {
+class _SplashScreen extends StatefulWidget {
   const _SplashScreen();
+
+  @override
+  State<_SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<_SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _fade;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
+    _scale = Tween(begin: 0.78, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack),
+    );
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.darkBg,
-      body: const Center(
-        child: Icon(Icons.movie_creation_outlined,
-            color: AppTheme.gold, size: 52),
+      body: Center(
+        child: FadeTransition(
+          opacity: _fade,
+          child: ScaleTransition(
+            scale: _scale,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/images/app_logo.png',
+                  width: 110,
+                  height: 110,
+                ),
+                const SizedBox(height: 22),
+                const Text(
+                  'Film Maker',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    color: AppTheme.gold,
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Tell your love story through film',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    color: AppTheme.subtleText,
+                    fontSize: 13,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
