@@ -96,8 +96,13 @@ class _PreviewViewState extends State<PreviewView>
   }
 
   void _onTapScreen() {
-    setState(() => _showControls = true);
-    _scheduleHideControls();
+    if (_showControls) {
+      _hideControlsTimer?.cancel();
+      setState(() => _showControls = false);
+    } else {
+      setState(() => _showControls = true);
+      _scheduleHideControls();
+    }
   }
 
   void _onPlayPause() {
@@ -149,6 +154,7 @@ class _PreviewViewState extends State<PreviewView>
                 slide: slides[i],
                 kenBurnsController: _kenBurnsController,
                 isActive: i == currentIndex,
+                isPlaying: widget.viewModel.isPlaying,
               ),
           ],
         );
@@ -385,10 +391,12 @@ class _AnimatedSlideCanvas extends StatelessWidget {
     required this.slide,
     required this.kenBurnsController,
     required this.isActive,
+    required this.isPlaying,
   });
   final Slide slide;
   final AnimationController kenBurnsController;
   final bool isActive;
+  final bool isPlaying;
 
   List<Widget> _buildLayers() {
     final items = <({int z, bool isText, Object layer})>[];
@@ -406,12 +414,14 @@ class _AnimatedSlideCanvas extends StatelessWidget {
             key: ValueKey((item.layer as TextLayer).id),
             layer: item.layer as TextLayer,
             isActive: isActive,
+            isPlaying: isPlaying,
           )
         else
           _AnimatedPhotoLayer(
             key: ValueKey((item.layer as PhotoLayer).id),
             pl: item.layer as PhotoLayer,
             isActive: isActive,
+            isPlaying: isPlaying,
           ),
     ];
   }
@@ -433,7 +443,7 @@ class _AnimatedSlideCanvas extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  _SlidePhotoLayer(slide: slide, kenBurnsController: kenBurnsController),
+                  _SlidePhotoLayer(slide: slide, kenBurnsController: kenBurnsController, isActive: isActive, isPlaying: isPlaying),
                   _gradientOverlay(),
                   buildSlideOverlay(slide.overlay),
                   ..._buildLayers(),
@@ -450,9 +460,10 @@ class _AnimatedSlideCanvas extends StatelessWidget {
 // ── Per-layer animated text widget ───────────────────────────────────────────
 
 class _AnimatedTextLayer extends StatefulWidget {
-  const _AnimatedTextLayer({super.key, required this.layer, required this.isActive});
+  const _AnimatedTextLayer({super.key, required this.layer, required this.isActive, required this.isPlaying});
   final TextLayer layer;
   final bool isActive;
+  final bool isPlaying;
 
   @override
   State<_AnimatedTextLayer> createState() => _AnimatedTextLayerState();
@@ -468,16 +479,17 @@ class _AnimatedTextLayerState extends State<_AnimatedTextLayer>
   void initState() {
     super.initState();
     _ctrl = AnimationController(vsync: this, duration: _durForAnim(widget.layer.contentAnimation));
-    if (widget.isActive) _play();
   }
 
   @override
   void didUpdateWidget(_AnimatedTextLayer old) {
     super.didUpdateWidget(old);
-    if (!old.isActive && widget.isActive) {
+    final wasGoing = old.isActive && old.isPlaying;
+    final isGoing = widget.isActive && widget.isPlaying;
+    if (!wasGoing && isGoing) {
       _ctrl.duration = _durForAnim(widget.layer.contentAnimation);
       _play();
-    } else if (old.isActive && !widget.isActive) {
+    } else if (wasGoing && !isGoing) {
       _ctrl.stop();
       if (!_looping) _ctrl.reset();
     }
@@ -601,9 +613,10 @@ class _AnimatedTextLayerState extends State<_AnimatedTextLayer>
 // ── Per-layer animated photo widget ──────────────────────────────────────────
 
 class _AnimatedPhotoLayer extends StatefulWidget {
-  const _AnimatedPhotoLayer({super.key, required this.pl, required this.isActive});
+  const _AnimatedPhotoLayer({super.key, required this.pl, required this.isActive, required this.isPlaying});
   final PhotoLayer pl;
   final bool isActive;
+  final bool isPlaying;
 
   @override
   State<_AnimatedPhotoLayer> createState() => _AnimatedPhotoLayerState();
@@ -621,16 +634,17 @@ class _AnimatedPhotoLayerState extends State<_AnimatedPhotoLayer>
   void initState() {
     super.initState();
     _ctrl = AnimationController(vsync: this, duration: _durForAnim(widget.pl.contentAnimation));
-    if (widget.isActive) _play();
   }
 
   @override
   void didUpdateWidget(_AnimatedPhotoLayer old) {
     super.didUpdateWidget(old);
-    if (!old.isActive && widget.isActive) {
+    final wasGoing = old.isActive && old.isPlaying;
+    final isGoing = widget.isActive && widget.isPlaying;
+    if (!wasGoing && isGoing) {
       _ctrl.duration = _durForAnim(widget.pl.contentAnimation);
       _play();
-    } else if (old.isActive && !widget.isActive) {
+    } else if (wasGoing && !isGoing) {
       _ctrl.stop();
       if (!_looping) _ctrl.reset();
     }
@@ -768,10 +782,14 @@ class _SlidePhotoLayer extends StatefulWidget {
   const _SlidePhotoLayer({
     required this.slide,
     required this.kenBurnsController,
+    required this.isActive,
+    required this.isPlaying,
   });
 
   final Slide slide;
   final AnimationController kenBurnsController;
+  final bool isActive;
+  final bool isPlaying;
 
   @override
   State<_SlidePhotoLayer> createState() => _SlidePhotoLayerState();
@@ -788,8 +806,18 @@ class _SlidePhotoLayerState extends State<_SlidePhotoLayer>
       vsync: this,
       duration: Duration(seconds: widget.slide.durationSeconds),
     );
-    if (widget.slide.layout != SlideLayout.single) {
+  }
+
+  @override
+  void didUpdateWidget(_SlidePhotoLayer old) {
+    super.didUpdateWidget(old);
+    if (widget.slide.layout == SlideLayout.single) return;
+    final wasGoing = old.isActive && old.isPlaying;
+    final isGoing = widget.isActive && widget.isPlaying;
+    if (!wasGoing && isGoing) {
       _stripController.forward();
+    } else if (wasGoing && !isGoing) {
+      _stripController.stop();
     }
   }
 
