@@ -401,7 +401,7 @@ class _EditorViewState extends State<EditorView> {
               itemCount: slides.length,
               buildDefaultDragHandles: false,
               onReorder: (oldIndex, newIndex) {
-                widget.viewModel.reorderSlide(oldIndex, newIndex);
+                widget.viewModel.reorderSlides(oldIndex, newIndex);
               },
               proxyDecorator: (child, index, animation) => child,
               itemBuilder: (context, index) {
