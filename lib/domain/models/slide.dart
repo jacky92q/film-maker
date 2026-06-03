@@ -213,6 +213,41 @@ extension SlideLayoutX on SlideLayout {
   }
 }
 
+enum SlideContentAnimation {
+  none,
+  typewriter,
+  slideUp,
+  slideIn,
+  fadeStagger,
+  float,
+  zoomPulse,
+  wipeReveal,
+}
+
+extension SlideContentAnimationX on SlideContentAnimation {
+  String get label => switch (this) {
+    SlideContentAnimation.none        => 'None',
+    SlideContentAnimation.typewriter  => 'Typewriter',
+    SlideContentAnimation.slideUp     => 'Slide Up',
+    SlideContentAnimation.slideIn     => 'Slide In',
+    SlideContentAnimation.fadeStagger => 'Fade In',
+    SlideContentAnimation.float       => 'Float',
+    SlideContentAnimation.zoomPulse   => 'Zoom Pulse',
+    SlideContentAnimation.wipeReveal  => 'Wipe Reveal',
+  };
+
+  String get emoji => switch (this) {
+    SlideContentAnimation.none        => '✦',
+    SlideContentAnimation.typewriter  => '⌨',
+    SlideContentAnimation.slideUp     => '↑',
+    SlideContentAnimation.slideIn     => '→',
+    SlideContentAnimation.fadeStagger => '✨',
+    SlideContentAnimation.float       => '〜',
+    SlideContentAnimation.zoomPulse   => '⊙',
+    SlideContentAnimation.wipeReveal  => '▶',
+  };
+}
+
 enum SlideOverlay { none, vignette, filmGrain, lightLeak, bokeh }
 
 extension SlideOverlayX on SlideOverlay {
@@ -493,6 +528,7 @@ class Slide {
     this.layout = SlideLayout.single,
     this.imagePath2,
     this.imagePath3,
+    this.contentAnimation = SlideContentAnimation.none,
   });
 
   final String id;
@@ -512,6 +548,7 @@ class Slide {
   final SlideLayout layout;
   final String? imagePath2;
   final String? imagePath3;
+  final SlideContentAnimation contentAnimation;
 
   Slide copyWith({
     String? imagePath,
@@ -530,6 +567,7 @@ class Slide {
     SlideLayout? layout,
     String? imagePath2,
     String? imagePath3,
+    SlideContentAnimation? contentAnimation,
   }) {
     return Slide(
       id: id,
@@ -549,6 +587,7 @@ class Slide {
       layout: layout ?? this.layout,
       imagePath2: imagePath2 ?? this.imagePath2,
       imagePath3: imagePath3 ?? this.imagePath3,
+      contentAnimation: contentAnimation ?? this.contentAnimation,
     );
   }
 }

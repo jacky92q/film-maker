@@ -1656,6 +1656,45 @@ class _SlideEditPanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
+            // Content animation picker
+            _Label('Animation'),
+            const SizedBox(height: 6),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: SlideContentAnimation.values.map((anim) {
+                  final sel = slide.contentAnimation == anim;
+                  return GestureDetector(
+                    onTap: () => viewModel
+                        .updateSelectedSlide(slide.copyWith(contentAnimation: anim)),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(7),
+                        color: sel
+                            ? AppTheme.gold.withValues(alpha: 0.2)
+                            : AppTheme.darkSurface2,
+                        border: Border.all(
+                            color: sel ? AppTheme.gold : AppTheme.border,
+                            width: sel ? 1.5 : 1),
+                      ),
+                      child: Text(
+                        '${anim.emoji} ${anim.label}',
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          fontSize: 11,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 10),
             // Layout picker
             _Label('Layout'),
             const SizedBox(height: 6),
