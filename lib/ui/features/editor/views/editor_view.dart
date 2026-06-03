@@ -436,7 +436,7 @@ class _EditorViewState extends State<EditorView> {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
               itemCount: slides.length,
               buildDefaultDragHandles: false,
-              onReorder: (oldIndex, newIndex) {
+              onReorderItem: (oldIndex, newIndex) {
                 widget.viewModel.reorderSlides(oldIndex, newIndex);
               },
               proxyDecorator: (child, index, animation) => child,
