@@ -70,6 +70,7 @@ class EditorView extends StatefulWidget {
 class _EditorViewState extends State<EditorView> {
   final _titleController = TextEditingController();
   bool _editingTitle = false;
+  bool _showMusicPanel = false;
 
   @override
   void initState() {
@@ -158,94 +159,14 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  void _showSlideSettingsSheet() {
-    final slide = widget.viewModel.selectedSlide;
-    if (slide == null) return;
-    final canDelete = widget.viewModel.project.slides.length > 1;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.65,
-        minChildSize: 0.4,
-        maxChildSize: 0.92,
-        builder: (ctx, controller) => ListenableBuilder(
-          listenable: widget.viewModel,
-          builder: (ctx, _) {
-            final s = widget.viewModel.selectedSlide!;
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Center(
-                              child: Container(
-                                width: 36, height: 4,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.line,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Slide Settings',
-                              style: TextStyle(
-                                fontFamily: AppTheme.fontTheme,
-                                color: AppTheme.textDark,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (canDelete)
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Color(0xFFE85D4A), size: 22),
-                          tooltip: 'Delete slide',
-                          onPressed: () {
-                            widget.viewModel.deleteSelectedSlide();
-                            Navigator.of(ctx).pop();
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: _SlideTabs(slide: s, viewModel: widget.viewModel),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  void _showMusicPicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _MusicPickerSheet(
-        currentMusicName: widget.viewModel.project.musicName,
-        onSelect: (name) => widget.viewModel.setMusic('music_path', name),
-        onRemove: () => widget.viewModel.setMusic(null, null),
-      ),
-    );
+  void _toggleMusicPanel() {
+    setState(() {
+      _showMusicPanel = !_showMusicPanel;
+      if (_showMusicPanel) {
+        widget.viewModel.selectLayer(null);
+        widget.viewModel.selectPhotoLayer(null);
+      }
+    });
   }
 
   @override
@@ -368,11 +289,6 @@ class _EditorViewState extends State<EditorView> {
                       : const Icon(Icons.save_outlined, color: AppTheme.primary),
                   onPressed: widget.viewModel.isSaving ? null : () => widget.viewModel.saveProject(),
                 ),
-              IconButton(
-                tooltip: 'Slide Settings',
-                icon: const Icon(Icons.tune_rounded, color: AppTheme.textMid, size: 20),
-                onPressed: _showSlideSettingsSheet,
-              ),
               TextButton(
                 onPressed: _openPreview,
                 child: Text('Preview',
@@ -412,6 +328,13 @@ class _EditorViewState extends State<EditorView> {
         onSendToBack: () => widget.viewModel.sendToBack(layer.id, isPhoto: false),
       );
     }
+    if (_showMusicPanel) {
+      return _MusicPanel(
+        currentMusicName: widget.viewModel.project.musicName,
+        onSelect: (name) => widget.viewModel.setMusic('music_path', name),
+        onRemove: () => widget.viewModel.setMusic(null, null),
+      );
+    }
     final slide = widget.viewModel.selectedSlide;
     if (slide == null) return const SizedBox.shrink();
     return _SlideTabs(slide: slide, viewModel: widget.viewModel);
@@ -423,12 +346,12 @@ class _EditorViewState extends State<EditorView> {
     final slides = widget.viewModel.project.slides;
     return Container(
       height: height,
-      color: const Color(0xFF1C1C1C),
+      color: AppTheme.bg,
       child: Row(
         children: [
           _MusicTimelineButton(
             musicName: widget.viewModel.project.musicName,
-            onTap: _showMusicPicker,
+            onTap: _toggleMusicPanel,
           ),
           Expanded(
             child: ReorderableListView.builder(
@@ -462,12 +385,17 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildPortraitLayout(BoxConstraints constraints, Slide slide) {
-    final hasObjectSelected = widget.viewModel.selectedLayer != null ||
-        widget.viewModel.selectedPhotoLayer != null;
+    // Compute a partial height for the edit panel so it sits right below
+    // the canvas without filling the whole remaining screen.
+    const buttonsH = 96.0;
+    const timelineH = 88.0;
+    final canvasH = constraints.maxWidth * 9.0 / 16.0;
+    final editH = (constraints.maxHeight - canvasH - buttonsH - timelineH)
+        .clamp(100.0, 230.0);
 
     return Column(
       children: [
-        // Canvas — fixed 16:9, never expands to fill screen
+        // Canvas — fixed 16:9
         ColoredBox(
           color: const Color(0xFF1C1C1C),
           child: AspectRatio(
@@ -475,21 +403,33 @@ class _EditorViewState extends State<EditorView> {
             child: _SlideCanvas(viewModel: widget.viewModel),
           ),
         ),
+        // Partial edit panel — right below the canvas preview
+        SizedBox(
+          height: editH,
+          child: _buildInlineEditPanel(),
+        ),
         // Action buttons
         _buildAddContentBar(slide),
         // Thumbnail timeline
-        _buildTimeline(height: 88),
-        // Edit area — fills remaining height, always visible
-        Expanded(
-          child: _buildInlineEditPanel(hasObjectSelected),
-        ),
+        _buildTimeline(height: timelineH),
       ],
     );
   }
 
-  Widget _buildInlineEditPanel(bool hasObjectSelected) {
+  Widget _buildInlineEditPanel() {
     final photoLayer = widget.viewModel.selectedPhotoLayer;
     final textLayer = widget.viewModel.selectedLayer;
+
+    final String? headerTitle;
+    if (photoLayer != null) {
+      headerTitle = 'Photo Layer';
+    } else if (textLayer != null) {
+      headerTitle = textLayer.isSubtitle ? 'Subtitle' : 'Title';
+    } else if (_showMusicPanel) {
+      headerTitle = 'Music';
+    } else {
+      headerTitle = null;
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -498,15 +438,13 @@ class _EditorViewState extends State<EditorView> {
       ),
       child: Column(
         children: [
-          if (hasObjectSelected)
+          if (headerTitle != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 8, 0),
               child: Row(
                 children: [
                   Text(
-                    photoLayer != null
-                        ? 'Photo Layer'
-                        : (textLayer!.isSubtitle ? 'Subtitle' : 'Title'),
+                    headerTitle,
                     style: const TextStyle(
                       fontFamily: AppTheme.fontTheme,
                       color: AppTheme.textDark,
@@ -523,6 +461,7 @@ class _EditorViewState extends State<EditorView> {
                     onPressed: () {
                       widget.viewModel.selectLayer(null);
                       widget.viewModel.selectPhotoLayer(null);
+                      setState(() => _showMusicPanel = false);
                     },
                   ),
                 ],
@@ -615,7 +554,8 @@ class _EditorViewState extends State<EditorView> {
       onAddPhoto: () => widget.viewModel.addPhotoLayer(),
       onAddTitle: () => widget.viewModel.addTextLayer(isSubtitle: false),
       onAddSubtitle: () => widget.viewModel.addTextLayer(isSubtitle: true),
-      onMusic: _showMusicPicker,
+      onMusic: _toggleMusicPanel,
+      musicPanelOpen: _showMusicPanel,
     );
   }
 }
@@ -1050,6 +990,7 @@ class _AddContentBar extends StatelessWidget {
     required this.onAddTitle,
     required this.onAddSubtitle,
     required this.onMusic,
+    this.musicPanelOpen = false,
   });
 
   final EditorViewModel viewModel;
@@ -1058,6 +999,7 @@ class _AddContentBar extends StatelessWidget {
   final VoidCallback onAddTitle;
   final VoidCallback onAddSubtitle;
   final VoidCallback onMusic;
+  final bool musicPanelOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -1086,7 +1028,7 @@ class _AddContentBar extends StatelessWidget {
             icon: Icons.music_note_rounded,
             label: 'Music',
             onTap: onMusic,
-            active: hasMusic,
+            active: hasMusic || musicPanelOpen,
           ),
         ],
       ),
@@ -2855,6 +2797,125 @@ class _MusicPickerSheet extends StatelessWidget {
               },
             );
           }),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inline music panel (no Navigator.pop — lives inside the edit panel area)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MusicPanel extends StatelessWidget {
+  const _MusicPanel({
+    required this.currentMusicName,
+    required this.onSelect,
+    required this.onRemove,
+  });
+
+  final String? currentMusicName;
+  final void Function(String name) onSelect;
+  final VoidCallback onRemove;
+
+  static const _songs = [
+    ('A Thousand Years', 'Christina Perri'),
+    ('Perfect', 'Ed Sheeran'),
+    ('All of Me', 'John Legend'),
+    ("Can't Help Falling in Love", 'Elvis Presley'),
+    ('Marry Me', 'Train'),
+    ('Make You Feel My Love', 'Adele'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppTheme.surface,
+      child: Column(
+        children: [
+          if (currentMusicName != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 8, 2),
+              child: Row(
+                children: [
+                  Icon(Icons.music_note, color: AppTheme.primary, size: 16),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      currentMusicName!,
+                      style: const TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: onRemove,
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+                    child: const Text(
+                      'Remove',
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: Color(0xFFFF6B6B),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              children: _songs.map((song) {
+                final isSel = currentMusicName == song.$1;
+                return ListTile(
+                  dense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: isSel
+                          ? AppTheme.primary.withValues(alpha: 0.2)
+                          : AppTheme.surface2,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      isSel ? Icons.music_note : Icons.music_note_outlined,
+                      color: isSel ? AppTheme.primary : AppTheme.textMid,
+                      size: 18,
+                    ),
+                  ),
+                  title: Text(
+                    song.$1,
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.textDark,
+                      fontSize: 13,
+                      fontWeight: isSel ? FontWeight.w700 : FontWeight.w400,
+                    ),
+                  ),
+                  subtitle: Text(
+                    song.$2,
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.textMid,
+                      fontSize: 11,
+                    ),
+                  ),
+                  trailing: isSel
+                      ? const Icon(Icons.check_circle,
+                          color: AppTheme.primary, size: 18)
+                      : null,
+                  onTap: () => onSelect(song.$1),
+                );
+              }).toList(),
+            ),
+          ),
         ],
       ),
     );
