@@ -199,46 +199,12 @@ class _EditorViewState extends State<EditorView> {
             }
             return LayoutBuilder(
               builder: (context, constraints) {
-                // Reserve height for add bar + timeline so canvas
-                // never overflows in landscape mode.
-                const reservedH = 52.0 + 100.0 + 160.0; // add bar + timeline + min panel
-                final maxCanvasH = (constraints.maxHeight - reservedH).clamp(60.0, double.infinity);
-                final maxCanvasW = constraints.maxWidth;
-                // Pick canvas size that fits 16:9 within both constraints
-                double canvasW = maxCanvasW;
-                double canvasH = canvasW / (16 / 9);
-                if (canvasH > maxCanvasH) {
-                  canvasH = maxCanvasH;
-                  canvasW = canvasH * (16 / 9);
-                }
-                return Column(
-                  children: [
-                    // 16:9 interactive canvas — bounded so it never overflows in landscape
-                    Center(
-                      child: SizedBox(
-                        width: canvasW,
-                        height: canvasH,
-                        child: _SlideCanvas(viewModel: widget.viewModel),
-                      ),
-                    ),
-                    // Floating add-content bar
-                    _AddContentBar(
-                      viewModel: widget.viewModel,
-                      slide: slide,
-                      onAddPhoto: () => widget.viewModel.addPhotoLayer(),
-                      onAddTitle: () => widget.viewModel.addTextLayer(isSubtitle: false),
-                      onAddSubtitle: () => widget.viewModel.addTextLayer(isSubtitle: true),
-                      onMusic: _showMusicPicker,
-                      onDeleteSlide: widget.viewModel.project.slides.length > 1
-                          ? widget.viewModel.deleteSelectedSlide
-                          : null,
-                    ),
-                    // Tab-based edit panel (layer vs. slide level)
-                    Expanded(child: _buildEditPanel()),
-                    // Timeline
-                    _buildTimeline(),
-                  ],
-                );
+                final isWide = constraints.maxWidth >= 900;
+                final isLandscape =
+                    !isWide && constraints.maxWidth > constraints.maxHeight + 60;
+                if (isWide) return _buildWideLayout(constraints, slide);
+                if (isLandscape) return _buildLandscapeLayout(constraints, slide);
+                return _buildPortraitLayout(constraints, slide);
               },
             );
           },
@@ -383,10 +349,10 @@ class _EditorViewState extends State<EditorView> {
 
   // ── Timeline ──────────────────────────────────────────────────────────────
 
-  Widget _buildTimeline() {
+  Widget _buildTimeline({double height = 100}) {
     final slides = widget.viewModel.project.slides;
     return Container(
-      height: 100,
+      height: height,
       color: AppTheme.darkBg,
       child: Row(
         children: [
@@ -422,6 +388,125 @@ class _EditorViewState extends State<EditorView> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPortraitLayout(BoxConstraints constraints, Slide slide) {
+    const reservedH = 52.0 + 100.0 + 160.0;
+    final maxCanvasH = (constraints.maxHeight - reservedH).clamp(60.0, double.infinity);
+    double canvasW = constraints.maxWidth;
+    double canvasH = canvasW / (16 / 9);
+    if (canvasH > maxCanvasH) {
+      canvasH = maxCanvasH;
+      canvasW = canvasH * (16 / 9);
+    }
+    return Column(
+      children: [
+        SizedBox(
+          height: canvasH,
+          child: ColoredBox(
+            color: AppTheme.filmStage,
+            child: Center(
+              child: SizedBox(
+                width: canvasW,
+                height: canvasH,
+                child: _SlideCanvas(viewModel: widget.viewModel),
+              ),
+            ),
+          ),
+        ),
+        _buildAddContentBar(slide),
+        Expanded(child: _buildEditPanel()),
+        _buildTimeline(),
+      ],
+    );
+  }
+
+  Widget _buildLandscapeLayout(BoxConstraints constraints, Slide slide) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 5,
+          child: Column(
+            children: [
+              Expanded(
+                child: ColoredBox(
+                  color: AppTheme.filmStage,
+                  child: Center(
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: _SlideCanvas(viewModel: widget.viewModel),
+                    ),
+                  ),
+                ),
+              ),
+              _buildTimeline(),
+            ],
+          ),
+        ),
+        Container(
+          width: 272,
+          color: AppTheme.darkSurface,
+          child: Column(
+            children: [
+              _buildAddContentBar(slide),
+              Expanded(child: _buildEditPanel()),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWideLayout(BoxConstraints constraints, Slide slide) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            children: [
+              Expanded(
+                child: ColoredBox(
+                  color: AppTheme.filmStage,
+                  child: Center(
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: _SlideCanvas(viewModel: widget.viewModel),
+                    ),
+                  ),
+                ),
+              ),
+              _buildTimeline(),
+            ],
+          ),
+        ),
+        Container(
+          width: 320,
+          decoration: BoxDecoration(
+            color: AppTheme.darkSurface,
+            border: Border(left: BorderSide(color: AppTheme.border)),
+          ),
+          child: Column(
+            children: [
+              _buildAddContentBar(slide),
+              Expanded(child: _buildEditPanel()),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddContentBar(Slide slide) {
+    return _AddContentBar(
+      viewModel: widget.viewModel,
+      slide: slide,
+      onAddPhoto: () => widget.viewModel.addPhotoLayer(),
+      onAddTitle: () => widget.viewModel.addTextLayer(isSubtitle: false),
+      onAddSubtitle: () => widget.viewModel.addTextLayer(isSubtitle: true),
+      onMusic: _showMusicPicker,
+      onDeleteSlide: widget.viewModel.project.slides.length > 1
+          ? widget.viewModel.deleteSelectedSlide
+          : null,
     );
   }
 }
@@ -918,7 +1003,7 @@ class _BarBtn extends StatelessWidget {
         ? const Color(0xFFFF6B6B)
         : active
             ? AppTheme.gold
-            : Colors.white54;
+            : AppTheme.subtleText;
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -1081,7 +1166,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
               IconButton(
                 icon: const Icon(Icons.flip_to_front, size: 16),
                 tooltip: 'Bring to front',
-                color: Colors.white54,
+                color: AppTheme.subtleText,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: widget.onBringToFront,
@@ -1090,7 +1175,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
               IconButton(
                 icon: const Icon(Icons.flip_to_back, size: 16),
                 tooltip: 'Send to back',
-                color: Colors.white54,
+                color: AppTheme.subtleText,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: widget.onSendToBack,
@@ -1217,7 +1302,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
               SizedBox(
                 width: 36,
                 child: Text('${layer.fontSize.round()}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(color: AppTheme.subtleText, fontSize: 12),
                     textAlign: TextAlign.center),
               ),
             ],
@@ -1444,7 +1529,7 @@ class _PhotoLayerTabs extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.flip_to_front, size: 16),
                 tooltip: 'Bring to front',
-                color: Colors.white54,
+                color: AppTheme.subtleText,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () => vm.bringToFront(layer.id, isPhoto: true),
@@ -1453,14 +1538,14 @@ class _PhotoLayerTabs extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.flip_to_back, size: 16),
                 tooltip: 'Send to back',
-                color: Colors.white54,
+                color: AppTheme.subtleText,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () => vm.sendToBack(layer.id, isPhoto: true),
               ),
               TextButton.icon(
                 style: TextButton.styleFrom(
-                  foregroundColor: isCrop ? Colors.orangeAccent : Colors.white54,
+                  foregroundColor: isCrop ? Colors.orangeAccent : AppTheme.subtleText,
                   backgroundColor: isCrop ? Colors.orangeAccent.withValues(alpha: 0.15) : Colors.transparent,
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   minimumSize: Size.zero,
@@ -1497,7 +1582,7 @@ class _PhotoLayerTabs extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text('Zoom', style: TextStyle(fontSize: 11, color: Colors.white54, letterSpacing: 1)),
+                  const Text('Zoom', style: TextStyle(fontSize: 11, color: AppTheme.subtleText, letterSpacing: 1)),
                   Slider(
                     value: layer.cropScale.clamp(1.0, 4.0),
                     min: 1.0, max: 4.0, divisions: 30,
@@ -1509,7 +1594,7 @@ class _PhotoLayerTabs extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.white54,
+                        foregroundColor: AppTheme.subtleText,
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         minimumSize: Size.zero,
                       ),
@@ -1556,8 +1641,8 @@ class _PhotoLayerTabs extends StatelessWidget {
                 icon: const Icon(Icons.image_outlined, size: 18),
                 label: const Text('Change Photo'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  side: const BorderSide(color: Colors.white24),
+                  foregroundColor: AppTheme.subtleText,
+                  side: const BorderSide(color: AppTheme.border),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -1792,8 +1877,8 @@ class _SlideTabs extends StatelessWidget {
               label: Text(slide.imagePath2 != null ? 'Photo 2 ✓' : 'Add Photo 2'),
               onPressed: () => viewModel.pickImageForSlot(2),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white70,
-                side: const BorderSide(color: Colors.white24),
+                foregroundColor: AppTheme.subtleText,
+                side: const BorderSide(color: AppTheme.border),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
@@ -1804,8 +1889,8 @@ class _SlideTabs extends StatelessWidget {
                 label: Text(slide.imagePath3 != null ? 'Photo 3 ✓' : 'Add Photo 3'),
                 onPressed: () => viewModel.pickImageForSlot(3),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  side: const BorderSide(color: Colors.white24),
+                  foregroundColor: AppTheme.subtleText,
+                  side: const BorderSide(color: AppTheme.border),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),

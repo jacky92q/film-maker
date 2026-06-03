@@ -1,44 +1,47 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color gold = Color(0xFFC9A84C);
-  static const Color cream = Color(0xFFF5F0E8);
-  static const Color darkBg = Color(0xFF0D0D0D);
-  static const Color darkSurface = Color(0xFF1A1A1A);
-  static const Color darkSurface2 = Color(0xFF242424);
-  static const Color subtleText = Color(0xFFB0A890);
-  static const Color border = Color(0xFF2A2A2A);
+  static const Color gold = Color(0xFFFF4D7B);
+  static const Color cream = Color(0xFF1A1A2E);
+  static const Color darkBg = Color(0xFFF7F5F2);
+  static const Color darkSurface = Color(0xFFFFFFFF);
+  static const Color darkSurface2 = Color(0xFFF1EFEC);
+  static const Color subtleText = Color(0xFF9B9BAA);
+  static const Color border = Color(0xFFE8E5E1);
+  static const Color filmStage = Color(0xFF1A1A1A);
   static const String fontTheme = 'Lato';
 
-  static ThemeData light() => _dark();
+  static ThemeData light() => _light();
 
-  static ThemeData _dark() {
-    final base = ThemeData.dark(useMaterial3: true);
+  static ThemeData _light() {
+    final base = ThemeData.light(useMaterial3: true);
     return base.copyWith(
-      colorScheme: const ColorScheme.dark(
+      colorScheme: const ColorScheme.light(
         primary: gold,
-        onPrimary: darkBg,
-        secondary: Color(0xFF8B7355),
+        onPrimary: Colors.white,
+        secondary: Color(0xFF7B61FF),
         onSecondary: Colors.white,
         surface: darkSurface,
         onSurface: cream,
         surfaceContainerHighest: darkSurface2,
-        surfaceContainerLow: Color(0xFF141414),
-        error: Color(0xFFFF6B6B),
+        surfaceContainerLow: Color(0xFFFBF9F7),
+        error: Color(0xFFFF3B30),
         onError: Colors.white,
         outline: border,
       ),
       scaffoldBackgroundColor: darkBg,
       appBarTheme: AppBarTheme(
-        backgroundColor: darkBg,
+        backgroundColor: darkSurface,
         foregroundColor: cream,
         elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
         titleTextStyle: TextStyle(
           fontFamily: fontTheme,
           color: cream,
           fontSize: 20,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
         iconTheme: const IconThemeData(color: cream),
         actionsIconTheme: const IconThemeData(color: gold),
@@ -110,7 +113,7 @@ class AppTheme {
           ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: darkSurface,
+        fillColor: darkSurface2,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: border),
@@ -125,23 +128,23 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
+          borderSide: const BorderSide(color: Color(0xFFFF3B30)),
         ),
         labelStyle: TextStyle(
-            fontFamily: fontTheme, color: Color(0xFF888888), fontSize: 14),
-        hintStyle: TextStyle(
-            fontFamily: fontTheme, color: Color(0xFF555555), fontSize: 14),
+            fontFamily: fontTheme, color: subtleText, fontSize: 14),
+        hintStyle: const TextStyle(
+            fontFamily: fontTheme, color: Color(0xFFBBBBC4), fontSize: 14),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: gold,
-          foregroundColor: darkBg,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: TextStyle(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          textStyle: const TextStyle(
               fontFamily: fontTheme,
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -154,8 +157,8 @@ class AppTheme {
           side: const BorderSide(color: gold),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: TextStyle(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          textStyle: const TextStyle(
               fontFamily: fontTheme, fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
@@ -166,29 +169,30 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: darkSurface2,
-        selectedColor: gold.withValues(alpha: 0.25),
+        selectedColor: gold.withValues(alpha: 0.15),
         labelStyle:
-            TextStyle(fontFamily: fontTheme, fontSize: 12, color: cream),
+            const TextStyle(fontFamily: fontTheme, fontSize: 12, color: cream),
         side: const BorderSide(color: border),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: gold,
-        foregroundColor: darkBg,
+        foregroundColor: Colors.white,
         elevation: 4,
       ),
       cardTheme: CardThemeData(
         color: darkSurface,
-        elevation: 0,
+        elevation: 2,
+        shadowColor: Color(0x18000000),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: border),
         ),
       ),
       dividerTheme: const DividerThemeData(color: border, thickness: 1),
@@ -202,7 +206,7 @@ class AppTheme {
         activeTrackColor: gold,
         thumbColor: gold,
         inactiveTrackColor: border,
-        overlayColor: Color(0x22C9A84C),
+        overlayColor: Color(0x26FF4D7B),
       ),
       iconTheme: const IconThemeData(color: cream),
       progressIndicatorTheme: const ProgressIndicatorThemeData(color: gold),
