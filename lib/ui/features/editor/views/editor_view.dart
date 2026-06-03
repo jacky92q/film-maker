@@ -845,7 +845,1154 @@ class _LayerWidget extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Layer edit panel (shown when a text layer is selected)
+// _AddContentBar — floating row of large action buttons above the edit panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AddContentBar extends StatelessWidget {
+  const _AddContentBar({
+    required this.viewModel,
+    required this.slide,
+    required this.onAddPhoto,
+    required this.onAddTitle,
+    required this.onAddSubtitle,
+    required this.onMusic,
+    this.onDeleteSlide,
+  });
+
+  final EditorViewModel viewModel;
+  final Slide slide;
+  final VoidCallback onAddPhoto;
+  final VoidCallback onAddTitle;
+  final VoidCallback onAddSubtitle;
+  final VoidCallback onMusic;
+  final VoidCallback? onDeleteSlide;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasMusic = viewModel.project.musicName != null;
+    return Container(
+      height: 52,
+      color: AppTheme.darkSurface,
+      child: Row(
+        children: [
+          _BarBtn(icon: Icons.add_photo_alternate_outlined, label: '+ Photo', onTap: onAddPhoto),
+          _BarBtn(icon: Icons.title, label: '+ Title', onTap: onAddTitle),
+          _BarBtn(icon: Icons.short_text, label: '+ Sub', onTap: onAddSubtitle),
+          _BarBtn(
+            icon: Icons.music_note_outlined,
+            label: hasMusic ? 'Music ✓' : 'Music',
+            onTap: onMusic,
+            active: hasMusic,
+          ),
+          if (onDeleteSlide != null)
+            _BarBtn(
+              icon: Icons.delete_sweep_outlined,
+              label: 'Delete',
+              onTap: onDeleteSlide!,
+              destructive: true,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BarBtn extends StatelessWidget {
+  const _BarBtn({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.active = false,
+    this.destructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool active;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = destructive
+        ? const Color(0xFFFF6B6B)
+        : active
+            ? AppTheme.gold
+            : Colors.white54;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 56),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                color: color,
+                fontSize: 11,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _SectionHeader — gold all-caps label with divider
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontFamily: 'PlayfairDisplay',
+            color: AppTheme.gold,
+            fontSize: 11,
+            letterSpacing: 1.2,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Container(
+          height: 1,
+          width: 32,
+          color: AppTheme.gold.withValues(alpha: 0.4),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _TextLayerTabs — tab-based editor for text layers (replaces _LayerEditPanel)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TextLayerTabs extends StatefulWidget {
+  const _TextLayerTabs({
+    super.key,
+    required this.layer,
+    required this.onUpdate,
+    required this.onDelete,
+    required this.onBringToFront,
+    required this.onSendToBack,
+  });
+
+  final TextLayer layer;
+  final void Function(TextLayer) onUpdate;
+  final VoidCallback onDelete;
+  final VoidCallback onBringToFront;
+  final VoidCallback onSendToBack;
+
+  @override
+  State<_TextLayerTabs> createState() => _TextLayerTabsState();
+}
+
+class _TextLayerTabsState extends State<_TextLayerTabs> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.layer.text);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _applyStyle(TextLayer Function(TextLayer) fn) {
+    widget.onUpdate(fn(widget.layer.copyWith(text: _ctrl.text)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Container(
+        color: AppTheme.darkSurface,
+        child: Column(
+          children: [
+            TabBar(
+              indicatorColor: AppTheme.gold,
+              indicatorWeight: 2,
+              labelColor: AppTheme.gold,
+              unselectedLabelColor: AppTheme.subtleText,
+              labelStyle: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                fontSize: 11,
+              ),
+              tabs: const [
+                Tab(icon: Icon(Icons.abc, size: 18), text: 'Text', iconMargin: EdgeInsets.only(bottom: 2)),
+                Tab(icon: Icon(Icons.palette_outlined, size: 18), text: 'Style', iconMargin: EdgeInsets.only(bottom: 2)),
+                Tab(icon: Icon(Icons.auto_awesome_outlined, size: 18), text: 'Motion', iconMargin: EdgeInsets.only(bottom: 2)),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildTextTab(),
+                  _buildStyleTab(),
+                  _buildMotionTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextTab() {
+    final layer = widget.layer;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Z-order buttons row
+          Row(
+            children: [
+              _SectionHeader(layer.isSubtitle ? 'Subtitle Layer' : 'Main Layer'),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.flip_to_front, size: 16),
+                tooltip: 'Bring to front',
+                color: Colors.white54,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: widget.onBringToFront,
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.flip_to_back, size: 16),
+                tooltip: 'Send to back',
+                color: Colors.white54,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: widget.onSendToBack,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Text input
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.darkSurface2,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(8),
+            child: TextField(
+              controller: _ctrl,
+              style: slideLayerTextStyle(layer.fontStyle,
+                  fontSize: 16,
+                  color: AppTheme.cream,
+                  fontWeight: FontWeight.normal),
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Enter text…',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              ),
+              onChanged: (v) => widget.onUpdate(widget.layer.copyWith(text: v)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Type toggle
+          const _SectionHeader('Type'),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _TypeButton(
+                label: 'Main',
+                icon: Icons.title,
+                selected: !layer.isSubtitle,
+                onTap: () => _applyStyle((l) => l.copyWith(isSubtitle: false)),
+              ),
+              const SizedBox(width: 8),
+              _TypeButton(
+                label: 'Subtitle',
+                icon: Icons.short_text,
+                selected: layer.isSubtitle,
+                onTap: () => _applyStyle((l) => l.copyWith(isSubtitle: true)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Delete button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFFF6B6B)),
+              label: const Text('Delete Layer', style: TextStyle(color: Color(0xFFFF6B6B))),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFFFF6B6B), width: 1),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: widget.onDelete,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStyleTab() {
+    final layer = widget.layer;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Font picker
+          const _SectionHeader('Font'),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: SlideFontStyle.values.map((f) {
+                final sel = layer.fontStyle == f;
+                return GestureDetector(
+                  onTap: () => _applyStyle((l) => l.copyWith(fontStyle: f)),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    height: 36,
+                    margin: const EdgeInsets.only(right: 7),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: sel ? AppTheme.gold.withValues(alpha: 0.15) : AppTheme.darkSurface2,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                    ),
+                    child: Text(
+                      f.label,
+                      style: slideLayerTextStyle(f,
+                          fontSize: 13,
+                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.w400),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Size slider
+          const _SectionHeader('Size'),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: Slider(
+                  value: layer.fontSize.clamp(12.0, 300.0),
+                  min: 12, max: 300, divisions: 72,
+                  label: '${layer.fontSize.round()}px',
+                  onChanged: (v) => _applyStyle((l) => l.copyWith(fontSize: v)),
+                ),
+              ),
+              SizedBox(
+                width: 36,
+                child: Text('${layer.fontSize.round()}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    textAlign: TextAlign.center),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Text color
+          const _SectionHeader('Text Color'),
+          const SizedBox(height: 8),
+          _ColorDots(
+            current: layer.color,
+            onSelect: (c) => _applyStyle((l) => l.copyWith(color: c)),
+          ),
+          // Bar color (subtitle only)
+          if (layer.isSubtitle) ...[
+            const SizedBox(height: 12),
+            const _SectionHeader('Bar Color'),
+            const SizedBox(height: 8),
+            _ColorDots(
+              current: layer.barColor,
+              onSelect: (c) => _applyStyle((l) => l.copyWith(barColor: c)),
+            ),
+          ],
+          const SizedBox(height: 12),
+          // Text background
+          const _SectionHeader('Text Bg'),
+          const SizedBox(height: 8),
+          Row(
+            children: SlideTextBg.values.map((bg) {
+              final sel = layer.textBg == bg;
+              return GestureDetector(
+                onTap: () => _applyStyle((l) => l.copyWith(textBg: bg)),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  height: 36,
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                  ),
+                  child: Center(
+                    child: Text(bg.label,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          fontSize: 11,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                        )),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+          // Outline / stroke
+          const _SectionHeader('Outline'),
+          const SizedBox(height: 8),
+          Row(
+            children: [0.0, 1.0, 2.0, 3.0].map((w) {
+              final sel = layer.strokeWidth == w;
+              final lbl = w == 0 ? 'Off' : w == 1 ? 'Thin' : w == 2 ? 'Med' : 'Bold';
+              return GestureDetector(
+                onTap: () => _applyStyle((l) => l.copyWith(strokeWidth: w)),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  height: 36,
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                  ),
+                  child: Center(
+                    child: Text(lbl,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          fontSize: 11,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                        )),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+          // Letter spacing
+          const _SectionHeader('Spacing'),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              (0.0, 'Normal'),
+              (1.0, 'Wide'),
+              (3.0, 'Wider'),
+              (6.0, 'Max'),
+            ].map(((double, String) entry) {
+              final (sp, lbl) = entry;
+              final sel = layer.letterSpacing == sp;
+              return GestureDetector(
+                onTap: () => _applyStyle((l) => l.copyWith(letterSpacing: sp)),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  height: 36,
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                  ),
+                  child: Center(
+                    child: Text(lbl,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          fontSize: 11,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                        )),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+          // Rotation
+          const _SectionHeader('Rotation'),
+          const SizedBox(height: 4),
+          Slider(
+            value: layer.rotation.clamp(-180.0, 180.0),
+            min: -180, max: 180, divisions: 72,
+            label: '${layer.rotation.round()}°',
+            onChanged: (v) => _applyStyle((l) => l.copyWith(rotation: v)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMotionTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeader('Animation'),
+          const SizedBox(height: 8),
+          _AnimationPickerRow(
+            current: widget.layer.contentAnimation,
+            onSelect: (anim) => widget.onUpdate(widget.layer.copyWith(contentAnimation: anim)),
+            allowed: SlideContentAnimationX.textAnimations,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _PhotoLayerTabs — tab-based editor for photo layers
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PhotoLayerTabs extends StatelessWidget {
+  const _PhotoLayerTabs({super.key, required this.vm, required this.layer});
+  final EditorViewModel vm;
+  final PhotoLayer layer;
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Container(
+        color: AppTheme.darkSurface,
+        child: Column(
+          children: [
+            TabBar(
+              indicatorColor: AppTheme.gold,
+              indicatorWeight: 2,
+              labelColor: AppTheme.gold,
+              unselectedLabelColor: AppTheme.subtleText,
+              labelStyle: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                fontSize: 11,
+              ),
+              tabs: const [
+                Tab(icon: Icon(Icons.tune, size: 18), text: 'Adjust', iconMargin: EdgeInsets.only(bottom: 2)),
+                Tab(icon: Icon(Icons.style_outlined, size: 18), text: 'Style', iconMargin: EdgeInsets.only(bottom: 2)),
+                Tab(icon: Icon(Icons.auto_awesome_outlined, size: 18), text: 'Motion', iconMargin: EdgeInsets.only(bottom: 2)),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildAdjustTab(context),
+                  _buildStyleTab(),
+                  _buildMotionTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdjustTab(BuildContext context) {
+    final isCrop = vm.cropMode;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Z-order & Crop row
+          Row(
+            children: [
+              const _SectionHeader('Photo Layer'),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.flip_to_front, size: 16),
+                tooltip: 'Bring to front',
+                color: Colors.white54,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () => vm.bringToFront(layer.id, isPhoto: true),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.flip_to_back, size: 16),
+                tooltip: 'Send to back',
+                color: Colors.white54,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () => vm.sendToBack(layer.id, isPhoto: true),
+              ),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  foregroundColor: isCrop ? Colors.orangeAccent : Colors.white54,
+                  backgroundColor: isCrop ? Colors.orangeAccent.withValues(alpha: 0.15) : Colors.transparent,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () => vm.toggleCropMode(),
+                icon: const Icon(Icons.crop, size: 16),
+                label: Text(isCrop ? 'Done' : 'Crop', style: const TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (isCrop) ...[
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orangeAccent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.touch_app_outlined, size: 13, color: Colors.orangeAccent),
+                      SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Drag on photo to pan · Pinch to zoom',
+                          style: TextStyle(fontSize: 11, color: Colors.orangeAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('Zoom', style: TextStyle(fontSize: 11, color: Colors.white54, letterSpacing: 1)),
+                  Slider(
+                    value: layer.cropScale.clamp(1.0, 4.0),
+                    min: 1.0, max: 4.0, divisions: 30,
+                    label: '${layer.cropScale.toStringAsFixed(1)}×',
+                    activeColor: Colors.orangeAccent,
+                    onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(cropScale: v)),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white54,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                      ),
+                      onPressed: () => vm.updatePhotoLayer(
+                        layer.copyWith(cropScale: 1.0, cropOffsetX: 0.0, cropOffsetY: 0.0),
+                      ),
+                      icon: const Icon(Icons.refresh, size: 14),
+                      label: const Text('Reset', style: TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            const _SectionHeader('Width'),
+            const SizedBox(height: 4),
+            Slider(
+              value: layer.widthFraction.clamp(0.1, 1.0),
+              min: 0.1, max: 1.0, divisions: 18,
+              label: '${(layer.widthFraction * 100).round()}%',
+              onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(widthFraction: v)),
+            ),
+            const _SectionHeader('Height'),
+            const SizedBox(height: 4),
+            Slider(
+              value: layer.heightFraction.clamp(0.1, 1.0),
+              min: 0.1, max: 1.0, divisions: 18,
+              label: '${(layer.heightFraction * 100).round()}%',
+              onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(heightFraction: v)),
+            ),
+            const _SectionHeader('Rotation'),
+            const SizedBox(height: 4),
+            Slider(
+              value: layer.rotation.clamp(-180.0, 180.0),
+              min: -180, max: 180, divisions: 72,
+              label: '${layer.rotation.round()}°',
+              onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(rotation: v)),
+            ),
+            const SizedBox(height: 8),
+            // Change photo button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.image_outlined, size: 18),
+                label: const Text('Change Photo'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  side: const BorderSide(color: Colors.white24),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () => vm.pickImageForPhotoLayer(layer.id),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Delete button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFFF6B6B)),
+                label: const Text('Delete Layer', style: TextStyle(color: Color(0xFFFF6B6B))),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFFF6B6B), width: 1),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () => vm.deletePhotoLayer(layer.id),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStyleTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Shape
+          const _SectionHeader('Shape'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8, runSpacing: 8,
+            children: PhotoShape.values.map((sh) => ChoiceChip(
+              label: Text(sh.label),
+              selected: layer.shape == sh,
+              onSelected: (_) => vm.updatePhotoLayer(layer.copyWith(shape: sh)),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            )).toList(),
+          ),
+          const SizedBox(height: 12),
+          // Frame
+          const _SectionHeader('Frame'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8, runSpacing: 8,
+            children: PhotoFrame.values.map((fr) => ChoiceChip(
+              label: Text(fr.label),
+              selected: layer.frame == fr,
+              onSelected: (_) => vm.updatePhotoLayer(layer.copyWith(frame: fr)),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            )).toList(),
+          ),
+          const SizedBox(height: 12),
+          // Filter
+          const _SectionHeader('Filter'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8, runSpacing: 8,
+            children: PhotoFilter.values.map((f) => ChoiceChip(
+              label: Text(f.label),
+              selected: layer.filter == f,
+              onSelected: (_) => vm.updatePhotoLayer(layer.copyWith(filter: f)),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            )).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMotionTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeader('Animation'),
+          const SizedBox(height: 8),
+          _AnimationPickerRow(
+            current: layer.contentAnimation,
+            onSelect: (anim) => vm.updatePhotoLayer(layer.copyWith(contentAnimation: anim)),
+            allowed: SlideContentAnimationX.photoAnimations,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _SlideTabs — tab-based editor for slide-level settings
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SlideTabs extends StatelessWidget {
+  const _SlideTabs({required this.slide, required this.viewModel});
+  final Slide slide;
+  final EditorViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Container(
+        color: AppTheme.darkSurface,
+        child: Column(
+          children: [
+            TabBar(
+              indicatorColor: AppTheme.gold,
+              indicatorWeight: 2,
+              labelColor: AppTheme.gold,
+              unselectedLabelColor: AppTheme.subtleText,
+              labelStyle: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                fontSize: 11,
+              ),
+              tabs: const [
+                Tab(icon: Icon(Icons.image_outlined, size: 18), text: 'Canvas', iconMargin: EdgeInsets.only(bottom: 2)),
+                Tab(icon: Icon(Icons.filter_outlined, size: 18), text: 'Style', iconMargin: EdgeInsets.only(bottom: 2)),
+                Tab(icon: Icon(Icons.timer_outlined, size: 18), text: 'Timing', iconMargin: EdgeInsets.only(bottom: 2)),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildCanvasTab(),
+                  _buildStyleTab(),
+                  _buildTimingTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCanvasTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeader('Background'),
+          const SizedBox(height: 8),
+          _BackgroundColorPicker(
+            current: slide.backgroundColor,
+            onSelect: (c) => viewModel.updateSelectedSlide(slide.copyWith(backgroundColor: c)),
+          ),
+          if (slide.imagePath != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const _SectionHeader('Photo Zoom'),
+                const Spacer(),
+                Text(
+                  '${slide.photoScale.toStringAsFixed(1)}×',
+                  style: const TextStyle(
+                    fontFamily: 'PlayfairDisplay',
+                    color: AppTheme.gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => viewModel.updatePhotoTransform(scale: 1.0, offsetX: 0.0, offsetY: 0.0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppTheme.border),
+                    ),
+                    child: Text('Reset',
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: AppTheme.subtleText,
+                          fontSize: 11,
+                        )),
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const Icon(Icons.zoom_out, color: AppTheme.subtleText, size: 16),
+                Expanded(
+                  child: Slider(
+                    value: slide.photoScale.clamp(0.1, 4.0),
+                    min: 0.1, max: 4.0,
+                    onChanged: (v) => viewModel.updatePhotoTransform(
+                      scale: v, offsetX: slide.photoOffsetX, offsetY: slide.photoOffsetY,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.zoom_in, color: AppTheme.subtleText, size: 16),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          const _SectionHeader('Layout'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8, runSpacing: 8,
+            children: SlideLayout.values.map((lay) => ChoiceChip(
+              label: Text(lay.label),
+              selected: slide.layout == lay,
+              onSelected: (_) => viewModel.updateSelectedSlide(slide.copyWith(layout: lay)),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            )).toList(),
+          ),
+          if (slide.layout != SlideLayout.single) ...[
+            const SizedBox(height: 12),
+            const _SectionHeader('Photos'),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+              label: Text(slide.imagePath2 != null ? 'Photo 2 ✓' : 'Add Photo 2'),
+              onPressed: () => viewModel.pickImageForSlot(2),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white70,
+                side: const BorderSide(color: Colors.white24),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            if (slide.layout == SlideLayout.strip3) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                label: Text(slide.imagePath3 != null ? 'Photo 3 ✓' : 'Add Photo 3'),
+                onPressed: () => viewModel.pickImageForSlot(3),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  side: const BorderSide(color: Colors.white24),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStyleTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Filter
+          const _SectionHeader('Filter'),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: PhotoFilter.values.map((filter) {
+                final sel = slide.photoFilter == filter;
+                return GestureDetector(
+                  onTap: () => viewModel.updateSelectedSlide(slide.copyWith(photoFilter: filter)),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    height: 36,
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+                      border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                    ),
+                    child: Center(
+                      child: Text(filter.label,
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontTheme,
+                            color: sel ? AppTheme.gold : AppTheme.subtleText,
+                            fontSize: 11,
+                            fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                          )),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Overlay
+          const _SectionHeader('Overlay'),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: SlideOverlay.values.map((ov) {
+                final sel = slide.overlay == ov;
+                return GestureDetector(
+                  onTap: () => viewModel.updateSelectedSlide(slide.copyWith(overlay: ov)),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    height: 36,
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+                      border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                    ),
+                    child: Center(
+                      child: Text(ov.label,
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontTheme,
+                            color: sel ? AppTheme.gold : AppTheme.subtleText,
+                            fontSize: 11,
+                            fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                          )),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Photo shape
+          const _SectionHeader('Photo Shape'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8, runSpacing: 8,
+            children: PhotoShape.values.map((sh) => ChoiceChip(
+              label: Text(sh.label),
+              selected: slide.photoShape == sh,
+              onSelected: (_) => viewModel.updateSelectedSlide(slide.copyWith(photoShape: sh)),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            )).toList(),
+          ),
+          const SizedBox(height: 12),
+          // Photo frame
+          const _SectionHeader('Photo Frame'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8, runSpacing: 8,
+            children: PhotoFrame.values.map((fr) => ChoiceChip(
+              label: Text(fr.label),
+              selected: slide.photoFrame == fr,
+              onSelected: (_) => viewModel.updateSelectedSlide(slide.copyWith(photoFrame: fr)),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            )).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimingTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Transition
+          const _SectionHeader('Transition'),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: TransitionEffect.values.map((effect) {
+                final sel = slide.transition == effect;
+                return GestureDetector(
+                  onTap: () => viewModel.updateSelectedSlide(slide.copyWith(transition: effect)),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    height: 36,
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+                      border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                    ),
+                    child: Center(
+                      child: Text(effect.label,
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontTheme,
+                            color: sel ? AppTheme.gold : AppTheme.subtleText,
+                            fontSize: 11,
+                            fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                          )),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Duration slider
+          Row(
+            children: [
+              const _SectionHeader('Duration'),
+              const Spacer(),
+              Text('${slide.durationSeconds}s',
+                  style: const TextStyle(
+                    fontFamily: 'PlayfairDisplay',
+                    color: AppTheme.gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  )),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Slider(
+            value: slide.durationSeconds.toDouble(),
+            min: 2, max: 10, divisions: 8,
+            onChanged: (v) => viewModel.updateSelectedSlide(slide.copyWith(durationSeconds: v.round())),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Layer edit panel (shown when a text layer is selected) — KEPT FOR REFERENCE
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _LayerEditPanel extends StatefulWidget {
@@ -1874,8 +3021,8 @@ class _ColorDots extends StatelessWidget {
           onTap: () => onSelect(c),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            width: 28,
-            height: 28,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: c.color,
@@ -1892,7 +3039,7 @@ class _ColorDots extends StatelessWidget {
             ),
             child: sel
                 ? Icon(Icons.check,
-                    size: 13,
+                    size: 16,
                     color:
                         c == SlideTextColor.white || c == SlideTextColor.cream ||
                         c == SlideTextColor.champagne || c == SlideTextColor.silver
@@ -2001,7 +3148,7 @@ class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
         ),
         const SizedBox(height: 6),
         SizedBox(
-          height: 34,
+          height: 40,
           child: TextField(
             controller: _hex,
             style: TextStyle(
@@ -2158,12 +3305,17 @@ class _SlideThumbnail extends StatelessWidget {
             .map((pl) => pl.imagePath!)
             .firstOrNull;
 
+    final hasAnimation = slide.textLayers.any(
+          (l) => l.contentAnimation != SlideContentAnimation.none) ||
+        slide.photoLayers.any(
+          (pl) => pl.contentAnimation != SlideContentAnimation.none);
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 64,
-        height: 72,
+        width: 72,
+        height: 88,
         margin: const EdgeInsets.only(right: 6),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
@@ -2211,6 +3363,13 @@ class _SlideThumbnail extends StatelessWidget {
                   ),
                 ),
               ),
+              // Animation badge
+              if (hasAnimation)
+                const Positioned(
+                  top: 3,
+                  right: 3,
+                  child: Text('✨', style: TextStyle(fontSize: 10)),
+                ),
             ],
           ),
         ),
