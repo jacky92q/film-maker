@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:film_maker/data/repositories/export_repository.dart';
 import 'package:film_maker/ui/core/photo_frame_widget.dart';
@@ -88,21 +88,21 @@ class _EditorViewState extends State<EditorView> {
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.darkSurface,
+        backgroundColor: AppTheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('Unsaved Changes',
             style: TextStyle(
-                fontFamily: AppTheme.fontTheme, color: AppTheme.cream)),
+                fontFamily: AppTheme.fontTheme, color: AppTheme.textDark)),
         content: Text('Save your film before leaving?',
             style: TextStyle(
-                fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText)),
+                fontFamily: AppTheme.fontTheme, color: AppTheme.textMid)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text('Discard',
                 style: TextStyle(
                     fontFamily: AppTheme.fontTheme,
-                    color: AppTheme.subtleText)),
+                    color: AppTheme.textMid)),
           ),
           TextButton(
             onPressed: () async {
@@ -111,7 +111,7 @@ class _EditorViewState extends State<EditorView> {
             },
             child: Text('Save',
                 style: TextStyle(
-                    fontFamily: AppTheme.fontTheme, color: AppTheme.gold)),
+                    fontFamily: AppTheme.fontTheme, color: AppTheme.primary)),
           ),
         ],
       ),
@@ -145,7 +145,7 @@ class _EditorViewState extends State<EditorView> {
   void _showTemplatePickerForNewSlide() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.darkSurface,
+      backgroundColor: AppTheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -158,10 +158,85 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
+  void _showSlideSettingsSheet() {
+    final slide = widget.viewModel.selectedSlide;
+    if (slide == null) return;
+    final canDelete = widget.viewModel.project.slides.length > 1;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.65,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        builder: (ctx, controller) => ListenableBuilder(
+          listenable: widget.viewModel,
+          builder: (ctx, _) {
+            final s = widget.viewModel.selectedSlide!;
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(
+                              child: Container(
+                                width: 36, height: 4,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.line,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Slide Settings',
+                              style: TextStyle(
+                                fontFamily: AppTheme.fontTheme,
+                                color: AppTheme.textDark,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (canDelete)
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Color(0xFFE85D4A), size: 22),
+                          tooltip: 'Delete slide',
+                          onPressed: () {
+                            widget.viewModel.deleteSelectedSlide();
+                            Navigator.of(ctx).pop();
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: _SlideTabs(slide: s, viewModel: widget.viewModel),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   void _showMusicPicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.darkSurface,
+      backgroundColor: AppTheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -185,7 +260,7 @@ class _EditorViewState extends State<EditorView> {
         }
       },
       child: Scaffold(
-        backgroundColor: AppTheme.darkBg,
+        backgroundColor: AppTheme.bg,
         appBar: _buildAppBar(),
         body: ListenableBuilder(
           listenable: widget.viewModel,
@@ -194,7 +269,7 @@ class _EditorViewState extends State<EditorView> {
             if (slide == null) {
               return const Center(
                 child: Text('No slides',
-                    style: TextStyle(color: AppTheme.subtleText)),
+                    style: TextStyle(color: AppTheme.textMid)),
               );
             }
             return LayoutBuilder(
@@ -217,7 +292,7 @@ class _EditorViewState extends State<EditorView> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppTheme.darkBg,
+      backgroundColor: AppTheme.bg,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, size: 18),
         onPressed: () async {
@@ -236,7 +311,7 @@ class _EditorViewState extends State<EditorView> {
               autofocus: true,
               style: TextStyle(
                   fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.cream,
+                  color: AppTheme.textDark,
                   fontSize: 18),
               decoration: const InputDecoration(
                   border: InputBorder.none, contentPadding: EdgeInsets.zero),
@@ -263,14 +338,14 @@ class _EditorViewState extends State<EditorView> {
                         : widget.viewModel.project.title,
                     style: TextStyle(
                         fontFamily: AppTheme.fontTheme,
-                        color: AppTheme.cream,
+                        color: AppTheme.textDark,
                         fontSize: 18),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 4),
                 const Icon(Icons.edit_outlined,
-                    color: AppTheme.subtleText, size: 14),
+                    color: AppTheme.textMid, size: 14),
               ],
             ),
           );
@@ -287,31 +362,26 @@ class _EditorViewState extends State<EditorView> {
                   tooltip: 'Save',
                   icon: widget.viewModel.isSaving
                       ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: AppTheme.gold),
+                          width: 16, height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
                         )
-                      : const Icon(Icons.save_outlined, color: AppTheme.gold),
-                  onPressed: widget.viewModel.isSaving
-                      ? null
-                      : () => widget.viewModel.saveProject(),
+                      : const Icon(Icons.save_outlined, color: AppTheme.primary),
+                  onPressed: widget.viewModel.isSaving ? null : () => widget.viewModel.saveProject(),
                 ),
+              IconButton(
+                tooltip: 'Slide Settings',
+                icon: const Icon(Icons.tune_rounded, color: AppTheme.textMid, size: 20),
+                onPressed: _showSlideSettingsSheet,
+              ),
               TextButton(
                 onPressed: _openPreview,
                 child: Text('Preview',
-                    style: TextStyle(
-                        fontFamily: AppTheme.fontTheme,
-                        color: AppTheme.gold,
-                        fontSize: 13)),
+                    style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.primary, fontSize: 13)),
               ),
               TextButton(
                 onPressed: _openExport,
                 child: Text('Export',
-                    style: TextStyle(
-                        fontFamily: AppTheme.fontTheme,
-                        color: AppTheme.cream,
-                        fontSize: 13)),
+                    style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textDark, fontSize: 13)),
               ),
             ],
           ),
@@ -353,7 +423,7 @@ class _EditorViewState extends State<EditorView> {
     final slides = widget.viewModel.project.slides;
     return Container(
       height: height,
-      color: AppTheme.darkBg,
+      color: const Color(0xFF1C1C1C),
       child: Row(
         children: [
           _MusicTimelineButton(
@@ -366,7 +436,7 @@ class _EditorViewState extends State<EditorView> {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
               itemCount: slides.length,
               buildDefaultDragHandles: false,
-              onReorderItem: (oldIndex, newIndex) {
+              onReorder: (oldIndex, newIndex) {
                 widget.viewModel.reorderSlides(oldIndex, newIndex);
               },
               proxyDecorator: (child, index, animation) => child,
@@ -392,33 +462,120 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildPortraitLayout(BoxConstraints constraints, Slide slide) {
-    const reservedH = 52.0 + 100.0 + 160.0;
-    final maxCanvasH = (constraints.maxHeight - reservedH).clamp(60.0, double.infinity);
-    double canvasW = constraints.maxWidth;
-    double canvasH = canvasW / (16 / 9);
-    if (canvasH > maxCanvasH) {
-      canvasH = maxCanvasH;
-      canvasW = canvasH * (16 / 9);
-    }
-    return Column(
+    const editPanelH = 320.0;
+    final hasSelection = widget.viewModel.selectedLayer != null ||
+        widget.viewModel.selectedPhotoLayer != null;
+
+    return Stack(
       children: [
-        SizedBox(
-          height: canvasH,
-          child: ColoredBox(
-            color: AppTheme.darkBg,
-            child: Center(
-              child: SizedBox(
-                width: canvasW,
-                height: canvasH,
-                child: _SlideCanvas(viewModel: widget.viewModel),
+        Positioned.fill(
+          child: Column(
+            children: [
+              Expanded(
+                child: ColoredBox(
+                  color: const Color(0xFF1C1C1C),
+                  child: Center(
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: _SlideCanvas(viewModel: widget.viewModel),
+                    ),
+                  ),
+                ),
               ),
-            ),
+              _buildAddContentBar(slide),
+              _buildTimeline(),
+            ],
           ),
         ),
-        _buildAddContentBar(slide),
-        Expanded(child: _buildEditPanel()),
-        _buildTimeline(),
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          bottom: hasSelection ? 0 : -editPanelH,
+          left: 0,
+          right: 0,
+          height: editPanelH,
+          child: _buildEditSheet(),
+        ),
       ],
+    );
+  }
+
+  Widget _buildEditSheet() {
+    final photoLayer = widget.viewModel.selectedPhotoLayer;
+    final textLayer = widget.viewModel.selectedLayer;
+    final String title;
+    if (photoLayer != null) {
+      title = 'Photo Layer';
+    } else if (textLayer != null) {
+      title = textLayer.isSubtitle ? 'Subtitle Layer' : 'Title Layer';
+    } else {
+      title = 'Edit';
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.14),
+              blurRadius: 28,
+              offset: const Offset(0, -6),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Sheet handle + title + close
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 8, 0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 36,
+                            height: 4,
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: AppTheme.line,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontFamily: AppTheme.fontTheme,
+                            color: AppTheme.textDark,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                        color: AppTheme.textMid, size: 26),
+                    onPressed: () {
+                      widget.viewModel.selectLayer(null);
+                      widget.viewModel.selectPhotoLayer(null);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildEditPanel()),
+          ],
+        ),
+      ),
     );
   }
 
@@ -431,7 +588,7 @@ class _EditorViewState extends State<EditorView> {
             children: [
               Expanded(
                 child: ColoredBox(
-                  color: AppTheme.darkBg,
+                  color: const Color(0xFF1C1C1C),
                   child: Center(
                     child: AspectRatio(
                       aspectRatio: 16 / 9,
@@ -446,7 +603,7 @@ class _EditorViewState extends State<EditorView> {
         ),
         Container(
           width: 272,
-          color: AppTheme.darkSurface,
+          color: AppTheme.surface,
           child: Column(
             children: [
               _buildAddContentBar(slide),
@@ -466,7 +623,7 @@ class _EditorViewState extends State<EditorView> {
             children: [
               Expanded(
                 child: ColoredBox(
-                  color: AppTheme.darkBg,
+                  color: const Color(0xFF1C1C1C),
                   child: Center(
                     child: AspectRatio(
                       aspectRatio: 16 / 9,
@@ -482,8 +639,8 @@ class _EditorViewState extends State<EditorView> {
         Container(
           width: 320,
           decoration: BoxDecoration(
-            color: AppTheme.darkSurface,
-            border: Border(left: BorderSide(color: AppTheme.border)),
+            color: AppTheme.surface,
+            border: Border(left: BorderSide(color: AppTheme.line)),
           ),
           child: Column(
             children: [
@@ -504,9 +661,6 @@ class _EditorViewState extends State<EditorView> {
       onAddTitle: () => widget.viewModel.addTextLayer(isSubtitle: false),
       onAddSubtitle: () => widget.viewModel.addTextLayer(isSubtitle: true),
       onMusic: _showMusicPicker,
-      onDeleteSlide: widget.viewModel.project.slides.length > 1
-          ? widget.viewModel.deleteSelectedSlide
-          : null,
     );
   }
 }
@@ -794,12 +948,12 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.open_with,
-                            color: Colors.white54, size: 10),
+                            color: AppTheme.textMid, size: 10),
                         const SizedBox(width: 3),
                         Text('drag · pinch to zoom',
                             style: TextStyle(
                                 fontFamily: AppTheme.fontTheme,
-                                color: Colors.white54,
+                                color: AppTheme.textMid,
                                 fontSize: 8)),
                       ],
                     ),
@@ -813,7 +967,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                     'Tap "+ Main" or "+ Sub" to add text',
                     style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
-                      color: AppTheme.subtleText.withValues(alpha: 0.5),
+                      color: AppTheme.textMid.withValues(alpha: 0.5),
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
                     ),
@@ -916,11 +1070,11 @@ class _LayerWidget extends StatelessWidget {
         decoration: selected
             ? BoxDecoration(
                 border: Border.all(
-                  color: AppTheme.gold.withValues(alpha: 0.7),
-                  width: 1,
+                  color: AppTheme.gold.withValues(alpha: 0.8),
+                  width: 1.5,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color: AppTheme.gold.withValues(alpha: 0.05),
+                color: AppTheme.gold.withValues(alpha: 0.08),
               )
             : null,
         child: content,
@@ -930,7 +1084,7 @@ class _LayerWidget extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _AddContentBar — floating row of large action buttons above the edit panel
+// _AddContentBar — row of big action buttons (Photo · Title · Sub · Music)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _AddContentBar extends StatelessWidget {
@@ -941,7 +1095,6 @@ class _AddContentBar extends StatelessWidget {
     required this.onAddTitle,
     required this.onAddSubtitle,
     required this.onMusic,
-    this.onDeleteSlide,
   });
 
   final EditorViewModel viewModel;
@@ -950,81 +1103,115 @@ class _AddContentBar extends StatelessWidget {
   final VoidCallback onAddTitle;
   final VoidCallback onAddSubtitle;
   final VoidCallback onMusic;
-  final VoidCallback? onDeleteSlide;
 
   @override
   Widget build(BuildContext context) {
     final hasMusic = viewModel.project.musicName != null;
     return Container(
-      height: 52,
-      color: AppTheme.darkSurface,
+      color: AppTheme.surface,
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
       child: Row(
         children: [
-          _BarBtn(icon: Icons.add_photo_alternate_outlined, label: '+ Photo', onTap: onAddPhoto),
-          _BarBtn(icon: Icons.title, label: '+ Title', onTap: onAddTitle),
-          _BarBtn(icon: Icons.short_text, label: '+ Sub', onTap: onAddSubtitle),
-          _BarBtn(
-            icon: Icons.music_note_outlined,
-            label: hasMusic ? 'Music ✓' : 'Music',
+          _BigActionBtn(
+            icon: Icons.add_photo_alternate_rounded,
+            label: 'Photo',
+            onTap: onAddPhoto,
+          ),
+          _BigActionBtn(
+            icon: Icons.title_rounded,
+            label: 'Title',
+            onTap: onAddTitle,
+          ),
+          _BigActionBtn(
+            icon: Icons.short_text_rounded,
+            label: 'Sub',
+            onTap: onAddSubtitle,
+          ),
+          _BigActionBtn(
+            icon: Icons.music_note_rounded,
+            label: 'Music',
             onTap: onMusic,
             active: hasMusic,
           ),
-          if (onDeleteSlide != null)
-            _BarBtn(
-              icon: Icons.delete_sweep_outlined,
-              label: 'Delete',
-              onTap: onDeleteSlide!,
-              destructive: true,
-            ),
         ],
       ),
     );
   }
 }
 
-class _BarBtn extends StatelessWidget {
-  const _BarBtn({
+class _BigActionBtn extends StatelessWidget {
+  const _BigActionBtn({
     required this.icon,
     required this.label,
     required this.onTap,
     this.active = false,
-    this.destructive = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final bool active;
-  final bool destructive;
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive
-        ? const Color(0xFFFF6B6B)
-        : active
-            ? AppTheme.gold
-            : Colors.white54;
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 56),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: AppTheme.fontTheme,
-                color: color,
-                fontSize: 11,
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: active
+                ? AppTheme.primary.withValues(alpha: 0.08)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: active ? AppTheme.primary : AppTheme.surface2,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: active
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.primary.withValues(alpha: 0.28),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          )
+                        ],
+                ),
+                child: Icon(
+                  icon,
+                  size: 24,
+                  color: active ? Colors.white : AppTheme.textMid,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              const SizedBox(height: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: active ? AppTheme.primary : AppTheme.textMid,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1048,7 +1235,7 @@ class _SectionHeader extends StatelessWidget {
           label.toUpperCase(),
           style: const TextStyle(
             fontFamily: 'PlayfairDisplay',
-            color: AppTheme.gold,
+            color: AppTheme.primary,
             fontSize: 11,
             letterSpacing: 1.2,
             fontWeight: FontWeight.w700,
@@ -1058,7 +1245,7 @@ class _SectionHeader extends StatelessWidget {
         Container(
           height: 1,
           width: 32,
-          color: AppTheme.gold.withValues(alpha: 0.4),
+          color: AppTheme.primary.withValues(alpha: 0.4),
         ),
       ],
     );
@@ -1113,14 +1300,14 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
     return DefaultTabController(
       length: 3,
       child: Container(
-        color: AppTheme.darkSurface,
+        color: AppTheme.surface,
         child: Column(
           children: [
             TabBar(
-              indicatorColor: AppTheme.gold,
+              indicatorColor: AppTheme.primary,
               indicatorWeight: 2,
-              labelColor: AppTheme.gold,
-              unselectedLabelColor: AppTheme.subtleText,
+              labelColor: AppTheme.primary,
+              unselectedLabelColor: AppTheme.textMid,
               labelStyle: TextStyle(
                 fontFamily: AppTheme.fontTheme,
                 fontSize: 11,
@@ -1166,7 +1353,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
               IconButton(
                 icon: const Icon(Icons.flip_to_front, size: 16),
                 tooltip: 'Bring to front',
-                color: Colors.white54,
+                color: AppTheme.textMid,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: widget.onBringToFront,
@@ -1175,7 +1362,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
               IconButton(
                 icon: const Icon(Icons.flip_to_back, size: 16),
                 tooltip: 'Send to back',
-                color: Colors.white54,
+                color: AppTheme.textMid,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: widget.onSendToBack,
@@ -1186,7 +1373,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
           // Text input
           Container(
             decoration: BoxDecoration(
-              color: AppTheme.darkSurface2,
+              color: AppTheme.surface2,
               borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.all(8),
@@ -1194,7 +1381,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
               controller: _ctrl,
               style: slideLayerTextStyle(layer.fontStyle,
                   fontSize: 16,
-                  color: AppTheme.cream,
+                  color: AppTheme.textDark,
                   fontWeight: FontWeight.normal),
               maxLines: 3,
               decoration: const InputDecoration(
@@ -1269,15 +1456,15 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                     margin: const EdgeInsets.only(right: 7),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      color: sel ? AppTheme.gold.withValues(alpha: 0.15) : AppTheme.darkSurface2,
+                      color: sel ? AppTheme.primary.withValues(alpha: 0.15) : AppTheme.surface2,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                      border: Border.all(color: sel ? AppTheme.primary : AppTheme.line, width: sel ? 1.5 : 1),
                     ),
                     child: Text(
                       f.label,
                       style: slideLayerTextStyle(f,
                           fontSize: 13,
-                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          color: sel ? AppTheme.primary : AppTheme.textMid,
                           fontWeight: sel ? FontWeight.w700 : FontWeight.w400),
                     ),
                   ),
@@ -1302,7 +1489,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
               SizedBox(
                 width: 36,
                 child: Text('${layer.fontSize.round()}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(color: AppTheme.textMid, fontSize: 12),
                     textAlign: TextAlign.center),
               ),
             ],
@@ -1340,15 +1527,15 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+                    color: sel ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surface2,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                    border: Border.all(color: sel ? AppTheme.primary : AppTheme.line, width: sel ? 1.5 : 1),
                   ),
                   child: Center(
                     child: Text(bg.label,
                         style: TextStyle(
                           fontFamily: AppTheme.fontTheme,
-                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          color: sel ? AppTheme.primary : AppTheme.textMid,
                           fontSize: 11,
                           fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
                         )),
@@ -1373,15 +1560,15 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+                    color: sel ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surface2,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                    border: Border.all(color: sel ? AppTheme.primary : AppTheme.line, width: sel ? 1.5 : 1),
                   ),
                   child: Center(
                     child: Text(lbl,
                         style: TextStyle(
                           fontFamily: AppTheme.fontTheme,
-                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          color: sel ? AppTheme.primary : AppTheme.textMid,
                           fontSize: 11,
                           fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
                         )),
@@ -1411,15 +1598,15 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
+                    color: sel ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surface2,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                    border: Border.all(color: sel ? AppTheme.primary : AppTheme.line, width: sel ? 1.5 : 1),
                   ),
                   child: Center(
                     child: Text(lbl,
                         style: TextStyle(
                           fontFamily: AppTheme.fontTheme,
-                          color: sel ? AppTheme.gold : AppTheme.subtleText,
+                          color: sel ? AppTheme.primary : AppTheme.textMid,
                           fontSize: 11,
                           fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
                         )),
@@ -1476,14 +1663,14 @@ class _PhotoLayerTabs extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: Container(
-        color: AppTheme.darkSurface,
+        color: AppTheme.surface,
         child: Column(
           children: [
             TabBar(
-              indicatorColor: AppTheme.gold,
+              indicatorColor: AppTheme.primary,
               indicatorWeight: 2,
-              labelColor: AppTheme.gold,
-              unselectedLabelColor: AppTheme.subtleText,
+              labelColor: AppTheme.primary,
+              unselectedLabelColor: AppTheme.textMid,
               labelStyle: TextStyle(
                 fontFamily: AppTheme.fontTheme,
                 fontSize: 11,
@@ -1529,7 +1716,7 @@ class _PhotoLayerTabs extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.flip_to_front, size: 16),
                 tooltip: 'Bring to front',
-                color: Colors.white54,
+                color: AppTheme.textMid,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () => vm.bringToFront(layer.id, isPhoto: true),
@@ -1538,14 +1725,14 @@ class _PhotoLayerTabs extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.flip_to_back, size: 16),
                 tooltip: 'Send to back',
-                color: Colors.white54,
+                color: AppTheme.textMid,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () => vm.sendToBack(layer.id, isPhoto: true),
               ),
               TextButton.icon(
                 style: TextButton.styleFrom(
-                  foregroundColor: isCrop ? Colors.orangeAccent : Colors.white54,
+                  foregroundColor: isCrop ? Colors.orangeAccent : AppTheme.textMid,
                   backgroundColor: isCrop ? Colors.orangeAccent.withValues(alpha: 0.15) : Colors.transparent,
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   minimumSize: Size.zero,
@@ -1582,7 +1769,7 @@ class _PhotoLayerTabs extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text('Zoom', style: TextStyle(fontSize: 11, color: Colors.white54, letterSpacing: 1)),
+                  const Text('Zoom', style: TextStyle(fontSize: 11, color: AppTheme.textMid, letterSpacing: 1)),
                   Slider(
                     value: layer.cropScale.clamp(1.0, 4.0),
                     min: 1.0, max: 4.0, divisions: 30,
@@ -1594,7 +1781,7 @@ class _PhotoLayerTabs extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.white54,
+                        foregroundColor: AppTheme.textMid,
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         minimumSize: Size.zero,
                       ),
@@ -1641,8 +1828,8 @@ class _PhotoLayerTabs extends StatelessWidget {
                 icon: const Icon(Icons.image_outlined, size: 18),
                 label: const Text('Change Photo'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  side: const BorderSide(color: Colors.white24),
+                  foregroundColor: AppTheme.textMid,
+                  side: const BorderSide(color: AppTheme.line),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -1755,14 +1942,14 @@ class _SlideTabs extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: Container(
-        color: AppTheme.darkSurface,
+        color: AppTheme.surface,
         child: Column(
           children: [
             TabBar(
-              indicatorColor: AppTheme.gold,
+              indicatorColor: AppTheme.primary,
               indicatorWeight: 2,
-              labelColor: AppTheme.gold,
-              unselectedLabelColor: AppTheme.subtleText,
+              labelColor: AppTheme.primary,
+              unselectedLabelColor: AppTheme.textMid,
               labelStyle: TextStyle(
                 fontFamily: AppTheme.fontTheme,
                 fontSize: 11,
@@ -1815,7 +2002,7 @@ class _SlideTabs extends StatelessWidget {
                   '${slide.photoScale.toStringAsFixed(1)}×',
                   style: const TextStyle(
                     fontFamily: 'PlayfairDisplay',
-                    color: AppTheme.gold,
+                    color: AppTheme.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -1827,12 +2014,12 @@ class _SlideTabs extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppTheme.border),
+                      border: Border.all(color: AppTheme.line),
                     ),
                     child: Text('Reset',
                         style: TextStyle(
                           fontFamily: AppTheme.fontTheme,
-                          color: AppTheme.subtleText,
+                          color: AppTheme.textMid,
                           fontSize: 11,
                         )),
                   ),
@@ -1841,7 +2028,7 @@ class _SlideTabs extends StatelessWidget {
             ),
             Row(
               children: [
-                const Icon(Icons.zoom_out, color: AppTheme.subtleText, size: 16),
+                const Icon(Icons.zoom_out, color: AppTheme.textMid, size: 16),
                 Expanded(
                   child: Slider(
                     value: slide.photoScale.clamp(0.1, 4.0),
@@ -1851,7 +2038,7 @@ class _SlideTabs extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Icon(Icons.zoom_in, color: AppTheme.subtleText, size: 16),
+                const Icon(Icons.zoom_in, color: AppTheme.textMid, size: 16),
               ],
             ),
           ],
@@ -1877,8 +2064,8 @@ class _SlideTabs extends StatelessWidget {
               label: Text(slide.imagePath2 != null ? 'Photo 2 ✓' : 'Add Photo 2'),
               onPressed: () => viewModel.pickImageForSlot(2),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white70,
-                side: const BorderSide(color: Colors.white24),
+                foregroundColor: AppTheme.textMid,
+                side: const BorderSide(color: AppTheme.line),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
@@ -1889,8 +2076,8 @@ class _SlideTabs extends StatelessWidget {
                 label: Text(slide.imagePath3 != null ? 'Photo 3 ✓' : 'Add Photo 3'),
                 onPressed: () => viewModel.pickImageForSlot(3),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  side: const BorderSide(color: Colors.white24),
+                  foregroundColor: AppTheme.textMid,
+                  side: const BorderSide(color: AppTheme.line),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
@@ -1924,14 +2111,14 @@ class _SlideTabs extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
-                      border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                      color: sel ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surface2,
+                      border: Border.all(color: sel ? AppTheme.primary : AppTheme.line, width: sel ? 1.5 : 1),
                     ),
                     child: Center(
                       child: Text(filter.label,
                           style: TextStyle(
                             fontFamily: AppTheme.fontTheme,
-                            color: sel ? AppTheme.gold : AppTheme.subtleText,
+                            color: sel ? AppTheme.primary : AppTheme.textMid,
                             fontSize: 11,
                             fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
                           )),
@@ -1959,14 +2146,14 @@ class _SlideTabs extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
-                      border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                      color: sel ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surface2,
+                      border: Border.all(color: sel ? AppTheme.primary : AppTheme.line, width: sel ? 1.5 : 1),
                     ),
                     child: Center(
                       child: Text(ov.label,
                           style: TextStyle(
                             fontFamily: AppTheme.fontTheme,
-                            color: sel ? AppTheme.gold : AppTheme.subtleText,
+                            color: sel ? AppTheme.primary : AppTheme.textMid,
                             fontSize: 11,
                             fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
                           )),
@@ -2032,14 +2219,14 @@ class _SlideTabs extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: sel ? AppTheme.gold.withValues(alpha: 0.2) : AppTheme.darkSurface2,
-                      border: Border.all(color: sel ? AppTheme.gold : AppTheme.border, width: sel ? 1.5 : 1),
+                      color: sel ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surface2,
+                      border: Border.all(color: sel ? AppTheme.primary : AppTheme.line, width: sel ? 1.5 : 1),
                     ),
                     child: Center(
                       child: Text(effect.label,
                           style: TextStyle(
                             fontFamily: AppTheme.fontTheme,
-                            color: sel ? AppTheme.gold : AppTheme.subtleText,
+                            color: sel ? AppTheme.primary : AppTheme.textMid,
                             fontSize: 11,
                             fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
                           )),
@@ -2058,7 +2245,7 @@ class _SlideTabs extends StatelessWidget {
               Text('${slide.durationSeconds}s',
                   style: const TextStyle(
                     fontFamily: 'PlayfairDisplay',
-                    color: AppTheme.gold,
+                    color: AppTheme.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   )),
@@ -2099,13 +2286,13 @@ class _AnimationPickerRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.auto_awesome, size: 11, color: AppTheme.gold),
+            const Icon(Icons.auto_awesome, size: 11, color: AppTheme.primary),
             const SizedBox(width: 4),
             const Text(
               'ANIMATION',
               style: TextStyle(
                 fontFamily: 'PlayfairDisplay',
-                color: AppTheme.subtleText,
+                color: AppTheme.textMid,
                 fontSize: 11,
                 letterSpacing: 0.8,
                 fontWeight: FontWeight.w600,
@@ -2128,10 +2315,10 @@ class _AnimationPickerRow extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(6),
                     color: sel
-                        ? AppTheme.gold.withValues(alpha: 0.2)
-                        : AppTheme.darkSurface2,
+                        ? AppTheme.primary.withValues(alpha: 0.2)
+                        : AppTheme.surface2,
                     border: Border.all(
-                      color: sel ? AppTheme.gold : AppTheme.border,
+                      color: sel ? AppTheme.primary : AppTheme.line,
                       width: sel ? 1.5 : 1,
                     ),
                   ),
@@ -2139,7 +2326,7 @@ class _AnimationPickerRow extends StatelessWidget {
                     '${anim.emoji} ${anim.label}',
                     style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
-                      color: sel ? AppTheme.gold : AppTheme.subtleText,
+                      color: sel ? AppTheme.primary : AppTheme.textMid,
                       fontSize: 10,
                       fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
                     ),
@@ -2176,12 +2363,12 @@ class _ColorDots extends StatelessWidget {
               shape: BoxShape.circle,
               color: c.color,
               border: Border.all(
-                  color: sel ? AppTheme.gold : AppTheme.border,
+                  color: sel ? AppTheme.primary : AppTheme.line,
                   width: sel ? 2.5 : 1),
               boxShadow: sel
                   ? [
                       BoxShadow(
-                          color: AppTheme.gold.withValues(alpha: 0.5),
+                          color: AppTheme.primary.withValues(alpha: 0.5),
                           blurRadius: 6)
                     ]
                   : null,
@@ -2273,13 +2460,13 @@ class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
                   shape: BoxShape.circle,
                   color: Color(c),
                   border: Border.all(
-                    color: sel ? AppTheme.gold : AppTheme.border,
+                    color: sel ? AppTheme.primary : AppTheme.line,
                     width: sel ? 2.5 : 1,
                   ),
                   boxShadow: sel
                       ? [
                           BoxShadow(
-                              color: AppTheme.gold.withValues(alpha: 0.4),
+                              color: AppTheme.primary.withValues(alpha: 0.4),
                               blurRadius: 5)
                         ]
                       : null,
@@ -2302,7 +2489,7 @@ class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
             controller: _hex,
             style: TextStyle(
                 fontFamily: AppTheme.fontTheme,
-                color: AppTheme.cream,
+                color: AppTheme.textDark,
                 fontSize: 12),
             decoration: const InputDecoration(
               hintText: '#000000',
@@ -2310,7 +2497,7 @@ class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
               prefixIcon: Padding(
                 padding: EdgeInsets.all(10),
                 child: Icon(Icons.palette_outlined,
-                    size: 14, color: AppTheme.subtleText),
+                    size: 14, color: AppTheme.textMid),
               ),
             ),
             onSubmitted: (raw) {
@@ -2345,11 +2532,11 @@ class _TypeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected
-              ? AppTheme.gold.withValues(alpha: 0.2)
-              : AppTheme.darkSurface2,
+              ? AppTheme.primary.withValues(alpha: 0.2)
+              : AppTheme.surface2,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-              color: selected ? AppTheme.gold : AppTheme.border,
+              color: selected ? AppTheme.primary : AppTheme.line,
               width: selected ? 1.5 : 1),
         ),
         child: Row(
@@ -2357,12 +2544,12 @@ class _TypeButton extends StatelessWidget {
           children: [
             Icon(icon,
                 size: 13,
-                color: selected ? AppTheme.gold : AppTheme.subtleText),
+                color: selected ? AppTheme.primary : AppTheme.textMid),
             const SizedBox(width: 4),
             Text(label,
                 style: TextStyle(
                   fontFamily: AppTheme.fontTheme,
-                  color: selected ? AppTheme.gold : AppTheme.subtleText,
+                  color: selected ? AppTheme.primary : AppTheme.textMid,
                   fontSize: 12,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
                 )),
@@ -2413,7 +2600,7 @@ class _SlideThumbnail extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? AppTheme.gold : AppTheme.border,
+            color: isSelected ? AppTheme.primary : AppTheme.line,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -2449,7 +2636,7 @@ class _SlideThumbnail extends StatelessWidget {
                     '${index + 1}',
                     style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
-                      color: isSelected ? AppTheme.gold : Colors.white70,
+                      color: isSelected ? AppTheme.primary : Colors.white70,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -2484,10 +2671,10 @@ class _AddSlideButton extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.gold.withValues(alpha: 0.5)),
-          color: AppTheme.gold.withValues(alpha: 0.08),
+          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.5)),
+          color: AppTheme.primary.withValues(alpha: 0.08),
         ),
-        child: const Icon(Icons.add, color: AppTheme.gold, size: 22),
+        child: const Icon(Icons.add, color: AppTheme.primary, size: 22),
       ),
     );
   }
@@ -2509,15 +2696,15 @@ class _MusicTimelineButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: musicName != null
-                ? AppTheme.gold.withValues(alpha: 0.5)
-                : AppTheme.border,
+                ? AppTheme.primary.withValues(alpha: 0.5)
+                : AppTheme.line,
           ),
           color: musicName != null
-              ? AppTheme.gold.withValues(alpha: 0.08)
-              : AppTheme.darkSurface,
+              ? AppTheme.primary.withValues(alpha: 0.08)
+              : AppTheme.surface,
         ),
         child: Icon(Icons.music_note_outlined,
-            color: musicName != null ? AppTheme.gold : AppTheme.subtleText,
+            color: musicName != null ? AppTheme.primary : AppTheme.textMid,
             size: 20),
       ),
     );
@@ -2545,7 +2732,7 @@ class _TemplatePicker extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                  color: AppTheme.border,
+                  color: AppTheme.line,
                   borderRadius: BorderRadius.circular(2)),
             ),
           ),
@@ -2553,14 +2740,14 @@ class _TemplatePicker extends StatelessWidget {
           Text('Choose a Template',
               style: TextStyle(
                   fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.cream,
+                  color: AppTheme.textDark,
                   fontSize: 20,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
           Text('Start with a pre-designed layout',
               style: TextStyle(
                   fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.subtleText,
+                  color: AppTheme.textMid,
                   fontSize: 13)),
           const SizedBox(height: 16),
           GridView.count(
@@ -2575,10 +2762,10 @@ class _TemplatePicker extends StatelessWidget {
                 onTap: () => onSelect(t),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppTheme.darkSurface2,
+                    color: AppTheme.surface2,
                     borderRadius: BorderRadius.circular(12),
                     border:
-                        Border.all(color: AppTheme.gold.withValues(alpha: 0.3)),
+                        Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -2588,13 +2775,13 @@ class _TemplatePicker extends StatelessWidget {
                       Text(t.label,
                           style: TextStyle(
                               fontFamily: AppTheme.fontTheme,
-                              color: AppTheme.cream,
+                              color: AppTheme.textDark,
                               fontSize: 12,
                               fontWeight: FontWeight.w600)),
                       Text(t.description,
                           style: TextStyle(
                               fontFamily: AppTheme.fontTheme,
-                              color: AppTheme.subtleText,
+                              color: AppTheme.textMid,
                               fontSize: 9),
                           textAlign: TextAlign.center,
                           maxLines: 2,
@@ -2644,7 +2831,7 @@ class _MusicPickerSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                  color: AppTheme.border,
+                  color: AppTheme.line,
                   borderRadius: BorderRadius.circular(2)),
             ),
           ),
@@ -2654,7 +2841,7 @@ class _MusicPickerSheet extends StatelessWidget {
               Text('Choose a Song',
                   style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
-                      color: AppTheme.cream,
+                      color: AppTheme.textDark,
                       fontSize: 20,
                       fontWeight: FontWeight.w600)),
               const Spacer(),
@@ -2683,29 +2870,29 @@ class _MusicPickerSheet extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: isSel
-                      ? AppTheme.gold.withValues(alpha: 0.2)
-                      : AppTheme.darkSurface2,
+                      ? AppTheme.primary.withValues(alpha: 0.2)
+                      : AppTheme.surface2,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                     isSel ? Icons.music_note : Icons.music_note_outlined,
-                    color: isSel ? AppTheme.gold : AppTheme.subtleText,
+                    color: isSel ? AppTheme.primary : AppTheme.textMid,
                     size: 18),
               ),
               title: Text(song.$1,
                   style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
-                      color: AppTheme.cream,
+                      color: AppTheme.textDark,
                       fontSize: 14,
                       fontWeight: isSel ? FontWeight.w700 : FontWeight.w400)),
               subtitle: Text(song.$2,
                   style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
-                      color: AppTheme.subtleText,
+                      color: AppTheme.textMid,
                       fontSize: 12)),
               trailing: isSel
                   ? const Icon(Icons.check_circle,
-                      color: AppTheme.gold, size: 18)
+                      color: AppTheme.primary, size: 18)
                   : null,
               onTap: () {
                 onSelect(song.$1);
@@ -2718,3 +2905,5 @@ class _MusicPickerSheet extends StatelessWidget {
     );
   }
 }
+
+

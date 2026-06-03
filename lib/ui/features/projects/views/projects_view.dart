@@ -9,7 +9,6 @@ import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/projects/view_models/projects_view_model.dart';
 import 'package:flutter/material.dart';
 
-
 class ProjectsView extends StatefulWidget {
   const ProjectsView({
     super.key,
@@ -36,28 +35,20 @@ class _ProjectsViewState extends State<ProjectsView> {
     final title = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.darkSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'New Wedding Film',
-          style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.cream),
-        ),
+        title: const Text('New Wedding Film'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Give your film a title to remember',
-              style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText, fontSize: 13),
-            ),
+            const Text('Give your film a title to remember'),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               autofocus: true,
-              style: const TextStyle(color: AppTheme.cream),
+              style: const TextStyle(color: AppTheme.textDark),
               decoration: const InputDecoration(
                 hintText: 'e.g. Our Love Story',
-                prefixIcon: Icon(Icons.movie_creation_outlined,
-                    color: AppTheme.subtleText),
+                prefixIcon: Icon(Icons.movie_creation_outlined),
               ),
               onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
             ),
@@ -66,8 +57,7 @@ class _ProjectsViewState extends State<ProjectsView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel',
-                style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText)),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () {
@@ -82,15 +72,11 @@ class _ProjectsViewState extends State<ProjectsView> {
     controller.dispose();
     if (title != null && title.isNotEmpty && mounted) {
       final project = await widget.viewModel.createProject(title);
-      if (project != null && mounted) {
-        _openEditor(project);
-      }
+      if (project != null && mounted) _openEditor(project);
     }
   }
 
   void _openEditor(Project project) async {
-    final exportRepo =
-        ExportRepository(exportService: MockExportService());
     final updated = await Navigator.of(context).push<Project>(
       SlideUpPageRoute(
         builder: (_) => EditorView(
@@ -98,36 +84,27 @@ class _ProjectsViewState extends State<ProjectsView> {
             project: project,
             projectRepository: widget.projectRepository,
           ),
-          exportRepository: exportRepo,
+          exportRepository: ExportRepository(exportService: MockExportService()),
         ),
       ),
     );
-    if (updated != null) {
-      widget.viewModel.updateProjectInList(updated);
-    }
+    if (updated != null) widget.viewModel.updateProjectInList(updated);
   }
 
   Future<void> _confirmDelete(Project project) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.darkSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Delete Film?',
-            style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.cream)),
-        content: Text(
-          '"${project.title}" will be permanently deleted.',
-          style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText),
-        ),
+        title: const Text('Delete Film?'),
+        content: Text('"${project.title}" will be permanently deleted.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('Cancel',
-                style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText)),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFFF6B6B),
+              backgroundColor: const Color(0xFFE85D4A),
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -136,20 +113,17 @@ class _ProjectsViewState extends State<ProjectsView> {
         ],
       ),
     );
-    if (confirmed == true) {
-      widget.viewModel.deleteProject(project.id);
-    }
+    if (confirmed == true) widget.viewModel.deleteProject(project.id);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.bg,
       appBar: AppBar(
-        title: Text(
-          'My Wedding Films',
-          style: TextStyle(fontFamily: AppTheme.fontTheme, 
-              color: AppTheme.cream, fontWeight: FontWeight.w600),
-        ),
+        title: const Text('My Wedding Films'),
+        backgroundColor: AppTheme.bg,
+        surfaceTintColor: Colors.transparent,
       ),
       body: ListenableBuilder(
         listenable: widget.viewModel,
@@ -157,22 +131,16 @@ class _ProjectsViewState extends State<ProjectsView> {
           if (widget.viewModel.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          if (widget.viewModel.error != null) {
-            return _buildError();
-          }
-
-          if (widget.viewModel.projects.isEmpty) {
-            return _buildEmptyState();
-          }
-
+          if (widget.viewModel.error != null) return _buildError();
+          if (widget.viewModel.projects.isEmpty) return _buildEmptyState();
           return _buildProjectGrid();
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showNewProjectDialog,
         icon: const Icon(Icons.add),
-        label: Text('New Film', style: TextStyle(fontFamily: AppTheme.fontTheme, fontWeight: FontWeight.w700)),
+        label: const Text('New Film',
+            style: TextStyle(fontFamily: AppTheme.fontTheme, fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -200,24 +168,37 @@ class _ProjectsViewState extends State<ProjectsView> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.movie_creation_outlined,
-              color: AppTheme.gold.withValues(alpha: 0.5), size: 72),
-          const SizedBox(height: 16),
-          Text(
-            'No films yet',
-            style: TextStyle(fontFamily: AppTheme.fontTheme, 
-                color: AppTheme.cream, fontSize: 22, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap the button below to create\nyour first wedding film',
-            style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 88, height: 88,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.movie_creation_outlined, color: AppTheme.primary, size: 40),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'No films yet',
+              style: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                color: AppTheme.textDark,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tap the button below to create\nyour first wedding film',
+              style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textMid, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -227,17 +208,19 @@ class _ProjectsViewState extends State<ProjectsView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: AppTheme.gold, size: 48),
-          const SizedBox(height: 12),
-          Text(
-            widget.viewModel.error!,
-            style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.subtleText),
+          Container(
+            width: 64, height: 64,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE85D4A).withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.error_outline, color: Color(0xFFE85D4A), size: 32),
           ),
           const SizedBox(height: 16),
-          OutlinedButton(
-            onPressed: widget.viewModel.loadProjects,
-            child: const Text('Try Again'),
-          ),
+          Text(widget.viewModel.error!,
+              style: const TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textMid)),
+          const SizedBox(height: 16),
+          FilledButton(onPressed: widget.viewModel.loadProjects, child: const Text('Try Again')),
         ],
       ),
     );
@@ -245,11 +228,7 @@ class _ProjectsViewState extends State<ProjectsView> {
 }
 
 class _ProjectCard extends StatelessWidget {
-  const _ProjectCard({
-    required this.project,
-    required this.onTap,
-    required this.onDelete,
-  });
+  const _ProjectCard({required this.project, required this.onTap, required this.onDelete});
 
   final Project project;
   final VoidCallback onTap;
@@ -270,9 +249,16 @@ class _ProjectCard extends StatelessWidget {
       onLongPress: onDelete,
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.darkSurface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.border),
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppTheme.line),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -286,32 +272,34 @@ class _ProjectCard extends StatelessWidget {
                 children: [
                   Text(
                     project.title,
-                    style: TextStyle(fontFamily: AppTheme.fontTheme, 
-                      color: AppTheme.cream,
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.textDark,
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Row(
                     children: [
-                      const Icon(Icons.photo_library_outlined,
-                          color: AppTheme.subtleText, size: 12),
+                      Icon(Icons.photo_library_outlined, color: AppTheme.textMid, size: 12),
                       const SizedBox(width: 4),
                       Text(
                         '${project.slideCount} slides',
-                        style: TextStyle(fontFamily: AppTheme.fontTheme, 
-                            color: AppTheme.subtleText, fontSize: 11),
+                        style: const TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textMid, fontSize: 11),
                       ),
                     ],
                   ),
                   const SizedBox(height: 2),
                   Text(
                     _formatDate(project.updatedAt),
-                    style: TextStyle(fontFamily: AppTheme.fontTheme, 
-                        color: AppTheme.border, fontSize: 10),
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.textMid.withValues(alpha: 0.6),
+                      fontSize: 10,
+                    ),
                   ),
                 ],
               ),
@@ -323,13 +311,13 @@ class _ProjectCard extends StatelessWidget {
   }
 
   Widget _buildThumbnail() {
-    final colors = [
-      [const Color(0xFF1A1208), const Color(0xFF2C1F00)],
-      [const Color(0xFF0D1A18), const Color(0xFF0A1414)],
-      [const Color(0xFF1A0D1A), const Color(0xFF180A18)],
-      [const Color(0xFF1A1212), const Color(0xFF1A0A0A)],
+    final palettes = [
+      [const Color(0xFF3B1F0A), const Color(0xFFC07842)],
+      [const Color(0xFF0A2A1F), const Color(0xFF1AA38C)],
+      [const Color(0xFF1A0A2A), const Color(0xFF6B5CE7)],
+      [const Color(0xFF2A1A0A), const Color(0xFFE8963C)],
     ];
-    final palette = colors[project.id.hashCode % colors.length];
+    final palette = palettes[project.id.hashCode % palettes.length];
 
     return AspectRatio(
       aspectRatio: 16 / 9,
@@ -345,32 +333,24 @@ class _ProjectCard extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             Opacity(
-              opacity: 0.08,
-              child: Icon(Icons.movie_creation,
-                  size: 60, color: AppTheme.gold),
+              opacity: 0.15,
+              child: const Icon(Icons.movie_creation, size: 52, color: Colors.white),
             ),
             if (project.musicName != null)
               Positioned(
-                bottom: 6,
-                right: 6,
+                bottom: 6, right: 6,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppTheme.darkBg.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.black.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.music_note,
-                          color: AppTheme.gold, size: 10),
-                      const SizedBox(width: 2),
-                      Text(
-                        'Music',
-                        style: TextStyle(fontFamily: AppTheme.fontTheme, 
-                            color: AppTheme.gold, fontSize: 9),
-                      ),
+                      Icon(Icons.music_note, color: Colors.white70, size: 10),
+                      SizedBox(width: 3),
+                      Text('Music', style: TextStyle(color: Colors.white70, fontSize: 9, fontFamily: AppTheme.fontTheme)),
                     ],
                   ),
                 ),

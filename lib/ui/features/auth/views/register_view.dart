@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key, required this.viewModel});
-
   final AuthViewModel viewModel;
 
   @override
@@ -39,7 +38,6 @@ class _RegisterViewState extends State<RegisterView> {
       email: _emailController.text.trim(),
       password: password,
     );
-    // On success, auth state stream triggers navigation in app.dart
     if (mounted && widget.viewModel.error == null) {
       Navigator.of(context).pop();
     }
@@ -48,21 +46,14 @@ class _RegisterViewState extends State<RegisterView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
+      backgroundColor: AppTheme.bg,
+      body: Column(
         children: [
-          _buildBackground(),
-          SafeArea(
+          _buildHeroSection(context),
+          Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 48),
-                  _buildHeader(context),
-                  const SizedBox(height: 40),
-                  _buildForm(),
-                ],
-              ),
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              child: _buildForm(),
             ),
           ),
         ],
@@ -70,63 +61,80 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 
-  Widget _buildBackground() {
+  Widget _buildHeroSection(BuildContext context) {
     return Container(
+      width: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF0D0D0D), Color(0xFF111118), Color(0xFF0D0D0D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3B1F0A), Color(0xFF7B3F18), Color(0xFFC07842)],
         ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.arrow_back_ios_new,
-                  color: AppTheme.cream, size: 20),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -30,
+            top: -20,
+            child: Opacity(
+              opacity: 0.07,
+              child: Icon(Icons.movie_creation, size: 180, color: Colors.white),
             ),
-            const Spacer(),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: AppTheme.gold, width: 1.5),
-            color: AppTheme.darkSurface,
           ),
-          child: const Icon(Icons.person_add_outlined,
-              color: AppTheme.gold, size: 28),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Create Account',
-          style: TextStyle(
-            fontFamily: AppTheme.fontTheme,
-            color: AppTheme.cream,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 28, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 52, height: 52,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(Icons.person_add_outlined, color: Colors.white, size: 26),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'Create Your Account',
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontTheme,
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Start telling your love story today.',
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontTheme,
+                            color: Colors.white.withValues(alpha: 0.75),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Start telling your story',
-          style: TextStyle(
-            fontFamily: AppTheme.fontTheme,
-            color: AppTheme.subtleText,
-            fontSize: 13,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -140,76 +148,61 @@ class _RegisterViewState extends State<RegisterView> {
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              style: const TextStyle(color: AppTheme.cream),
+              style: const TextStyle(color: AppTheme.textDark),
               decoration: const InputDecoration(
                 labelText: 'Email',
-                prefixIcon:
-                    Icon(Icons.email_outlined, color: AppTheme.subtleText),
+                prefixIcon: Icon(Icons.email_outlined),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             TextField(
               controller: _passwordController,
               obscureText: _obscurePassword,
-              style: const TextStyle(color: AppTheme.cream),
+              style: const TextStyle(color: AppTheme.textDark),
               decoration: InputDecoration(
                 labelText: 'Password',
                 hintText: 'At least 6 characters',
-                hintStyle:
-                    const TextStyle(color: AppTheme.subtleText, fontSize: 12),
-                prefixIcon:
-                    const Icon(Icons.lock_outline, color: AppTheme.subtleText),
+                prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: AppTheme.subtleText,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(_obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             TextField(
               controller: _confirmController,
               obscureText: _obscureConfirm,
-              style: const TextStyle(color: AppTheme.cream),
+              style: const TextStyle(color: AppTheme.textDark),
               decoration: InputDecoration(
                 labelText: 'Confirm Password',
-                prefixIcon:
-                    const Icon(Icons.lock_outline, color: AppTheme.subtleText),
+                prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureConfirm
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: AppTheme.subtleText,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscureConfirm = !_obscureConfirm),
+                  icon: Icon(_obscureConfirm
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined),
+                  onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                 ),
               ),
               onSubmitted: (_) => _handleRegister(),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
             SizedBox(
-              height: 52,
+              height: 54,
               child: FilledButton(
                 onPressed: widget.viewModel.isLoading ? null : _handleRegister,
                 child: widget.viewModel.isLoading
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppTheme.darkBg),
+                        width: 22, height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : const Text('Create Account'),
               ),
             ),
             if (widget.viewModel.error != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               _ErrorBanner(message: widget.viewModel.error!),
             ],
             const SizedBox(height: 24),
@@ -218,10 +211,7 @@ class _RegisterViewState extends State<RegisterView> {
               children: [
                 Text(
                   'Already have an account? ',
-                  style: TextStyle(
-                      fontFamily: AppTheme.fontTheme,
-                      color: AppTheme.subtleText,
-                      fontSize: 14),
+                  style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textMid, fontSize: 14),
                 ),
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
@@ -229,9 +219,9 @@ class _RegisterViewState extends State<RegisterView> {
                     'Sign In',
                     style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
-                      color: AppTheme.gold,
+                      color: AppTheme.primary,
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -253,23 +243,17 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF6B6B).withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-            color: const Color(0xFFFF6B6B).withValues(alpha: 0.3)),
+        color: const Color(0xFFE85D4A).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE85D4A).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Color(0xFFFF6B6B), size: 16),
+          const Icon(Icons.error_outline, color: Color(0xFFE85D4A), size: 16),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: const Color(0xFFFF6B6B),
-                  fontSize: 13),
-            ),
+            child: Text(message,
+                style: const TextStyle(fontFamily: AppTheme.fontTheme, color: Color(0xFFE85D4A), fontSize: 13)),
           ),
         ],
       ),

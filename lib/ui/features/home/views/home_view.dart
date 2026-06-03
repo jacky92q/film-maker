@@ -52,9 +52,7 @@ class _HomeViewState extends State<HomeView> {
     Navigator.of(context).push(
       SlideUpPageRoute(
         builder: (_) => ProjectsView(
-          viewModel: ProjectsViewModel(
-            projectRepository: widget.projectRepository,
-          ),
+          viewModel: ProjectsViewModel(projectRepository: widget.projectRepository),
           projectRepository: widget.projectRepository,
         ),
       ),
@@ -66,31 +64,20 @@ class _HomeViewState extends State<HomeView> {
     final title = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.darkSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'New Wedding Film',
-          style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.cream),
-        ),
+        title: const Text('New Wedding Film'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Give your film a title to remember',
-              style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.subtleText,
-                  fontSize: 13),
-            ),
+            const Text('Give your film a title to remember'),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               autofocus: true,
-              style: const TextStyle(color: AppTheme.cream),
+              style: const TextStyle(color: AppTheme.textDark),
               decoration: const InputDecoration(
                 hintText: 'e.g. Our Love Story',
-                prefixIcon: Icon(Icons.movie_creation_outlined,
-                    color: AppTheme.subtleText),
+                prefixIcon: Icon(Icons.movie_creation_outlined),
               ),
               onSubmitted: (v) {
                 if (v.trim().isNotEmpty) Navigator.of(ctx).pop(v.trim());
@@ -101,10 +88,7 @@ class _HomeViewState extends State<HomeView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel',
-                style: TextStyle(
-                    fontFamily: AppTheme.fontTheme,
-                    color: AppTheme.subtleText)),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () {
@@ -140,12 +124,13 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.bg,
       body: CustomScrollView(
         slivers: [
           _buildAppBar(),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -153,10 +138,12 @@ class _HomeViewState extends State<HomeView> {
                   const SizedBox(height: 24),
                   _buildStatsRow(),
                   const SizedBox(height: 28),
-                  _buildSectionTitle('Create & Explore'),
-                  const SizedBox(height: 16),
+                  _buildSectionTitle('Quick Actions'),
+                  const SizedBox(height: 14),
                   _buildActionCards(),
                   const SizedBox(height: 28),
+                  _buildSectionTitle('Tips for a Perfect Film'),
+                  const SizedBox(height: 14),
                   _buildFilmInspiration(),
                 ],
               ),
@@ -171,55 +158,66 @@ class _HomeViewState extends State<HomeView> {
     return SliverAppBar(
       expandedHeight: 0,
       floating: true,
-      backgroundColor: AppTheme.darkBg,
-      title: Text(
-        'Film Maker',
-        style: TextStyle(
-          fontFamily: AppTheme.fontTheme,
-          color: AppTheme.cream,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
+      backgroundColor: AppTheme.bg,
+      surfaceTintColor: Colors.transparent,
+      title: Row(
+        children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: AppTheme.primary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.movie_creation_outlined, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 10),
+          const Text(
+            'Film Maker',
+            style: TextStyle(
+              fontFamily: AppTheme.fontTheme,
+              color: AppTheme.textDark,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.only(right: 12),
           child: PopupMenuButton<_MenuAction>(
             onSelected: (action) {
               if (action == _MenuAction.logout) widget.onLogout();
             },
-            color: AppTheme.darkSurface,
+            color: AppTheme.surface,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: AppTheme.border),
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: AppTheme.line),
             ),
             itemBuilder: (_) => [
               PopupMenuItem(
                 value: _MenuAction.logout,
                 child: Row(
                   children: [
-                    const Icon(Icons.logout, color: AppTheme.subtleText, size: 18),
+                    const Icon(Icons.logout, color: AppTheme.textMid, size: 18),
                     const SizedBox(width: 10),
-                    Text(
-                      'Sign Out',
-                      style: TextStyle(
-                          fontFamily: AppTheme.fontTheme,
-                          color: AppTheme.cream,
-                          fontSize: 14),
-                    ),
+                    Text('Sign Out',
+                        style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textDark, fontSize: 14)),
                   ],
                 ),
               ),
             ],
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: AppTheme.darkSurface2,
+              backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
               child: Text(
                 widget.user.name[0].toUpperCase(),
-                style: TextStyle(
-                    fontFamily: AppTheme.fontTheme,
-                    color: AppTheme.gold,
-                    fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
               ),
             ),
           ),
@@ -230,54 +228,64 @@ class _HomeViewState extends State<HomeView> {
 
   Widget _buildHeroBanner() {
     return Container(
-      height: 180,
+      width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1A1508), Color(0xFF2C1F00), Color(0xFF0D0D0D)],
+          colors: [Color(0xFF3B1F0A), Color(0xFF7B3F18), Color(0xFFC07842)],
         ),
-        border: Border.all(color: AppTheme.gold.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primary.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Stack(
         children: [
           Positioned(
-            right: -20,
-            top: -20,
+            right: -24,
+            top: -24,
             child: Opacity(
-              opacity: 0.06,
-              child:
-                  Icon(Icons.movie_creation, size: 180, color: AppTheme.gold),
+              opacity: 0.08,
+              child: Icon(Icons.movie_creation, size: 180, color: Colors.white),
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Row(
                   children: [
-                    Container(width: 28, height: 1, color: AppTheme.gold),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Welcome back',
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontTheme,
-                        color: AppTheme.gold,
-                        fontSize: 12,
-                        letterSpacing: 1.5,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Welcome back',
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 Text(
                   widget.user.name,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: AppTheme.fontTheme,
-                    color: AppTheme.cream,
+                    color: Colors.white,
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                   ),
@@ -287,8 +295,33 @@ class _HomeViewState extends State<HomeView> {
                   'Tell your love story through film',
                   style: TextStyle(
                     fontFamily: AppTheme.fontTheme,
-                    color: AppTheme.subtleText,
+                    color: Colors.white.withValues(alpha: 0.75),
                     fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  child: FilledButton(
+                    onPressed: _showNewFilmDialog,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.primaryDark,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      textStyle: const TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add, size: 18),
+                        SizedBox(width: 6),
+                        Text('New Film'),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -305,61 +338,56 @@ class _HomeViewState extends State<HomeView> {
       builder: (context, _) {
         return Row(
           children: [
-            _buildStatCard(
-              icon: Icons.movie_outlined,
-              value: _viewModel.projectCount.toString(),
-              label: 'Films',
-            ),
+            _buildStatCard(icon: Icons.movie_outlined, value: _viewModel.projectCount.toString(), label: 'Films'),
             const SizedBox(width: 12),
-            _buildStatCard(
-              icon: Icons.photo_library_outlined,
-              value: _viewModel.totalSlides.toString(),
-              label: 'Total Slides',
-            ),
+            _buildStatCard(icon: Icons.photo_library_outlined, value: _viewModel.totalSlides.toString(), label: 'Slides'),
             const SizedBox(width: 12),
-            _buildStatCard(
-              icon: Icons.favorite_outline,
-              value: 'Wedding',
-              label: 'Theme',
-            ),
+            _buildStatCard(icon: Icons.favorite_outline, value: 'Wedding', label: 'Theme'),
           ],
         );
       },
     );
   }
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required String value,
-    required String label,
-  }) {
+  Widget _buildStatCard({required IconData icon, required String value, required String label}) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
-          color: AppTheme.darkSurface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppTheme.border),
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.line),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            Icon(icon, color: AppTheme.gold, size: 20),
-            const SizedBox(height: 6),
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: AppTheme.primary, size: 18),
+            ),
+            const SizedBox(height: 8),
             Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: AppTheme.fontTheme,
-                color: AppTheme.cream,
-                fontSize: 18,
+                color: AppTheme.textDark,
+                fontSize: 17,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               label,
-              style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.subtleText,
-                  fontSize: 11),
+              style: const TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textMid, fontSize: 11),
               textAlign: TextAlign.center,
             ),
           ],
@@ -369,20 +397,14 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return Row(
-      children: [
-        Container(width: 3, height: 18, color: AppTheme.gold),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: TextStyle(
-            fontFamily: AppTheme.fontTheme,
-            color: AppTheme.cream,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+    return Text(
+      title,
+      style: const TextStyle(
+        fontFamily: AppTheme.fontTheme,
+        color: AppTheme.textDark,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+      ),
     );
   }
 
@@ -391,30 +413,23 @@ class _HomeViewState extends State<HomeView> {
       children: [
         Expanded(
           child: _buildActionCard(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF1E1400), Color(0xFF2C1F00)],
-            ),
             icon: Icons.video_library_outlined,
             title: 'My Films',
-            subtitle: 'View & edit your projects',
+            subtitle: 'View & edit projects',
+            iconBg: AppTheme.primary.withValues(alpha: 0.1),
+            iconColor: AppTheme.primary,
             onTap: _goToProjects,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildActionCard(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF0D1A1A), Color(0xFF0A1414)],
-            ),
             icon: Icons.add_circle_outline,
             title: 'New Film',
             subtitle: 'Start a new story',
+            iconBg: const Color(0xFF1AA38C).withValues(alpha: 0.1),
+            iconColor: const Color(0xFF1AA38C),
             onTap: _showNewFilmDialog,
-            iconColor: const Color(0xFF4CC9A8),
           ),
         ),
       ],
@@ -422,48 +437,51 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildActionCard({
-    required Gradient gradient,
     required IconData icon,
     required String title,
     required String subtitle,
+    required Color iconBg,
+    required Color iconColor,
     required VoidCallback onTap,
-    Color iconColor = AppTheme.gold,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 130,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: iconColor.withValues(alpha: 0.3)),
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppTheme.line),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(icon, color: iconColor, size: 28),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontTheme,
-                    color: AppTheme.cream,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                      fontFamily: AppTheme.fontTheme,
-                      color: AppTheme.subtleText,
-                      fontSize: 11),
-                ),
-              ],
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              style: const TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                color: AppTheme.textDark,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              subtitle,
+              style: const TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textMid, fontSize: 11),
             ),
           ],
         ),
@@ -473,35 +491,55 @@ class _HomeViewState extends State<HomeView> {
 
   Widget _buildFilmInspiration() {
     final tips = [
-      ('🌸', 'Choose photos that tell a story'),
-      ('🎵', 'Add a meaningful song for emotion'),
-      ('✨', 'Use Ken Burns for cinematic feel'),
+      (Icons.photo_camera_outlined, AppTheme.primary, 'Choose photos that tell a story'),
+      (Icons.music_note_outlined, const Color(0xFF1AA38C), 'Add a meaningful song for emotion'),
+      (Icons.auto_awesome_outlined, const Color(0xFF6B5CE7), 'Use Ken Burns for cinematic feel'),
     ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Tips for a perfect wedding film'),
-        const SizedBox(height: 14),
-        ...tips.map(
-          (tip) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                Text(tip.$1, style: const TextStyle(fontSize: 16)),
-                const SizedBox(width: 12),
-                Text(
-                  tip.$2,
-                  style: TextStyle(
-                      fontFamily: AppTheme.fontTheme,
-                      color: AppTheme.subtleText,
-                      fontSize: 13),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.line),
+      ),
+      child: Column(
+        children: tips.asMap().entries.map((entry) {
+          final i = entry.key;
+          final tip = entry.value;
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: tip.$2.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(tip.$1, color: tip.$2, size: 18),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        tip.$3,
+                        style: const TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: AppTheme.textDark,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ),
-      ],
+              ),
+              if (i < tips.length - 1)
+                const Divider(height: 1, indent: 66, endIndent: 16),
+            ],
+          );
+        }).toList(),
+      ),
     );
   }
 }

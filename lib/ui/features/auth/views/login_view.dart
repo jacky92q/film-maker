@@ -2,10 +2,10 @@ import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/auth/view_models/auth_view_model.dart';
 import 'package:film_maker/ui/features/auth/views/register_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key, required this.viewModel});
-
   final AuthViewModel viewModel;
 
   @override
@@ -29,33 +29,29 @@ class _LoginViewState extends State<LoginView> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
-    // Auth state stream in app.dart handles navigation on success
   }
 
   void _goToRegister() {
     widget.viewModel.clearError();
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => RegisterView(viewModel: widget.viewModel),
-      ),
+          builder: (_) => RegisterView(viewModel: widget.viewModel)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
+      backgroundColor: AppTheme.bg,
+      body: Column(
         children: [
-          _buildBackground(),
-          SafeArea(
+          _buildHeroSection(),
+          Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 72),
-                  _buildLogo(),
-                  const SizedBox(height: 48),
                   _buildForm(),
                   const SizedBox(height: 20),
                   _buildDivider(),
@@ -72,64 +68,81 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Widget _buildBackground() {
+  Widget _buildHeroSection() {
     return Container(
+      height: 260,
+      width: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF0D0D0D), Color(0xFF111118), Color(0xFF0D0D0D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3B1F0A), Color(0xFF7B3F18), Color(0xFFC07842)],
         ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
-    );
-  }
-
-  Widget _buildLogo() {
-    return Column(
-      children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: AppTheme.gold, width: 1.5),
-            color: AppTheme.darkSurface,
+      child: Stack(
+        children: [
+          // Decorative film strip pattern
+          Positioned(
+            right: -30,
+            top: -30,
+            child: Opacity(
+              opacity: 0.07,
+              child: Icon(Icons.movie_creation, size: 220, color: Colors.white),
+            ),
           ),
-          child: const Icon(Icons.movie_creation_outlined,
-              color: AppTheme.gold, size: 32),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          'Film Maker',
-          style: TextStyle(
-            fontFamily: AppTheme.fontTheme,
-            color: AppTheme.cream,
-            fontSize: 36,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.0,
+          Positioned(
+            left: -20,
+            bottom: -20,
+            child: Opacity(
+              opacity: 0.05,
+              child:
+                  Icon(Icons.photo_camera_back, size: 160, color: Colors.white),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(width: 24, height: 1, color: AppTheme.gold),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                'Make film with your special memories.',
-                style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.subtleText,
-                  fontSize: 13,
-                  letterSpacing: 0.5,
-                ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(28, 20, 28, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.movie_creation_outlined,
+                        color: Colors.white, size: 26),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Create Beautiful\nMemory Films',
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Sign in to continue your love story.',
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: Colors.white.withValues(alpha: 0.75),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Container(width: 24, height: 1, color: AppTheme.gold),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -143,53 +156,48 @@ class _LoginViewState extends State<LoginView> {
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              style: const TextStyle(color: AppTheme.cream),
+              style: const TextStyle(color: AppTheme.textDark),
               decoration: const InputDecoration(
                 labelText: 'Email',
-                prefixIcon:
-                    Icon(Icons.email_outlined, color: AppTheme.subtleText),
+                prefixIcon: Icon(Icons.email_outlined),
               ),
               onSubmitted: (_) => _handleLogin(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             TextField(
               controller: _passwordController,
               obscureText: _obscurePassword,
-              style: const TextStyle(color: AppTheme.cream),
+              style: const TextStyle(color: AppTheme.textDark),
               decoration: InputDecoration(
                 labelText: 'Password',
-                prefixIcon:
-                    const Icon(Icons.lock_outline, color: AppTheme.subtleText),
+                prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: AppTheme.subtleText,
-                  ),
+                  icon: Icon(_obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined),
                   onPressed: () =>
                       setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
               onSubmitted: (_) => _handleLogin(),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
             SizedBox(
-              height: 52,
+              height: 54,
               child: FilledButton(
                 onPressed: widget.viewModel.isLoading ? null : _handleLogin,
                 child: widget.viewModel.isLoading
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
+                        width: 22,
+                        height: 22,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppTheme.darkBg),
+                            strokeWidth: 2, color: Colors.white),
                       )
                     : const Text('Sign In'),
               ),
             ),
             if (widget.viewModel.error != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               _ErrorBanner(message: widget.viewModel.error!),
             ],
           ],
@@ -201,18 +209,16 @@ class _LoginViewState extends State<LoginView> {
   Widget _buildDivider() {
     return Row(
       children: [
-        Expanded(child: Container(height: 1, color: AppTheme.border)),
+        Expanded(child: Container(height: 1, color: AppTheme.line)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'or',
-            style: TextStyle(
-                fontFamily: AppTheme.fontTheme,
-                color: AppTheme.subtleText,
-                fontSize: 13),
-          ),
+          child: Text('or',
+              style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.textMid,
+                  fontSize: 13)),
         ),
-        Expanded(child: Container(height: 1, color: AppTheme.border)),
+        Expanded(child: Container(height: 1, color: AppTheme.line)),
       ],
     );
   }
@@ -222,17 +228,18 @@ class _LoginViewState extends State<LoginView> {
       listenable: widget.viewModel,
       builder: (context, _) {
         return SizedBox(
-          height: 52,
-          width: double.infinity,
+          height: 54,
           child: OutlinedButton(
             onPressed: widget.viewModel.isLoading
                 ? null
                 : () => widget.viewModel.loginWithGoogle(),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF3C3C3C)),
+              foregroundColor: AppTheme.textDark,
+              side: const BorderSide(color: AppTheme.line, width: 1.5),
+              backgroundColor: AppTheme.surface,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              backgroundColor: const Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.circular(14)),
+              padding: EdgeInsets.zero,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -240,12 +247,12 @@ class _LoginViewState extends State<LoginView> {
                 _GoogleLogo(),
                 const SizedBox(width: 12),
                 Text(
-                  'Continue with Google',
+                  'Sign in with Google',
                   style: TextStyle(
                     fontFamily: AppTheme.fontTheme,
-                    color: AppTheme.cream,
+                    color: AppTheme.textDark,
                     fontSize: 15,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -264,7 +271,7 @@ class _LoginViewState extends State<LoginView> {
           "Don't have an account? ",
           style: TextStyle(
               fontFamily: AppTheme.fontTheme,
-              color: AppTheme.subtleText,
+              color: AppTheme.textMid,
               fontSize: 14),
         ),
         GestureDetector(
@@ -273,9 +280,9 @@ class _LoginViewState extends State<LoginView> {
             'Register',
             style: TextStyle(
               fontFamily: AppTheme.fontTheme,
-              color: AppTheme.gold,
+              color: AppTheme.primary,
               fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -287,24 +294,10 @@ class _LoginViewState extends State<LoginView> {
 class _GoogleLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-      ),
-      child: const Center(
-        child: Text(
-          'G',
-          style: TextStyle(
-            color: Color(0xFF4285F4),
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            height: 1,
-          ),
-        ),
-      ),
+    return SvgPicture.asset(
+      'assets/images/google_logo.svg',
+      width: 22,
+      height: 22,
     );
   }
 }
@@ -318,23 +311,21 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF6B6B).withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-            color: const Color(0xFFFF6B6B).withValues(alpha: 0.3)),
+        color: const Color(0xFFE85D4A).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border:
+            Border.all(color: const Color(0xFFE85D4A).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Color(0xFFFF6B6B), size: 16),
+          const Icon(Icons.error_outline, color: Color(0xFFE85D4A), size: 16),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: const Color(0xFFFF6B6B),
-                  fontSize: 13),
-            ),
+            child: Text(message,
+                style: const TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    color: Color(0xFFE85D4A),
+                    fontSize: 13)),
           ),
         ],
       ),
