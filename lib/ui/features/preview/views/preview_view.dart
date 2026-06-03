@@ -711,7 +711,7 @@ class _AnimatedSlideCanvasState extends State<_AnimatedSlideCanvas>
             return Stack(children: [
               Positioned(
                 left: left, top: top + dy, width: pw, height: ph,
-                child: child,
+                child: child!,
               ),
             ]);
           },
@@ -730,7 +730,7 @@ class _AnimatedSlideCanvasState extends State<_AnimatedSlideCanvas>
               Positioned(
                 left: left - dw, top: top - dh,
                 width: pw * scale, height: ph * scale,
-                child: child,
+                child: child!,
               ),
             ]);
           },
