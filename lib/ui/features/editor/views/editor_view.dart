@@ -53,6 +53,8 @@ TextStyle slideLayerTextStyle(
   );
 }
 
+enum _EditSection { slide, photo, text, music }
+
 class EditorView extends StatefulWidget {
   const EditorView({
     super.key,
@@ -70,11 +72,8 @@ class EditorView extends StatefulWidget {
 class _EditorViewState extends State<EditorView> {
   final _titleController = TextEditingController();
   bool _editingTitle = false;
-
-  // Track which layer already has a sheet open to avoid duplicates.
+  _EditSection _section = _EditSection.slide;
   bool _isPortraitLayout = true;
-  String? _sheetLayerId;
-  String? _sheetPhotoLayerId;
 
   @override
   void initState() {
@@ -90,33 +89,25 @@ class _EditorViewState extends State<EditorView> {
     super.dispose();
   }
 
-  // Open a bottom sheet when a layer is newly selected in portrait mode.
+  // Auto-switch the section tab when a layer is tapped on the canvas.
   void _onViewModelChange() {
     if (!_isPortraitLayout) return;
-    final photoLayer = widget.viewModel.selectedPhotoLayer;
-    final textLayer = widget.viewModel.selectedLayer;
-
-    if (photoLayer != null && photoLayer.id != _sheetPhotoLayerId) {
-      _sheetPhotoLayerId = photoLayer.id;
-      _sheetLayerId = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        if (widget.viewModel.selectedPhotoLayerId == photoLayer.id) {
-          _showPhotoLayerSheet(photoLayer.id);
-        }
-      });
-    } else if (textLayer != null && textLayer.id != _sheetLayerId) {
-      _sheetLayerId = textLayer.id;
-      _sheetPhotoLayerId = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        if (widget.viewModel.selectedLayer?.id == textLayer.id) {
-          _showTextLayerSheet(textLayer.id);
-        }
-      });
+    final photo = widget.viewModel.selectedPhotoLayer;
+    final text = widget.viewModel.selectedLayer;
+    if (photo != null && _section != _EditSection.photo) {
+      setState(() => _section = _EditSection.photo);
+    } else if (text != null && photo == null && _section != _EditSection.text) {
+      setState(() => _section = _EditSection.text);
     }
-    if (photoLayer == null) _sheetPhotoLayerId = null;
-    if (textLayer == null) _sheetLayerId = null;
+  }
+
+  void _switchSection(_EditSection s) {
+    if (s == _section) return;
+    setState(() => _section = s);
+    if (s == _EditSection.slide || s == _EditSection.music) {
+      widget.viewModel.selectLayer(null);
+      widget.viewModel.selectPhotoLayer(null);
+    }
   }
 
   Future<bool> _onWillPop() async {
@@ -194,111 +185,60 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  // ── Bottom sheets for photo / text / music ─────────────────────────────────
-
-  void _showPhotoLayerSheet(String layerId) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _LayerSheet(
-        title: 'Photo Layer',
-        height: MediaQuery.of(context).size.height * 0.62,
-        child: ListenableBuilder(
-          listenable: widget.viewModel,
-          builder: (ctx, _) {
-            final layer = widget.viewModel.selectedPhotoLayer;
-            if (layer == null || layer.id != layerId) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (ctx.mounted && Navigator.of(ctx).canPop()) {
-                  Navigator.of(ctx).pop();
-                }
-              });
-              return const SizedBox.shrink();
-            }
-            return _PhotoLayerTabs(
-              key: ValueKey(layer.id),
-              vm: widget.viewModel,
-              layer: layer,
-            );
-          },
+  // In portrait the timeline ♪ button switches to the Music tab; in
+  // landscape/wide it opens a modal (no inline panel available there).
+  void _onMusicTimelineButtonTap() {
+    if (_isPortraitLayout) {
+      _switchSection(_EditSection.music);
+    } else {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: AppTheme.surface,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-      ),
-    ).then((_) {
-      widget.viewModel.selectPhotoLayer(null);
-      _sheetPhotoLayerId = null;
-    });
-  }
-
-  void _showTextLayerSheet(String layerId) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _LayerSheet(
-        title: widget.viewModel.selectedLayer?.isSubtitle == true ? 'Subtitle' : 'Title',
-        height: MediaQuery.of(context).size.height * 0.62,
-        child: ListenableBuilder(
-          listenable: widget.viewModel,
-          builder: (ctx, _) {
-            final layer = widget.viewModel.selectedLayer;
-            if (layer == null || layer.id != layerId) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (ctx.mounted && Navigator.of(ctx).canPop()) {
-                  Navigator.of(ctx).pop();
-                }
-              });
-              return const SizedBox.shrink();
-            }
-            return _TextLayerTabs(
-              key: ValueKey(layer.id),
-              layer: layer,
-              onUpdate: widget.viewModel.updateTextLayer,
-              onDelete: () {
-                widget.viewModel.deleteTextLayer(layer.id);
-                if (ctx.mounted && Navigator.of(ctx).canPop()) {
-                  Navigator.of(ctx).pop();
-                }
-              },
-              onBringToFront: () =>
-                  widget.viewModel.bringToFront(layer.id, isPhoto: false),
-              onSendToBack: () =>
-                  widget.viewModel.sendToBack(layer.id, isPhoto: false),
-            );
-          },
-        ),
-      ),
-    ).then((_) {
-      widget.viewModel.selectLayer(null);
-      _sheetLayerId = null;
-    });
-  }
-
-  void _showMusicPicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _LayerSheet(
-        title: 'Music',
-        height: MediaQuery.of(context).size.height * 0.55,
-        child: _MusicPanel(
-          currentMusicName: widget.viewModel.project.musicName,
-          onSelect: (name) => widget.viewModel.setMusic('music_path', name),
-          onRemove: () => widget.viewModel.setMusic(null, null),
-          closeOnSelect: true,
-        ),
-      ),
-    );
+        builder: (_) {
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * 0.55,
+            child: Column(
+              children: [
+                Container(
+                  width: 40, height: 4,
+                  margin: const EdgeInsets.only(top: 14, bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.line,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 0, 20, 10),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Music',
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.textDark,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _MusicPanel(
+                    currentMusicName: widget.viewModel.project.musicName,
+                    onSelect: (name) => widget.viewModel.setMusic('music_path', name),
+                    onRemove: () => widget.viewModel.setMusic(null, null),
+                    closeOnSelect: true,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
   }
 
   @override
@@ -476,7 +416,7 @@ class _EditorViewState extends State<EditorView> {
         children: [
           _MusicTimelineButton(
             musicName: widget.viewModel.project.musicName,
-            onTap: _showMusicPicker,
+            onTap: _onMusicTimelineButtonTap,
           ),
           Expanded(
             child: ReorderableListView.builder(
@@ -513,7 +453,7 @@ class _EditorViewState extends State<EditorView> {
     _isPortraitLayout = true;
     return Column(
       children: [
-        // Canvas — fixed 16:9
+        // Canvas — always fully visible, never dimmed
         ColoredBox(
           color: const Color(0xFF1C1C1C),
           child: AspectRatio(
@@ -521,15 +461,180 @@ class _EditorViewState extends State<EditorView> {
             child: _SlideCanvas(viewModel: widget.viewModel),
           ),
         ),
-        // Action buttons
-        _buildAddContentBar(slide),
-        // Thumbnail timeline
-        _buildTimeline(height: 88),
-        // Slide background settings — always visible below the timeline
-        Expanded(
-          child: _SlideTabs(slide: slide, viewModel: widget.viewModel),
-        ),
+        // Section selector — switches edit context without any overlay/dim
+        _buildSectionTabBar(slide),
+        // Edit panel — always inline, always visible alongside canvas
+        Expanded(child: _buildSectionContent(slide)),
+        // Compact add-layer row + delete
+        _buildPortraitAddBar(slide),
+        // Timeline strip
+        _buildTimeline(height: 78),
       ],
+    );
+  }
+
+  Widget _buildSectionTabBar(Slide slide) {
+    final hasPhoto = slide.photoLayers.isNotEmpty;
+    final hasText = slide.textLayers.isNotEmpty;
+    final hasMusic = widget.viewModel.project.musicName != null;
+
+    return Container(
+      height: 46,
+      decoration: BoxDecoration(
+        color: AppTheme.bg,
+        border: Border.symmetric(
+          horizontal: BorderSide(color: AppTheme.line),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Row(
+        children: [
+          _SectionPill(
+            icon: Icons.layers_outlined,
+            label: 'Slide',
+            active: _section == _EditSection.slide,
+            onTap: () => _switchSection(_EditSection.slide),
+          ),
+          _SectionPill(
+            icon: Icons.photo_outlined,
+            label: 'Photo',
+            active: _section == _EditSection.photo,
+            dotted: hasPhoto,
+            onTap: () => _switchSection(_EditSection.photo),
+          ),
+          _SectionPill(
+            icon: Icons.title_rounded,
+            label: 'Text',
+            active: _section == _EditSection.text,
+            dotted: hasText,
+            onTap: () => _switchSection(_EditSection.text),
+          ),
+          _SectionPill(
+            icon: Icons.music_note_outlined,
+            label: 'Music',
+            active: _section == _EditSection.music,
+            dotted: hasMusic,
+            onTap: () => _switchSection(_EditSection.music),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionContent(Slide slide) {
+    switch (_section) {
+      case _EditSection.slide:
+        return _SlideTabs(slide: slide, viewModel: widget.viewModel);
+
+      case _EditSection.photo:
+        final layer = widget.viewModel.selectedPhotoLayer;
+        if (layer == null) {
+          return _LayerPlaceholder(
+            icon: Icons.photo_outlined,
+            headline: 'No photo selected',
+            sub: 'Tap a photo in the canvas above',
+            actions: [
+              _PlaceholderAction(
+                label: '+ Add Photo',
+                onTap: () => widget.viewModel.addPhotoLayer(),
+              ),
+            ],
+          );
+        }
+        return _PhotoLayerTabs(
+          key: ValueKey(layer.id),
+          vm: widget.viewModel,
+          layer: layer,
+        );
+
+      case _EditSection.text:
+        final layer = widget.viewModel.selectedLayer;
+        if (layer == null) {
+          return _LayerPlaceholder(
+            icon: Icons.title_rounded,
+            headline: 'No text selected',
+            sub: 'Tap a text layer in the canvas above',
+            actions: [
+              _PlaceholderAction(
+                label: '+ Title',
+                onTap: () => widget.viewModel.addTextLayer(isSubtitle: false),
+              ),
+              _PlaceholderAction(
+                label: '+ Subtitle',
+                onTap: () => widget.viewModel.addTextLayer(isSubtitle: true),
+              ),
+            ],
+          );
+        }
+        return _TextLayerTabs(
+          key: ValueKey(layer.id),
+          layer: layer,
+          onUpdate: widget.viewModel.updateTextLayer,
+          onDelete: () {
+            widget.viewModel.deleteTextLayer(layer.id);
+            setState(() => _section = _EditSection.slide);
+          },
+          onBringToFront: () =>
+              widget.viewModel.bringToFront(layer.id, isPhoto: false),
+          onSendToBack: () =>
+              widget.viewModel.sendToBack(layer.id, isPhoto: false),
+        );
+
+      case _EditSection.music:
+        return _MusicPanel(
+          currentMusicName: widget.viewModel.project.musicName,
+          onSelect: (name) => widget.viewModel.setMusic('music_path', name),
+          onRemove: () => widget.viewModel.setMusic(null, null),
+        );
+    }
+  }
+
+  Widget _buildPortraitAddBar(Slide slide) {
+    final canDelete = widget.viewModel.project.slides.length > 1;
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        border: Border(top: BorderSide(color: AppTheme.line)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          _AddChip(
+            label: '+ Photo',
+            onTap: () {
+              widget.viewModel.addPhotoLayer();
+              setState(() => _section = _EditSection.photo);
+            },
+          ),
+          const SizedBox(width: 6),
+          _AddChip(
+            label: '+ Title',
+            onTap: () {
+              widget.viewModel.addTextLayer(isSubtitle: false);
+              setState(() => _section = _EditSection.text);
+            },
+          ),
+          const SizedBox(width: 6),
+          _AddChip(
+            label: '+ Sub',
+            onTap: () {
+              widget.viewModel.addTextLayer(isSubtitle: true);
+              setState(() => _section = _EditSection.text);
+            },
+          ),
+          const Spacer(),
+          if (canDelete)
+            IconButton(
+              icon: const Icon(Icons.delete_outline,
+                  color: Color(0xFFE85D4A), size: 18),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              tooltip: 'Delete slide',
+              onPressed: widget.viewModel.deleteSelectedSlide,
+            ),
+        ],
+      ),
     );
   }
 
@@ -616,7 +721,7 @@ class _EditorViewState extends State<EditorView> {
       onAddPhoto: () => widget.viewModel.addPhotoLayer(),
       onAddTitle: () => widget.viewModel.addTextLayer(isSubtitle: false),
       onAddSubtitle: () => widget.viewModel.addTextLayer(isSubtitle: true),
-      onMusic: _showMusicPicker,
+      onMusic: _onMusicTimelineButtonTap,
     );
   }
 }
@@ -2755,61 +2860,8 @@ class _TemplatePicker extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Inline music panel (no Navigator.pop — lives inside the edit panel area)
+// Music panel — inline, no Navigator.pop on close
 // ─────────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Reusable bottom-sheet chrome (drag handle + title row)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _LayerSheet extends StatelessWidget {
-  const _LayerSheet({
-    required this.title,
-    required this.height,
-    required this.child,
-  });
-
-  final String title;
-  final double height;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: height,
-      child: Column(
-        children: [
-          // Drag handle
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(top: 12, bottom: 10),
-            decoration: BoxDecoration(
-              color: AppTheme.line,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.textDark,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          Expanded(child: child),
-        ],
-      ),
-    );
-  }
-}
 
 class _MusicPanel extends StatelessWidget {
   const _MusicPanel({
@@ -2934,4 +2986,207 @@ class _MusicPanel extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Section tab pill — the four tabs below the canvas
+// ─────────────────────────────────────────────────────────────────────────────
 
+class _SectionPill extends StatelessWidget {
+  const _SectionPill({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+    this.dotted = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool active;
+  final bool dotted;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          decoration: BoxDecoration(
+            color: active
+                ? AppTheme.primary.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: active ? AppTheme.primary : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 13,
+                color: active ? AppTheme.primary : AppTheme.textMid,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: active ? AppTheme.primary : AppTheme.textMid,
+                ),
+              ),
+              if (dotted && !active) ...[
+                const SizedBox(width: 3),
+                Container(
+                  width: 5,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Placeholder shown when a section tab is open but no layer is selected
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _LayerPlaceholder extends StatelessWidget {
+  const _LayerPlaceholder({
+    required this.icon,
+    required this.headline,
+    required this.sub,
+    required this.actions,
+  });
+
+  final IconData icon;
+  final String headline;
+  final String sub;
+  final List<_PlaceholderAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppTheme.surface,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 40, color: AppTheme.line),
+              const SizedBox(height: 10),
+              Text(
+                headline,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.textDark,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                sub,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.textMid,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                children: actions,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlaceholderAction extends StatelessWidget {
+  const _PlaceholderAction({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: AppTheme.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.primary.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontFamily: AppTheme.fontTheme,
+            color: AppTheme.primary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Compact add-layer chip used in the portrait add bar
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AddChip extends StatelessWidget {
+  const _AddChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppTheme.surface2,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.line),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontFamily: AppTheme.fontTheme,
+            color: AppTheme.textDark,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
