@@ -2069,23 +2069,6 @@ class _AnimationPickerRow extends StatelessWidget {
   }
 }
 
-class _Label extends StatelessWidget {
-  const _Label(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Text(
-        text,
-        style: TextStyle(
-          fontFamily: AppTheme.fontTheme,
-          color: AppTheme.subtleText,
-          fontSize: 11,
-          letterSpacing: 0.8,
-          fontWeight: FontWeight.w600,
-        ),
-      );
-}
-
 class _ColorDots extends StatelessWidget {
   const _ColorDots({required this.current, required this.onSelect});
   final SlideTextColor current;
