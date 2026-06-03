@@ -246,6 +246,27 @@ extension SlideContentAnimationX on SlideContentAnimation {
     SlideContentAnimation.zoomPulse   => '⊙',
     SlideContentAnimation.wipeReveal  => '▶',
   };
+
+  // Animations that make sense on text layers
+  static const textAnimations = [
+    SlideContentAnimation.none,
+    SlideContentAnimation.typewriter,
+    SlideContentAnimation.slideUp,
+    SlideContentAnimation.slideIn,
+    SlideContentAnimation.fadeStagger,
+    SlideContentAnimation.float,
+    SlideContentAnimation.wipeReveal,
+  ];
+
+  // Animations that make sense on photo layers
+  static const photoAnimations = [
+    SlideContentAnimation.none,
+    SlideContentAnimation.slideUp,
+    SlideContentAnimation.slideIn,
+    SlideContentAnimation.fadeStagger,
+    SlideContentAnimation.float,
+    SlideContentAnimation.zoomPulse,
+  ];
 }
 
 enum SlideOverlay { none, vignette, filmGrain, lightLeak, bokeh }
@@ -339,6 +360,7 @@ class TextLayer {
     this.strokeWidth = 0.0,
     this.letterSpacing = 0.0,
     this.zOrder = 0,
+    this.contentAnimation = SlideContentAnimation.none,
   });
 
   final String id;
@@ -355,6 +377,7 @@ class TextLayer {
   final double strokeWidth;
   final double letterSpacing;
   final int zOrder;
+  final SlideContentAnimation contentAnimation;
 
   TextLayer copyWith({
     String? text,
@@ -370,6 +393,7 @@ class TextLayer {
     double? strokeWidth,
     double? letterSpacing,
     int? zOrder,
+    SlideContentAnimation? contentAnimation,
   }) {
     return TextLayer(
       id: id,
@@ -386,6 +410,7 @@ class TextLayer {
       strokeWidth: strokeWidth ?? this.strokeWidth,
       letterSpacing: letterSpacing ?? this.letterSpacing,
       zOrder: zOrder ?? this.zOrder,
+      contentAnimation: contentAnimation ?? this.contentAnimation,
     );
   }
 }
@@ -407,6 +432,7 @@ class PhotoLayer {
     this.cropOffsetX = 0.0,
     this.cropOffsetY = 0.0,
     this.zOrder = 0,
+    this.contentAnimation = SlideContentAnimation.none,
   });
 
   final String id;
@@ -424,6 +450,7 @@ class PhotoLayer {
   final double cropOffsetX;    // horizontal pan as fraction of frame width  (-0.5..0.5)
   final double cropOffsetY;    // vertical   pan as fraction of frame height (-0.5..0.5)
   final int zOrder;
+  final SlideContentAnimation contentAnimation;
 
   PhotoLayer copyWith({
     String? imagePath,
@@ -440,6 +467,7 @@ class PhotoLayer {
     double? cropOffsetX,
     double? cropOffsetY,
     int? zOrder,
+    SlideContentAnimation? contentAnimation,
   }) {
     return PhotoLayer(
       id: id,
@@ -457,6 +485,7 @@ class PhotoLayer {
       cropOffsetX: cropOffsetX ?? this.cropOffsetX,
       cropOffsetY: cropOffsetY ?? this.cropOffsetY,
       zOrder: zOrder ?? this.zOrder,
+      contentAnimation: contentAnimation ?? this.contentAnimation,
     );
   }
 }
