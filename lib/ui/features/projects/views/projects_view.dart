@@ -311,7 +311,7 @@ class _ProjectCard extends StatelessWidget {
                   Text(
                     _formatDate(project.updatedAt),
                     style: TextStyle(fontFamily: AppTheme.fontTheme, 
-                        color: AppTheme.subtleText, fontSize: 10),
+                        color: AppTheme.border, fontSize: 10),
                   ),
                 ],
               ),
@@ -324,10 +324,10 @@ class _ProjectCard extends StatelessWidget {
 
   Widget _buildThumbnail() {
     final colors = [
-      [const Color(0xFFFFE4EE), const Color(0xFFFFCFE3)],
-      [const Color(0xFFE4EEFF), const Color(0xFFCFDFFF)],
-      [const Color(0xFFE8F5E9), const Color(0xFFD0EDD1)],
-      [const Color(0xFFFFF3E0), const Color(0xFFFFE0B2)],
+      [const Color(0xFF1A1208), const Color(0xFF2C1F00)],
+      [const Color(0xFF0D1A18), const Color(0xFF0A1414)],
+      [const Color(0xFF1A0D1A), const Color(0xFF180A18)],
+      [const Color(0xFF1A1212), const Color(0xFF1A0A0A)],
     ];
     final palette = colors[project.id.hashCode % colors.length];
 
@@ -357,7 +357,7 @@ class _ProjectCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppTheme.gold.withValues(alpha: 0.15),
+                    color: AppTheme.darkBg.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
@@ -368,7 +368,7 @@ class _ProjectCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Text(
                         'Music',
-                        style: TextStyle(fontFamily: AppTheme.fontTheme,
+                        style: TextStyle(fontFamily: AppTheme.fontTheme, 
                             color: AppTheme.gold, fontSize: 9),
                       ),
                     ],

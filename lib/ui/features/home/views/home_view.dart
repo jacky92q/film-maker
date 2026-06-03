@@ -171,7 +171,7 @@ class _HomeViewState extends State<HomeView> {
     return SliverAppBar(
       expandedHeight: 0,
       floating: true,
-      backgroundColor: AppTheme.darkSurface,
+      backgroundColor: AppTheme.darkBg,
       title: Text(
         'Film Maker',
         style: TextStyle(
@@ -236,9 +236,9 @@ class _HomeViewState extends State<HomeView> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFFF0F4), Color(0xFFFFE0EC), Color(0xFFFCF5F8)],
+          colors: [Color(0xFF1A1508), Color(0xFF2C1F00), Color(0xFF0D0D0D)],
         ),
-        border: Border.all(color: AppTheme.gold.withValues(alpha: 0.25)),
+        border: Border.all(color: AppTheme.gold.withValues(alpha: 0.3)),
       ),
       child: Stack(
         children: [
@@ -246,7 +246,7 @@ class _HomeViewState extends State<HomeView> {
             right: -20,
             top: -20,
             child: Opacity(
-              opacity: 0.08,
+              opacity: 0.06,
               child:
                   Icon(Icons.movie_creation, size: 180, color: AppTheme.gold),
             ),
@@ -259,27 +259,26 @@ class _HomeViewState extends State<HomeView> {
               children: [
                 Row(
                   children: [
-                    Container(width: 28, height: 2, color: AppTheme.gold),
+                    Container(width: 28, height: 1, color: AppTheme.gold),
                     const SizedBox(width: 8),
                     Text(
-                      'WELCOME BACK',
+                      'Welcome back',
                       style: TextStyle(
                         fontFamily: AppTheme.fontTheme,
                         color: AppTheme.gold,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.8,
+                        fontSize: 12,
+                        letterSpacing: 1.5,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   widget.user.name,
                   style: TextStyle(
                     fontFamily: AppTheme.fontTheme,
                     color: AppTheme.cream,
-                    fontSize: 28,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -395,7 +394,7 @@ class _HomeViewState extends State<HomeView> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFFFF0F4), Color(0xFFFFDEEB)],
+              colors: [Color(0xFF1E1400), Color(0xFF2C1F00)],
             ),
             icon: Icons.video_library_outlined,
             title: 'My Films',
@@ -409,13 +408,13 @@ class _HomeViewState extends State<HomeView> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFF0F4FF), Color(0xFFDEE8FF)],
+              colors: [Color(0xFF0D1A1A), Color(0xFF0A1414)],
             ),
             icon: Icons.add_circle_outline,
             title: 'New Film',
             subtitle: 'Start a new story',
             onTap: _showNewFilmDialog,
-            iconColor: const Color(0xFF4B7BFF),
+            iconColor: const Color(0xFF4CC9A8),
           ),
         ),
       ],

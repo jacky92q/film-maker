@@ -405,7 +405,7 @@ class _EditorViewState extends State<EditorView> {
         SizedBox(
           height: canvasH,
           child: ColoredBox(
-            color: AppTheme.filmStage,
+            color: AppTheme.darkBg,
             child: Center(
               child: SizedBox(
                 width: canvasW,
@@ -431,7 +431,7 @@ class _EditorViewState extends State<EditorView> {
             children: [
               Expanded(
                 child: ColoredBox(
-                  color: AppTheme.filmStage,
+                  color: AppTheme.darkBg,
                   child: Center(
                     child: AspectRatio(
                       aspectRatio: 16 / 9,
@@ -466,7 +466,7 @@ class _EditorViewState extends State<EditorView> {
             children: [
               Expanded(
                 child: ColoredBox(
-                  color: AppTheme.filmStage,
+                  color: AppTheme.darkBg,
                   child: Center(
                     child: AspectRatio(
                       aspectRatio: 16 / 9,
@@ -1003,7 +1003,7 @@ class _BarBtn extends StatelessWidget {
         ? const Color(0xFFFF6B6B)
         : active
             ? AppTheme.gold
-            : AppTheme.subtleText;
+            : Colors.white54;
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -1166,7 +1166,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
               IconButton(
                 icon: const Icon(Icons.flip_to_front, size: 16),
                 tooltip: 'Bring to front',
-                color: AppTheme.subtleText,
+                color: Colors.white54,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: widget.onBringToFront,
@@ -1175,7 +1175,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
               IconButton(
                 icon: const Icon(Icons.flip_to_back, size: 16),
                 tooltip: 'Send to back',
-                color: AppTheme.subtleText,
+                color: Colors.white54,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: widget.onSendToBack,
@@ -1302,7 +1302,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
               SizedBox(
                 width: 36,
                 child: Text('${layer.fontSize.round()}',
-                    style: const TextStyle(color: AppTheme.subtleText, fontSize: 12),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                     textAlign: TextAlign.center),
               ),
             ],
@@ -1529,7 +1529,7 @@ class _PhotoLayerTabs extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.flip_to_front, size: 16),
                 tooltip: 'Bring to front',
-                color: AppTheme.subtleText,
+                color: Colors.white54,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () => vm.bringToFront(layer.id, isPhoto: true),
@@ -1538,14 +1538,14 @@ class _PhotoLayerTabs extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.flip_to_back, size: 16),
                 tooltip: 'Send to back',
-                color: AppTheme.subtleText,
+                color: Colors.white54,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () => vm.sendToBack(layer.id, isPhoto: true),
               ),
               TextButton.icon(
                 style: TextButton.styleFrom(
-                  foregroundColor: isCrop ? Colors.orangeAccent : AppTheme.subtleText,
+                  foregroundColor: isCrop ? Colors.orangeAccent : Colors.white54,
                   backgroundColor: isCrop ? Colors.orangeAccent.withValues(alpha: 0.15) : Colors.transparent,
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   minimumSize: Size.zero,
@@ -1582,7 +1582,7 @@ class _PhotoLayerTabs extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text('Zoom', style: TextStyle(fontSize: 11, color: AppTheme.subtleText, letterSpacing: 1)),
+                  const Text('Zoom', style: TextStyle(fontSize: 11, color: Colors.white54, letterSpacing: 1)),
                   Slider(
                     value: layer.cropScale.clamp(1.0, 4.0),
                     min: 1.0, max: 4.0, divisions: 30,
@@ -1594,7 +1594,7 @@ class _PhotoLayerTabs extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
                       style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.subtleText,
+                        foregroundColor: Colors.white54,
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         minimumSize: Size.zero,
                       ),
@@ -1641,8 +1641,8 @@ class _PhotoLayerTabs extends StatelessWidget {
                 icon: const Icon(Icons.image_outlined, size: 18),
                 label: const Text('Change Photo'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.subtleText,
-                  side: const BorderSide(color: AppTheme.border),
+                  foregroundColor: Colors.white70,
+                  side: const BorderSide(color: Colors.white24),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -1877,8 +1877,8 @@ class _SlideTabs extends StatelessWidget {
               label: Text(slide.imagePath2 != null ? 'Photo 2 ✓' : 'Add Photo 2'),
               onPressed: () => viewModel.pickImageForSlot(2),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.subtleText,
-                side: const BorderSide(color: AppTheme.border),
+                foregroundColor: Colors.white70,
+                side: const BorderSide(color: Colors.white24),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
@@ -1889,8 +1889,8 @@ class _SlideTabs extends StatelessWidget {
                 label: Text(slide.imagePath3 != null ? 'Photo 3 ✓' : 'Add Photo 3'),
                 onPressed: () => viewModel.pickImageForSlot(3),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.subtleText,
-                  side: const BorderSide(color: AppTheme.border),
+                  foregroundColor: Colors.white70,
+                  side: const BorderSide(color: Colors.white24),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
