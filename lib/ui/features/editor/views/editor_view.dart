@@ -407,6 +407,7 @@ class _EditorViewState extends State<EditorView> {
     if (layer != null) {
       return _LayerEditPanel(
         key: ValueKey(layer.id),
+        vm: widget.viewModel,
         layer: layer,
         onUpdate: widget.viewModel.updateTextLayer,
         onDelete: () => widget.viewModel.deleteTextLayer(layer.id),
@@ -690,7 +691,10 @@ class _SlideCanvasState extends State<_SlideCanvas> {
       // Photo acts as the interactive background: tap=deselect, drag/pinch=move+zoom.
       // Gesture deltas are in canonical space because GestureDetector is inside FittedBox.
       background = GestureDetector(
-        onTap: () => widget.viewModel.selectLayer(null),
+        onTap: () {
+          widget.viewModel.selectLayer(null);
+          widget.viewModel.selectPhotoLayer(null);
+        },
         onScaleStart: slide.layout == SlideLayout.single ? _onPhotoScaleStart : null,
         onScaleUpdate: slide.layout == SlideLayout.single
             ? (d) => _onPhotoScaleUpdate(d, canonicalW, canonicalH)
@@ -699,7 +703,10 @@ class _SlideCanvasState extends State<_SlideCanvas> {
       );
     } else {
       background = GestureDetector(
-        onTap: () => widget.viewModel.selectLayer(null),
+        onTap: () {
+          widget.viewModel.selectLayer(null);
+          widget.viewModel.selectPhotoLayer(null);
+        },
         child: ColoredBox(color: Color(slide.backgroundColor)),
       );
     }
@@ -875,12 +882,14 @@ class _LayerWidget extends StatelessWidget {
 class _LayerEditPanel extends StatefulWidget {
   const _LayerEditPanel({
     super.key,
+    required this.vm,
     required this.layer,
     required this.onUpdate,
     required this.onDelete,
     required this.onBringToFront,
     required this.onSendToBack,
   });
+  final EditorViewModel vm;
   final TextLayer layer;
   final void Function(TextLayer) onUpdate;
   final VoidCallback onDelete;
@@ -910,6 +919,15 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
   // drag-repositioned text is never overwritten by stale local position values.
   void _applyStyle(TextLayer Function(TextLayer) fn) {
     widget.onUpdate(fn(widget.layer.copyWith(text: _ctrl.text)));
+  }
+
+  Widget _buildAnimationRow(EditorViewModel vm) {
+    final slide = vm.selectedSlide;
+    if (slide == null) return const SizedBox.shrink();
+    return _AnimationPickerRow(
+      current: slide.contentAnimation,
+      onSelect: (anim) => vm.updateSelectedSlide(slide.copyWith(contentAnimation: anim)),
+    );
   }
 
   @override
@@ -989,6 +1007,9 @@ class _LayerEditPanelState extends State<_LayerEditPanel> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            // Slide animation quick-access row
+            _buildAnimationRow(widget.vm),
             const SizedBox(height: 8),
             // Text input
             TextField(
@@ -1250,6 +1271,15 @@ class _PhotoLayerEditPanel extends StatelessWidget {
   final EditorViewModel vm;
   final PhotoLayer layer;
 
+  Widget _buildPhotoAnimRow() {
+    final slide = vm.selectedSlide;
+    if (slide == null) return const SizedBox.shrink();
+    return _AnimationPickerRow(
+      current: slide.contentAnimation,
+      onSelect: (anim) => vm.updateSelectedSlide(slide.copyWith(contentAnimation: anim)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const labelStyle = TextStyle(fontSize: 11, color: Colors.white54, letterSpacing: 1);
@@ -1308,6 +1338,9 @@ class _PhotoLayerEditPanel extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            // Slide animation quick-access row
+            _buildPhotoAnimRow(),
             const SizedBox(height: 8),
 
             // ── Crop controls (visible only in crop mode) ──────────────────────
@@ -1528,6 +1561,12 @@ class _SlideEditPanel extends StatelessWidget {
               ),
               const SizedBox(height: 6),
             ],
+            // Animation (top so it's easy to find)
+            _AnimationPickerRow(
+              current: slide.contentAnimation,
+              onSelect: (anim) => viewModel.updateSelectedSlide(slide.copyWith(contentAnimation: anim)),
+            ),
+            const SizedBox(height: 10),
             // Background color (always visible)
             _Label('Background Color'),
             const SizedBox(height: 6),
@@ -1656,45 +1695,6 @@ class _SlideEditPanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            // Content animation picker
-            _Label('Animation'),
-            const SizedBox(height: 6),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: SlideContentAnimation.values.map((anim) {
-                  final sel = slide.contentAnimation == anim;
-                  return GestureDetector(
-                    onTap: () => viewModel
-                        .updateSelectedSlide(slide.copyWith(contentAnimation: anim)),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      margin: const EdgeInsets.only(right: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(7),
-                        color: sel
-                            ? AppTheme.gold.withValues(alpha: 0.2)
-                            : AppTheme.darkSurface2,
-                        border: Border.all(
-                            color: sel ? AppTheme.gold : AppTheme.border,
-                            width: sel ? 1.5 : 1),
-                      ),
-                      child: Text(
-                        '${anim.emoji} ${anim.label}',
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontTheme,
-                          color: sel ? AppTheme.gold : AppTheme.subtleText,
-                          fontSize: 11,
-                          fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 10),
             // Layout picker
             _Label('Layout'),
             const SizedBox(height: 6),
@@ -1806,6 +1806,75 @@ class _SlideEditPanel extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared small widgets
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Compact animation picker row — shown in all three edit panels so the user
+// can always access the slide-level entrance animation regardless of selection.
+class _AnimationPickerRow extends StatelessWidget {
+  const _AnimationPickerRow({required this.current, required this.onSelect});
+  final SlideContentAnimation current;
+  final void Function(SlideContentAnimation) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.auto_awesome, size: 11, color: AppTheme.gold),
+            const SizedBox(width: 4),
+            const Text(
+              'ANIMATION',
+              style: TextStyle(
+                fontFamily: 'PlayfairDisplay',
+                color: AppTheme.subtleText,
+                fontSize: 11,
+                letterSpacing: 0.8,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: SlideContentAnimation.values.map((anim) {
+              final sel = current == anim;
+              return GestureDetector(
+                onTap: () => onSelect(anim),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: const EdgeInsets.only(right: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    color: sel
+                        ? AppTheme.gold.withValues(alpha: 0.2)
+                        : AppTheme.darkSurface2,
+                    border: Border.all(
+                      color: sel ? AppTheme.gold : AppTheme.border,
+                      width: sel ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Text(
+                    '${anim.emoji} ${anim.label}',
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: sel ? AppTheme.gold : AppTheme.subtleText,
+                      fontSize: 10,
+                      fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _Label extends StatelessWidget {
   const _Label(this.text);
