@@ -462,108 +462,64 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildPortraitLayout(BoxConstraints constraints, Slide slide) {
-    const editPanelH = 320.0;
-    final hasSelection = widget.viewModel.selectedLayer != null ||
+    final hasObjectSelected = widget.viewModel.selectedLayer != null ||
         widget.viewModel.selectedPhotoLayer != null;
 
-    return Stack(
+    return Column(
       children: [
-        Positioned.fill(
-          child: Column(
-            children: [
-              Expanded(
-                child: ColoredBox(
-                  color: const Color(0xFF1C1C1C),
-                  child: Center(
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: _SlideCanvas(viewModel: widget.viewModel),
-                    ),
-                  ),
-                ),
-              ),
-              _buildAddContentBar(slide),
-              _buildTimeline(),
-            ],
+        // Canvas — fixed 16:9, never expands to fill screen
+        ColoredBox(
+          color: const Color(0xFF1C1C1C),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: _SlideCanvas(viewModel: widget.viewModel),
           ),
         ),
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
-          bottom: hasSelection ? 0 : -editPanelH,
-          left: 0,
-          right: 0,
-          height: editPanelH,
-          child: _buildEditSheet(),
+        // Action buttons
+        _buildAddContentBar(slide),
+        // Thumbnail timeline
+        _buildTimeline(height: 88),
+        // Edit area — fills remaining height, always visible
+        Expanded(
+          child: _buildInlineEditPanel(hasObjectSelected),
         ),
       ],
     );
   }
 
-  Widget _buildEditSheet() {
+  Widget _buildInlineEditPanel(bool hasObjectSelected) {
     final photoLayer = widget.viewModel.selectedPhotoLayer;
     final textLayer = widget.viewModel.selectedLayer;
-    final String title;
-    if (photoLayer != null) {
-      title = 'Photo Layer';
-    } else if (textLayer != null) {
-      title = textLayer.isSubtitle ? 'Subtitle Layer' : 'Title Layer';
-    } else {
-      title = 'Edit';
-    }
 
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.14),
-              blurRadius: 28,
-              offset: const Offset(0, -6),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Sheet handle + title + close
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        border: Border(top: BorderSide(color: AppTheme.line)),
+      ),
+      child: Column(
+        children: [
+          if (hasObjectSelected)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 8, 0),
+              padding: const EdgeInsets.fromLTRB(16, 10, 8, 0),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 36,
-                            height: 4,
-                            margin: const EdgeInsets.only(bottom: 10),
-                            decoration: BoxDecoration(
-                              color: AppTheme.line,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontFamily: AppTheme.fontTheme,
-                            color: AppTheme.textDark,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    photoLayer != null
+                        ? 'Photo Layer'
+                        : (textLayer!.isSubtitle ? 'Subtitle' : 'Title'),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.textDark,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
+                  const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                        color: AppTheme.textMid, size: 26),
+                    icon: const Icon(Icons.close_rounded,
+                        color: AppTheme.textMid, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     onPressed: () {
                       widget.viewModel.selectLayer(null);
                       widget.viewModel.selectPhotoLayer(null);
@@ -572,9 +528,8 @@ class _EditorViewState extends State<EditorView> {
                 ],
               ),
             ),
-            Expanded(child: _buildEditPanel()),
-          ],
-        ),
+          Expanded(child: _buildEditPanel()),
+        ],
       ),
     );
   }
@@ -1161,23 +1116,23 @@ class _BigActionBtn extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: active
                 ? AppTheme.primary.withValues(alpha: 0.08)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                width: 48,
-                height: 48,
+                width: 58,
+                height: 58,
                 decoration: BoxDecoration(
                   color: active ? AppTheme.primary : AppTheme.surface2,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: active
                       ? [
                           BoxShadow(
@@ -1196,17 +1151,17 @@ class _BigActionBtn extends StatelessWidget {
                 ),
                 child: Icon(
                   icon,
-                  size: 24,
+                  size: 28,
                   color: active ? Colors.white : AppTheme.textMid,
                 ),
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 6),
               Text(
                 label,
                 style: TextStyle(
                   fontFamily: AppTheme.fontTheme,
                   color: active ? AppTheme.primary : AppTheme.textMid,
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1452,7 +1407,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                   onTap: () => _applyStyle((l) => l.copyWith(fontStyle: f)),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    height: 36,
+                    height: 44,
                     margin: const EdgeInsets.only(right: 7),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
@@ -1523,7 +1478,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                 onTap: () => _applyStyle((l) => l.copyWith(textBg: bg)),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  height: 36,
+                  height: 44,
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
@@ -1556,7 +1511,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                 onTap: () => _applyStyle((l) => l.copyWith(strokeWidth: w)),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  height: 36,
+                  height: 44,
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
@@ -1594,7 +1549,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                 onTap: () => _applyStyle((l) => l.copyWith(letterSpacing: sp)),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  height: 36,
+                  height: 44,
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
@@ -1872,7 +1827,7 @@ class _PhotoLayerTabs extends StatelessWidget {
               label: Text(sh.label),
               selected: layer.shape == sh,
               onSelected: (_) => vm.updatePhotoLayer(layer.copyWith(shape: sh)),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             )).toList(),
           ),
@@ -1886,7 +1841,7 @@ class _PhotoLayerTabs extends StatelessWidget {
               label: Text(fr.label),
               selected: layer.frame == fr,
               onSelected: (_) => vm.updatePhotoLayer(layer.copyWith(frame: fr)),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             )).toList(),
           ),
@@ -1900,7 +1855,7 @@ class _PhotoLayerTabs extends StatelessWidget {
               label: Text(f.label),
               selected: layer.filter == f,
               onSelected: (_) => vm.updatePhotoLayer(layer.copyWith(filter: f)),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             )).toList(),
           ),
@@ -2051,7 +2006,7 @@ class _SlideTabs extends StatelessWidget {
               label: Text(lay.label),
               selected: slide.layout == lay,
               onSelected: (_) => viewModel.updateSelectedSlide(slide.copyWith(layout: lay)),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             )).toList(),
           ),
@@ -2106,7 +2061,7 @@ class _SlideTabs extends StatelessWidget {
                   onTap: () => viewModel.updateSelectedSlide(slide.copyWith(photoFilter: filter)),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    height: 36,
+                    height: 44,
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
@@ -2141,7 +2096,7 @@ class _SlideTabs extends StatelessWidget {
                   onTap: () => viewModel.updateSelectedSlide(slide.copyWith(overlay: ov)),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    height: 36,
+                    height: 44,
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
@@ -2173,7 +2128,7 @@ class _SlideTabs extends StatelessWidget {
               label: Text(sh.label),
               selected: slide.photoShape == sh,
               onSelected: (_) => viewModel.updateSelectedSlide(slide.copyWith(photoShape: sh)),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             )).toList(),
           ),
@@ -2187,7 +2142,7 @@ class _SlideTabs extends StatelessWidget {
               label: Text(fr.label),
               selected: slide.photoFrame == fr,
               onSelected: (_) => viewModel.updateSelectedSlide(slide.copyWith(photoFrame: fr)),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             )).toList(),
           ),
@@ -2214,7 +2169,7 @@ class _SlideTabs extends StatelessWidget {
                   onTap: () => viewModel.updateSelectedSlide(slide.copyWith(transition: effect)),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    height: 36,
+                    height: 44,
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
