@@ -70,18 +70,53 @@ class EditorView extends StatefulWidget {
 class _EditorViewState extends State<EditorView> {
   final _titleController = TextEditingController();
   bool _editingTitle = false;
-  bool _showMusicPanel = false;
+
+  // Track which layer already has a sheet open to avoid duplicates.
+  bool _isPortraitLayout = true;
+  String? _sheetLayerId;
+  String? _sheetPhotoLayerId;
 
   @override
   void initState() {
     super.initState();
     _titleController.text = widget.viewModel.project.title;
+    widget.viewModel.addListener(_onViewModelChange);
   }
 
   @override
   void dispose() {
+    widget.viewModel.removeListener(_onViewModelChange);
     _titleController.dispose();
     super.dispose();
+  }
+
+  // Open a bottom sheet when a layer is newly selected in portrait mode.
+  void _onViewModelChange() {
+    if (!_isPortraitLayout) return;
+    final photoLayer = widget.viewModel.selectedPhotoLayer;
+    final textLayer = widget.viewModel.selectedLayer;
+
+    if (photoLayer != null && photoLayer.id != _sheetPhotoLayerId) {
+      _sheetPhotoLayerId = photoLayer.id;
+      _sheetLayerId = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (widget.viewModel.selectedPhotoLayerId == photoLayer.id) {
+          _showPhotoLayerSheet(photoLayer.id);
+        }
+      });
+    } else if (textLayer != null && textLayer.id != _sheetLayerId) {
+      _sheetLayerId = textLayer.id;
+      _sheetPhotoLayerId = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (widget.viewModel.selectedLayer?.id == textLayer.id) {
+          _showTextLayerSheet(textLayer.id);
+        }
+      });
+    }
+    if (photoLayer == null) _sheetPhotoLayerId = null;
+    if (textLayer == null) _sheetLayerId = null;
   }
 
   Future<bool> _onWillPop() async {
@@ -159,14 +194,111 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  void _toggleMusicPanel() {
-    setState(() {
-      _showMusicPanel = !_showMusicPanel;
-      if (_showMusicPanel) {
-        widget.viewModel.selectLayer(null);
-        widget.viewModel.selectPhotoLayer(null);
-      }
+  // ── Bottom sheets for photo / text / music ─────────────────────────────────
+
+  void _showPhotoLayerSheet(String layerId) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _LayerSheet(
+        title: 'Photo Layer',
+        height: MediaQuery.of(context).size.height * 0.62,
+        child: ListenableBuilder(
+          listenable: widget.viewModel,
+          builder: (ctx, _) {
+            final layer = widget.viewModel.selectedPhotoLayer;
+            if (layer == null || layer.id != layerId) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (ctx.mounted && Navigator.of(ctx).canPop()) {
+                  Navigator.of(ctx).pop();
+                }
+              });
+              return const SizedBox.shrink();
+            }
+            return _PhotoLayerTabs(
+              key: ValueKey(layer.id),
+              vm: widget.viewModel,
+              layer: layer,
+            );
+          },
+        ),
+      ),
+    ).then((_) {
+      widget.viewModel.selectPhotoLayer(null);
+      _sheetPhotoLayerId = null;
     });
+  }
+
+  void _showTextLayerSheet(String layerId) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _LayerSheet(
+        title: widget.viewModel.selectedLayer?.isSubtitle == true ? 'Subtitle' : 'Title',
+        height: MediaQuery.of(context).size.height * 0.62,
+        child: ListenableBuilder(
+          listenable: widget.viewModel,
+          builder: (ctx, _) {
+            final layer = widget.viewModel.selectedLayer;
+            if (layer == null || layer.id != layerId) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (ctx.mounted && Navigator.of(ctx).canPop()) {
+                  Navigator.of(ctx).pop();
+                }
+              });
+              return const SizedBox.shrink();
+            }
+            return _TextLayerTabs(
+              key: ValueKey(layer.id),
+              layer: layer,
+              onUpdate: widget.viewModel.updateTextLayer,
+              onDelete: () {
+                widget.viewModel.deleteTextLayer(layer.id);
+                if (ctx.mounted && Navigator.of(ctx).canPop()) {
+                  Navigator.of(ctx).pop();
+                }
+              },
+              onBringToFront: () =>
+                  widget.viewModel.bringToFront(layer.id, isPhoto: false),
+              onSendToBack: () =>
+                  widget.viewModel.sendToBack(layer.id, isPhoto: false),
+            );
+          },
+        ),
+      ),
+    ).then((_) {
+      widget.viewModel.selectLayer(null);
+      _sheetLayerId = null;
+    });
+  }
+
+  void _showMusicPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _LayerSheet(
+        title: 'Music',
+        height: MediaQuery.of(context).size.height * 0.55,
+        child: _MusicPanel(
+          currentMusicName: widget.viewModel.project.musicName,
+          onSelect: (name) => widget.viewModel.setMusic('music_path', name),
+          onRemove: () => widget.viewModel.setMusic(null, null),
+          closeOnSelect: true,
+        ),
+      ),
+    );
   }
 
   @override
@@ -328,13 +460,6 @@ class _EditorViewState extends State<EditorView> {
         onSendToBack: () => widget.viewModel.sendToBack(layer.id, isPhoto: false),
       );
     }
-    if (_showMusicPanel) {
-      return _MusicPanel(
-        currentMusicName: widget.viewModel.project.musicName,
-        onSelect: (name) => widget.viewModel.setMusic('music_path', name),
-        onRemove: () => widget.viewModel.setMusic(null, null),
-      );
-    }
     final slide = widget.viewModel.selectedSlide;
     if (slide == null) return const SizedBox.shrink();
     return _SlideTabs(slide: slide, viewModel: widget.viewModel);
@@ -351,7 +476,7 @@ class _EditorViewState extends State<EditorView> {
         children: [
           _MusicTimelineButton(
             musicName: widget.viewModel.project.musicName,
-            onTap: _toggleMusicPanel,
+            onTap: _showMusicPicker,
           ),
           Expanded(
             child: ReorderableListView.builder(
@@ -385,14 +510,7 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildPortraitLayout(BoxConstraints constraints, Slide slide) {
-    // Compute a partial height for the edit panel so it sits right below
-    // the canvas without filling the whole remaining screen.
-    const buttonsH = 96.0;
-    const timelineH = 88.0;
-    final canvasH = constraints.maxWidth * 9.0 / 16.0;
-    final editH = (constraints.maxHeight - canvasH - buttonsH - timelineH)
-        .clamp(100.0, 230.0);
-
+    _isPortraitLayout = true;
     return Column(
       children: [
         // Canvas — fixed 16:9
@@ -403,77 +521,20 @@ class _EditorViewState extends State<EditorView> {
             child: _SlideCanvas(viewModel: widget.viewModel),
           ),
         ),
-        // Partial edit panel — right below the canvas preview
-        SizedBox(
-          height: editH,
-          child: _buildInlineEditPanel(),
-        ),
         // Action buttons
         _buildAddContentBar(slide),
         // Thumbnail timeline
-        _buildTimeline(height: timelineH),
+        _buildTimeline(height: 88),
+        // Slide background settings — always visible below the timeline
+        Expanded(
+          child: _SlideTabs(slide: slide, viewModel: widget.viewModel),
+        ),
       ],
     );
   }
 
-  Widget _buildInlineEditPanel() {
-    final photoLayer = widget.viewModel.selectedPhotoLayer;
-    final textLayer = widget.viewModel.selectedLayer;
-
-    final String? headerTitle;
-    if (photoLayer != null) {
-      headerTitle = 'Photo Layer';
-    } else if (textLayer != null) {
-      headerTitle = textLayer.isSubtitle ? 'Subtitle' : 'Title';
-    } else if (_showMusicPanel) {
-      headerTitle = 'Music';
-    } else {
-      headerTitle = null;
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        border: Border(top: BorderSide(color: AppTheme.line)),
-      ),
-      child: Column(
-        children: [
-          if (headerTitle != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 8, 0),
-              child: Row(
-                children: [
-                  Text(
-                    headerTitle,
-                    style: const TextStyle(
-                      fontFamily: AppTheme.fontTheme,
-                      color: AppTheme.textDark,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded,
-                        color: AppTheme.textMid, size: 20),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () {
-                      widget.viewModel.selectLayer(null);
-                      widget.viewModel.selectPhotoLayer(null);
-                      setState(() => _showMusicPanel = false);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          Expanded(child: _buildEditPanel()),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLandscapeLayout(BoxConstraints constraints, Slide slide) {
+    _isPortraitLayout = false;
     return Row(
       children: [
         Expanded(
@@ -510,6 +571,7 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildWideLayout(BoxConstraints constraints, Slide slide) {
+    _isPortraitLayout = false;
     return Row(
       children: [
         Expanded(
@@ -554,8 +616,7 @@ class _EditorViewState extends State<EditorView> {
       onAddPhoto: () => widget.viewModel.addPhotoLayer(),
       onAddTitle: () => widget.viewModel.addTextLayer(isSubtitle: false),
       onAddSubtitle: () => widget.viewModel.addTextLayer(isSubtitle: true),
-      onMusic: _toggleMusicPanel,
-      musicPanelOpen: _showMusicPanel,
+      onMusic: _showMusicPicker,
     );
   }
 }
@@ -990,7 +1051,6 @@ class _AddContentBar extends StatelessWidget {
     required this.onAddTitle,
     required this.onAddSubtitle,
     required this.onMusic,
-    this.musicPanelOpen = false,
   });
 
   final EditorViewModel viewModel;
@@ -999,7 +1059,6 @@ class _AddContentBar extends StatelessWidget {
   final VoidCallback onAddTitle;
   final VoidCallback onAddSubtitle;
   final VoidCallback onMusic;
-  final bool musicPanelOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -1028,7 +1087,7 @@ class _AddContentBar extends StatelessWidget {
             icon: Icons.music_note_rounded,
             label: 'Music',
             onTap: onMusic,
-            active: hasMusic || musicPanelOpen,
+            active: hasMusic,
           ),
         ],
       ),
@@ -2699,16 +2758,71 @@ class _TemplatePicker extends StatelessWidget {
 // Inline music panel (no Navigator.pop — lives inside the edit panel area)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Reusable bottom-sheet chrome (drag handle + title row)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _LayerSheet extends StatelessWidget {
+  const _LayerSheet({
+    required this.title,
+    required this.height,
+    required this.child,
+  });
+
+  final String title;
+  final double height;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: Column(
+        children: [
+          // Drag handle
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(top: 12, bottom: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.line,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.textDark,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          Expanded(child: child),
+        ],
+      ),
+    );
+  }
+}
+
 class _MusicPanel extends StatelessWidget {
   const _MusicPanel({
     required this.currentMusicName,
     required this.onSelect,
     required this.onRemove,
+    this.closeOnSelect = false,
   });
 
   final String? currentMusicName;
   final void Function(String name) onSelect;
   final VoidCallback onRemove;
+  final bool closeOnSelect;
 
   static const _songs = [
     ('A Thousand Years', 'Christina Perri'),
@@ -2745,7 +2859,10 @@ class _MusicPanel extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: onRemove,
+                    onPressed: () {
+                      onRemove();
+                      if (closeOnSelect) Navigator.of(context).pop();
+                    },
                     style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
                     child: const Text(
                       'Remove',
@@ -2803,7 +2920,10 @@ class _MusicPanel extends StatelessWidget {
                       ? const Icon(Icons.check_circle,
                           color: AppTheme.primary, size: 18)
                       : null,
-                  onTap: () => onSelect(song.$1),
+                  onTap: () {
+                    onSelect(song.$1);
+                    if (closeOnSelect) Navigator.of(context).pop();
+                  },
                 );
               }).toList(),
             ),
