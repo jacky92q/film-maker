@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:film_maker/data/repositories/project_repository.dart';
 import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/domain/models/slide.dart';
@@ -219,10 +222,33 @@ class EditorViewModel extends ChangeNotifier {
         requestFullMetadata: false,
       );
       if (picked != null) {
+        // Compute initial size so the full photo is visible (contain within canvas)
+        const double canvasW = 1280, canvasH = 720;
+        double wf = 0.45, hf = 0.55; // fallback
+        try {
+          final bytes = await File(picked.path).readAsBytes();
+          final codec = await ui.instantiateImageCodec(bytes);
+          final frame = await codec.getNextFrame();
+          final imgW = frame.image.width.toDouble();
+          final imgH = frame.image.height.toDouble();
+          frame.image.dispose();
+          final photoAR = imgW / imgH;
+          final canvasAR = canvasW / canvasH;
+          if (photoAR >= canvasAR) {
+            wf = 1.0;
+            hf = ((canvasW / imgW) * imgH) / canvasH;
+          } else {
+            hf = 1.0;
+            wf = ((canvasH / imgH) * imgW) / canvasW;
+          }
+        } catch (_) {}
+
         final layer = PhotoLayer(
           id: _uuid.v4(),
           imagePath: picked.path,
           zOrder: _nextZOrder(),
+          widthFraction: wf,
+          heightFraction: hf,
         );
         _updateSlide(slide.copyWith(
           photoLayers: [...slide.photoLayers, layer],
