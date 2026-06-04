@@ -2945,6 +2945,7 @@ class _SectionPill extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           margin: const EdgeInsets.symmetric(horizontal: 3),
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: active ? AppTheme.primaryDark : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
