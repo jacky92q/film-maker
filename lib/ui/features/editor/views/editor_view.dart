@@ -69,24 +69,39 @@ class EditorView extends StatefulWidget {
   State<EditorView> createState() => _EditorViewState();
 }
 
-class _EditorViewState extends State<EditorView> {
+class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
   final _titleController = TextEditingController();
   bool _editingTitle = false;
   _EditSection _section = _EditSection.slide;
   bool _isPortraitLayout = true;
+  bool _keyboardVisible = false;
 
   @override
   void initState() {
     super.initState();
     _titleController.text = widget.viewModel.project.title;
     widget.viewModel.addListener(_onViewModelChange);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.viewModel.removeListener(_onViewModelChange);
     _titleController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    if (!mounted) return;
+    final insets = WidgetsBinding.instance.platformDispatcher.views.first.viewInsets;
+    final dpr = WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
+    final kbHeight = insets.bottom / dpr;
+    final nowVisible = kbHeight > 100;
+    if (nowVisible != _keyboardVisible) {
+      setState(() => _keyboardVisible = nowVisible);
+    }
   }
 
   // Auto-switch the section tab when a layer is tapped on the canvas.
@@ -456,7 +471,6 @@ class _EditorViewState extends State<EditorView> {
 
   Widget _buildPortraitLayout(BoxConstraints constraints, Slide slide) {
     _isPortraitLayout = true;
-    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Column(
       children: [
         // Canvas — always present so widget identity is stable (avoids focus loss)
@@ -467,12 +481,12 @@ class _EditorViewState extends State<EditorView> {
             child: _SlideCanvas(viewModel: widget.viewModel),
           ),
         ),
-        // Section selector — switches edit context without any overlay/dim
+        // Section selector
         _buildSectionTabBar(slide),
-        // Edit panel — always inline, always visible alongside canvas
+        // Edit panel
         Expanded(child: _buildSectionContent(slide)),
         // Timeline strip — hidden when keyboard is open to free up space
-        if (!keyboardOpen) _buildTimeline(height: 108),
+        if (!_keyboardVisible) _buildTimeline(height: 108),
       ],
     );
   }
