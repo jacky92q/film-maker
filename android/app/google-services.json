@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "609658608834-616l4u77nlui4kqccarpffo2ds02101i.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.seoko.film_maker",
+            "certificate_hash": "df2658f29b9aed9e350bce032f80cf6aa04d1de0"
+          }
+        },
+        {
+          "client_id": "609658608834-lnlfqgv5ejsc13f7uahcqc9fpmj4ljlh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.seoko.film_maker",
+            "certificate_hash": "80086c6f2a7b4c3162f6a2d846ac28ae5ecf3d25"
+          }
+        },
+        {
           "client_id": "609658608834-2uebljieak5cev683vvjk78f826h37pd.apps.googleusercontent.com",
           "client_type": 3
         }
