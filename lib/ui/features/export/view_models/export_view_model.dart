@@ -1,4 +1,3 @@
-import 'package:film_maker/data/repositories/export_repository.dart';
 import 'package:film_maker/domain/models/project.dart';
 import 'package:flutter/foundation.dart';
 
@@ -7,37 +6,42 @@ enum ExportStatus { idle, exporting, done, error }
 enum ExportResolution { hd, fullHd, fourK }
 
 extension ExportResolutionX on ExportResolution {
-  String get label {
-    switch (this) {
-      case ExportResolution.hd:
-        return '720p HD';
-      case ExportResolution.fullHd:
-        return '1080p Full HD';
-      case ExportResolution.fourK:
-        return '4K Ultra HD';
-    }
-  }
+  String get label => switch (this) {
+        ExportResolution.hd => '720p HD',
+        ExportResolution.fullHd => '1080p Full HD',
+        ExportResolution.fourK => '4K Ultra HD',
+      };
 
-  String get value {
-    switch (this) {
-      case ExportResolution.hd:
-        return '720p';
-      case ExportResolution.fullHd:
-        return '1080p';
-      case ExportResolution.fourK:
-        return '4k';
-    }
-  }
+  int get width => switch (this) {
+        ExportResolution.hd => 1280,
+        ExportResolution.fullHd => 1920,
+        ExportResolution.fourK => 3840,
+      };
+
+  int get height => switch (this) {
+        ExportResolution.hd => 720,
+        ExportResolution.fullHd => 1080,
+        ExportResolution.fourK => 2160,
+      };
+
+  /// Canvas pixel ratio relative to the 1280×720 logical canvas.
+  double get pixelRatio => switch (this) {
+        ExportResolution.hd => 1.0,
+        ExportResolution.fullHd => 1.5,
+        ExportResolution.fourK => 3.0,
+      };
+
+  int get bitrateBps => switch (this) {
+        ExportResolution.hd => 4_000_000,
+        ExportResolution.fullHd => 8_000_000,
+        ExportResolution.fourK => 20_000_000,
+      };
 }
 
 class ExportViewModel extends ChangeNotifier {
-  ExportViewModel({
-    required this.project,
-    required this.exportRepository,
-  });
+  ExportViewModel({required this.project});
 
   final Project project;
-  final ExportRepository exportRepository;
 
   ExportStatus _status = ExportStatus.idle;
   ExportResolution _resolution = ExportResolution.fullHd;
@@ -58,29 +62,29 @@ class ExportViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> startExport() async {
+  /// Transitions to [ExportStatus.exporting]; the view drives the actual work.
+  void startExport() {
     _status = ExportStatus.exporting;
     _progress = 0;
     _error = null;
+    _outputPath = null;
     notifyListeners();
+  }
 
-    try {
-      await for (final p in exportRepository.exportProject(
-        projectId: project.id,
-        resolution: _resolution.value,
-      )) {
-        _progress = p;
-        notifyListeners();
-      }
-      _status = ExportStatus.done;
-      final fileName = project.title
-          .toLowerCase()
-          .replaceAll(RegExp(r'[^a-z0-9]+'), '_');
-      _outputPath = '/Movies/${fileName}_wedding_film.mp4';
-    } catch (_) {
-      _status = ExportStatus.error;
-      _error = 'Export failed. Please try again.';
-    }
+  void updateProgress(double p) {
+    _progress = p;
+    notifyListeners();
+  }
+
+  void completeExport(String outputPath) {
+    _status = ExportStatus.done;
+    _outputPath = outputPath;
+    notifyListeners();
+  }
+
+  void failExport(String message) {
+    _status = ExportStatus.error;
+    _error = message;
     notifyListeners();
   }
 

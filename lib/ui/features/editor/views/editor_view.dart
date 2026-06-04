@@ -1,6 +1,5 @@
 ﻿import 'dart:io';
 
-import 'package:film_maker/data/repositories/export_repository.dart';
 import 'package:film_maker/ui/core/photo_frame_widget.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/domain/models/slide.dart';
@@ -59,11 +58,9 @@ class EditorView extends StatefulWidget {
   const EditorView({
     super.key,
     required this.viewModel,
-    required this.exportRepository,
   });
 
   final EditorViewModel viewModel;
-  final ExportRepository exportRepository;
 
   @override
   State<EditorView> createState() => _EditorViewState();
@@ -162,7 +159,6 @@ class _EditorViewState extends State<EditorView> {
         builder: (_) => ExportView(
           viewModel: ExportViewModel(
             project: widget.viewModel.project,
-            exportRepository: widget.exportRepository,
           ),
         ),
       ),

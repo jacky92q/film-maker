@@ -1,6 +1,4 @@
-import 'package:film_maker/data/repositories/export_repository.dart';
 import 'package:film_maker/data/repositories/project_repository.dart';
-import 'package:film_maker/data/services/mock_export_service.dart';
 import 'package:film_maker/domain/models/user.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
@@ -114,7 +112,6 @@ class _HomeViewState extends State<HomeView> {
             project: project,
             projectRepository: widget.projectRepository,
           ),
-          exportRepository: ExportRepository(exportService: MockExportService()),
         ),
       ),
     );
