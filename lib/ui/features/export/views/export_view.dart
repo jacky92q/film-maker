@@ -9,6 +9,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
+// Per-frame state passed to the off-screen render canvas.
+typedef _CanvasFrame = ({
+  Slide slide,
+  double slideTime,
+  Slide? prevSlide,
+  double prevSlideTime,
+  double transitionProgress,
+});
+
 class ExportView extends StatefulWidget {
   const ExportView({super.key, required this.viewModel});
 
@@ -20,11 +29,17 @@ class ExportView extends StatefulWidget {
 
 class _ExportViewState extends State<ExportView> {
   final _captureKey = GlobalKey();
-  final _renderNotifier = ValueNotifier<(Slide, double)>(_kDummy);
+  final _renderNotifier = ValueNotifier<_CanvasFrame>(_kDummyFrame);
   OverlayEntry? _canvasOverlay;
   bool _cancelled = false;
 
-  static final _kDummy = (const Slide(id: '_'), 0.0);
+  static final _kDummyFrame = (
+    slide: const Slide(id: '_'),
+    slideTime: 0.0,
+    prevSlide: null as Slide?,
+    prevSlideTime: 0.0,
+    transitionProgress: 0.0,
+  );
 
   @override
   void initState() {
@@ -73,6 +88,9 @@ class _ExportViewState extends State<ExportView> {
 
   // ── Export loop ───────────────────────────────────────────────────────────
 
+  // Transition between slides: 0.6 s = 18 frames at 30 fps.
+  static const _kTransitionSec = 0.6;
+
   Future<void> _startExport() async {
     _cancelled = false;
     final project = widget.viewModel.project;
@@ -81,7 +99,7 @@ class _ExportViewState extends State<ExportView> {
       return;
     }
 
-    _renderNotifier.value = (project.slides.first, 0.0);
+    _renderNotifier.value = _kDummyFrame;
     _installCanvas();
 
     await SchedulerBinding.instance.endOfFrame;
@@ -99,6 +117,7 @@ class _ExportViewState extends State<ExportView> {
     final project = widget.viewModel.project;
     final res = widget.viewModel.resolution;
     const fps = 30;
+    final transitionFrames = (_kTransitionSec * fps).round(); // 18 frames
 
     final service = VideoExportService();
     await service.startEncoder(
@@ -113,15 +132,37 @@ class _ExportViewState extends State<ExportView> {
 
     int done = 0;
 
-    for (final slide in project.slides) {
+    for (int i = 0; i < project.slides.length; i++) {
       if (_cancelled) break;
+
+      final slide      = project.slides[i];
       final slideFrames = slide.durationSeconds * fps;
+      final prevSlide  = i > 0 ? project.slides[i - 1] : null;
+      // Render the previous slide at its final time during the transition.
+      final prevEndTime = prevSlide?.durationSeconds.toDouble() ?? 0.0;
+      // Number of transition frames at the START of this slide (0 for first).
+      final tFrames = prevSlide != null
+          ? transitionFrames.clamp(0, slideFrames)
+          : 0;
 
       for (int f = 0; f < slideFrames; f++) {
         if (_cancelled) break;
+
         final t = f / fps.toDouble();
 
-        _renderNotifier.value = (slide, t);
+        // Is this frame inside the cross-slide transition zone?
+        final transP = (f < tFrames && tFrames > 0)
+            ? f / tFrames.toDouble()
+            : 0.0;
+
+        _renderNotifier.value = (
+          slide: slide,
+          slideTime: t,
+          prevSlide: transP > 0 ? prevSlide : null,
+          prevSlideTime: prevEndTime,
+          transitionProgress: transP,
+        );
+
         await SchedulerBinding.instance.endOfFrame;
 
         final boundary = _captureKey.currentContext?.findRenderObject()
@@ -755,7 +796,7 @@ class _RenderCanvas extends StatefulWidget {
   const _RenderCanvas({required this.captureKey, required this.notifier});
 
   final GlobalKey captureKey;
-  final ValueNotifier<(Slide, double)> notifier;
+  final ValueNotifier<_CanvasFrame> notifier;
 
   @override
   State<_RenderCanvas> createState() => _RenderCanvasState();
@@ -778,10 +819,16 @@ class _RenderCanvasState extends State<_RenderCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    final (slide, t) = widget.notifier.value;
+    final f = widget.notifier.value;
     return RepaintBoundary(
       key: widget.captureKey,
-      child: ExportCanvas(slide: slide, slideTimeSeconds: t),
+      child: ExportCanvas(
+        slide: f.slide,
+        slideTimeSeconds: f.slideTime,
+        prevSlide: f.prevSlide,
+        prevSlideTimeSeconds: f.prevSlideTime,
+        transitionProgress: f.transitionProgress,
+      ),
     );
   }
 }

@@ -6,27 +6,122 @@ import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:flutter/material.dart';
 
-/// Renders a single slide at an explicit [slideTimeSeconds] offset.
-/// All animation values are derived mathematically — no AnimationControllers.
-/// Used for frame-by-frame video export.
+/// Renders one or two slides for frame-by-frame video export.
+///
+/// When [prevSlide] is provided and [transitionProgress] ∈ (0, 1), the
+/// previous slide is drawn as the bottom layer and the current slide is
+/// composited on top using [slide.transition].
 class ExportCanvas extends StatelessWidget {
   const ExportCanvas({
     super.key,
     required this.slide,
     required this.slideTimeSeconds,
+    this.prevSlide,
+    this.prevSlideTimeSeconds = 0.0,
+    this.transitionProgress = 0.0,
   });
 
   final Slide slide;
   final double slideTimeSeconds;
 
-  static const double kWidth = 1280.0;
-  static const double kHeight = 720.0;
+  /// The slide that was playing before this one (for cross-slide transitions).
+  final Slide? prevSlide;
+
+  /// The time offset used to render [prevSlide] (typically its end time).
+  final double prevSlideTimeSeconds;
+
+  /// 0 = still showing [prevSlide], 1 = fully on [slide].
+  final double transitionProgress;
+
+  static const double kWidth  = 1280.0;
+  static const double kHeight =  720.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final inTransition =
+        prevSlide != null && transitionProgress > 0 && transitionProgress < 1.0;
+
+    if (!inTransition) {
+      return _SlideRender(slide: slide, time: slideTimeSeconds);
+    }
+
+    final te = Curves.easeInOut.transform(transitionProgress);
+    final incoming = _SlideRender(slide: slide, time: slideTimeSeconds);
+
+    final Widget overlay;
+    switch (slide.transition) {
+      case TransitionEffect.fade:
+      case TransitionEffect.kenBurns:
+      case TransitionEffect.blurDissolve:
+        overlay = Opacity(opacity: te, child: incoming);
+
+      case TransitionEffect.slideLeft:
+        // Incoming enters from the right edge.
+        overlay = Transform.translate(
+          offset: Offset(kWidth * (1.0 - te), 0),
+          child: incoming,
+        );
+
+      case TransitionEffect.slideRight:
+        // Incoming enters from the left edge.
+        overlay = Transform.translate(
+          offset: Offset(-kWidth * (1.0 - te), 0),
+          child: incoming,
+        );
+
+      case TransitionEffect.zoomIn:
+        overlay = Opacity(
+          opacity: te,
+          child: Transform.scale(scale: 0.5 + 0.5 * te, child: incoming),
+        );
+
+      case TransitionEffect.wipeLeft:
+        // New slide revealed from right → left.
+        overlay = ClipRect(
+          clipper: _RightToLeftWipeClipper(te),
+          child: incoming,
+        );
+
+      case TransitionEffect.wipeRight:
+        // New slide revealed from left → right.
+        overlay = ClipRect(
+          clipper: _LeftToRightWipeClipper(te),
+          child: incoming,
+        );
+    }
+
+    return SizedBox(
+      width: kWidth,
+      height: kHeight,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _SlideRender(slide: prevSlide!, time: prevSlideTimeSeconds),
+          overlay,
+        ],
+      ),
+    );
+  }
+}
+
+// ── Single-slide renderer ─────────────────────────────────────────────────────
+
+/// Renders one [slide] at the given [time] offset. All animation values are
+/// derived mathematically — no AnimationControllers required.
+class _SlideRender extends StatelessWidget {
+  const _SlideRender({required this.slide, required this.time});
+
+  final Slide slide;
+  final double time;
+
+  static const double _w = ExportCanvas.kWidth;
+  static const double _h = ExportCanvas.kHeight;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: kWidth,
-      height: kHeight,
+      width: _w,
+      height: _h,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -39,7 +134,7 @@ class ExportCanvas extends StatelessWidget {
     );
   }
 
-  // ── Background ──────────────────────────────────────────────────────────────
+  // ── Background ─────────────────────────────────────────────────────────────
 
   Widget _buildBackground() {
     if (slide.imagePath == null && slide.layout == SlideLayout.single) {
@@ -62,7 +157,7 @@ class ExportCanvas extends StatelessWidget {
       color: Color(slide.backgroundColor),
       child: ClipRect(
         child: Transform.translate(
-          offset: Offset(slide.photoOffsetX * kWidth, slide.photoOffsetY * kHeight),
+          offset: Offset(slide.photoOffsetX * _w, slide.photoOffsetY * _h),
           child: Transform.scale(scale: slide.photoScale, child: photo),
         ),
       ),
@@ -70,10 +165,10 @@ class ExportCanvas extends StatelessWidget {
 
     if (slide.transition != TransitionEffect.kenBurns) return base;
 
-    final dur = slide.durationSeconds.toDouble();
-    final kenT = (slideTimeSeconds / dur).clamp(0.0, 1.0);
+    // Ken Burns: slow zoom + pan across the slide's own duration.
+    final kenT = (time / slide.durationSeconds.toDouble()).clamp(0.0, 1.0);
     final scale = 1.0 + 0.08 * kenT;
-    final dx = 0.03 * (kenT - 0.5) * 200;
+    final dx    = 0.03 * (kenT - 0.5) * 200;
     return Transform.scale(
       scale: scale,
       alignment: Alignment.center,
@@ -84,10 +179,9 @@ class ExportCanvas extends StatelessWidget {
   Widget _buildStrip() {
     final photos = [slide.imagePath, slide.imagePath2];
     if (slide.layout == SlideLayout.strip3) photos.add(slide.imagePath3);
-    final n = photos.length;
-    final dur = slide.durationSeconds.toDouble();
-    final stripT = (slideTimeSeconds / dur).clamp(0.0, 1.0);
-    final offset = stripT * (n - 1) * kWidth;
+    final n      = photos.length;
+    final stripT = (time / slide.durationSeconds.toDouble()).clamp(0.0, 1.0);
+    final offset = stripT * (n - 1) * _w;
 
     return ClipRect(
       child: Transform.translate(
@@ -95,8 +189,8 @@ class ExportCanvas extends StatelessWidget {
         child: Row(
           children: photos
               .map((path) => SizedBox(
-                    width: kWidth,
-                    height: kHeight,
+                    width: _w,
+                    height: _h,
                     child: buildShapedPhoto(
                       imagePath: path,
                       shape: slide.photoShape,
@@ -111,7 +205,7 @@ class ExportCanvas extends StatelessWidget {
     );
   }
 
-  // ── Layers ──────────────────────────────────────────────────────────────────
+  // ── Layers ─────────────────────────────────────────────────────────────────
 
   List<Widget> _buildLayers() {
     final items = <({int z, bool isText, Object layer})>[];
@@ -131,44 +225,43 @@ class ExportCanvas extends StatelessWidget {
     ];
   }
 
-  // ── Animation helpers ────────────────────────────────────────────────────────
+  // ── Animation helpers ──────────────────────────────────────────────────────
 
   static double _animDurSec(SlideContentAnimation a) => switch (a) {
-        SlideContentAnimation.none => 0.1,
-        SlideContentAnimation.typewriter => 2.8,
-        SlideContentAnimation.slideUp || SlideContentAnimation.slideIn => 1.2,
+        SlideContentAnimation.none        => 0.1,
+        SlideContentAnimation.typewriter  => 2.8,
+        SlideContentAnimation.slideUp ||
+        SlideContentAnimation.slideIn     => 1.2,
         SlideContentAnimation.fadeStagger => 2.0,
-        SlideContentAnimation.float => 2.2,
-        SlideContentAnimation.zoomPulse => 3.0,
-        SlideContentAnimation.wipeReveal => 2.2,
+        SlideContentAnimation.float       => 2.2,
+        SlideContentAnimation.zoomPulse   => 3.0,
+        SlideContentAnimation.wipeReveal  => 2.2,
       };
 
-  /// Returns animation progress ∈ [0, 1] at [t] seconds.
-  /// Looping animations (float, zoomPulse) oscillate like repeat(reverse:true).
   double _animT(SlideContentAnimation a) {
     final dur = _animDurSec(a);
     if (dur <= 0) return 1.0;
     switch (a) {
       case SlideContentAnimation.float:
       case SlideContentAnimation.zoomPulse:
-        final cycles = slideTimeSeconds / dur;
-        final phase = cycles - cycles.floor();
+        // Looping: triangle wave so the animation oscillates continuously.
+        final cycles = time / dur;
+        final phase  = cycles - cycles.floor();
         return (cycles.floor() % 2 == 0) ? phase : 1.0 - phase;
       default:
-        return (slideTimeSeconds / dur).clamp(0.0, 1.0);
+        return (time / dur).clamp(0.0, 1.0);
     }
   }
 
-  // ── Text layer ───────────────────────────────────────────────────────────────
+  // ── Text layer ─────────────────────────────────────────────────────────────
 
   Widget _buildTextLayer(TextLayer layer) {
-    final anim = layer.contentAnimation;
-    final t = _animT(anim);
+    final anim  = layer.contentAnimation;
+    final t     = _animT(anim);
     final align = Alignment(
       (layer.x * 2 - 1).clamp(-0.95, 0.95),
       (layer.y * 2 - 1).clamp(-0.95, 0.92),
     );
-
     final text = _layerText(layer);
 
     switch (anim) {
@@ -231,7 +324,7 @@ class ExportCanvas extends StatelessWidget {
         return Positioned.fill(
           child: Align(
             alignment: align,
-            child: ClipRect(clipper: _WipeClipper(e), child: text),
+            child: ClipRect(clipper: _LeftToRightWipeClipper(e), child: text),
           ),
         );
     }
@@ -260,17 +353,16 @@ class ExportCanvas extends StatelessWidget {
     return Transform.rotate(angle: layer.rotation * math.pi / 180.0, child: content);
   }
 
-  // ── Photo layer ──────────────────────────────────────────────────────────────
+  // ── Photo layer ────────────────────────────────────────────────────────────
 
   Widget _buildPhotoLayer(PhotoLayer pl) {
-    const w = kWidth, h = kHeight;
-    final left = (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * w;
-    final top = (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * h;
-    final pw = pl.widthFraction * w;
-    final ph = pl.heightFraction * h;
+    final left = (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * _w;
+    final top  = (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * _h;
+    final pw   = pl.widthFraction * _w;
+    final ph   = pl.heightFraction * _h;
 
     final anim = pl.contentAnimation;
-    final t = _animT(anim);
+    final t    = _animT(anim);
 
     final photo = Transform.rotate(
       angle: pl.rotation * math.pi / 180.0,
@@ -331,14 +423,13 @@ class ExportCanvas extends StatelessWidget {
         ]);
 
       case SlideContentAnimation.zoomPulse:
-        final e = Curves.easeInOut.transform(t);
-        final scale = 1.0 + 0.08 * e;
-        final dw = pw * (scale - 1) / 2;
-        final dh = ph * (scale - 1) / 2;
+        final e    = Curves.easeInOut.transform(t);
+        final sc   = 1.0 + 0.08 * e;
+        final dw   = pw * (sc - 1) / 2;
+        final dh   = ph * (sc - 1) / 2;
         return Stack(children: [
           Positioned(
-            left: left - dw, top: top - dh,
-            width: pw * scale, height: ph * scale,
+            left: left - dw, top: top - dh, width: pw * sc, height: ph * sc,
             child: photo,
           ),
         ]);
@@ -346,13 +437,32 @@ class ExportCanvas extends StatelessWidget {
   }
 }
 
-class _WipeClipper extends CustomClipper<Rect> {
-  const _WipeClipper(this.progress);
+// ── Clippers ──────────────────────────────────────────────────────────────────
+
+/// Reveals content from left → right (wipeRight transition / wipeReveal anim).
+class _LeftToRightWipeClipper extends CustomClipper<Rect> {
+  const _LeftToRightWipeClipper(this.progress);
   final double progress;
 
   @override
-  Rect getClip(Size size) => Rect.fromLTWH(0, 0, size.width * progress, size.height);
+  Rect getClip(Size size) =>
+      Rect.fromLTWH(0, 0, size.width * progress, size.height);
 
   @override
-  bool shouldReclip(_WipeClipper old) => old.progress != progress;
+  bool shouldReclip(_LeftToRightWipeClipper old) => old.progress != progress;
+}
+
+/// Reveals content from right → left (wipeLeft transition).
+class _RightToLeftWipeClipper extends CustomClipper<Rect> {
+  const _RightToLeftWipeClipper(this.progress);
+  final double progress;
+
+  @override
+  Rect getClip(Size size) {
+    final w = size.width;
+    return Rect.fromLTWH(w * (1.0 - progress), 0, w * progress, size.height);
+  }
+
+  @override
+  bool shouldReclip(_RightToLeftWipeClipper old) => old.progress != progress;
 }
