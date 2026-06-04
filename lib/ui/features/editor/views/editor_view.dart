@@ -2057,47 +2057,6 @@ class _SlideTabs extends StatelessWidget {
               ],
             ),
           ],
-          const SizedBox(height: 12),
-          const _SectionHeader('Layout'),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8, runSpacing: 8,
-            children: SlideLayout.values.map((lay) => ChoiceChip(
-              label: Text(lay.label),
-              selected: slide.layout == lay,
-              onSelected: (_) => viewModel.updateSelectedSlide(slide.copyWith(layout: lay)),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            )).toList(),
-          ),
-          if (slide.layout != SlideLayout.single) ...[
-            const SizedBox(height: 12),
-            const _SectionHeader('Photos'),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
-              label: Text(slide.imagePath2 != null ? 'Photo 2 ✓' : 'Add Photo 2'),
-              onPressed: () => viewModel.pickImageForSlot(2),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.textMid,
-                side: const BorderSide(color: AppTheme.line),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            if (slide.layout == SlideLayout.strip3) ...[
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
-                label: Text(slide.imagePath3 != null ? 'Photo 3 ✓' : 'Add Photo 3'),
-                onPressed: () => viewModel.pickImageForSlot(3),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.textMid,
-                  side: const BorderSide(color: AppTheme.line),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ],
-          ],
         ],
       ),
     );
@@ -2417,12 +2376,15 @@ class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
   late final TextEditingController _hex;
 
   static const _presets = <int>[
-    0xFF000000,
-    0xFF1A1A1A,
-    0xFF0D0D0D,
-    0xFFFFFFFF,
-    0xFFF5F0E8,
-    0xFFE8B4B8,
+    // Darks
+    0xFF000000, 0xFF0D0D0D, 0xFF1A1A1A, 0xFF2C2C2C,
+    0xFF1C1C2E, 0xFF1A1A2E, 0xFF2D1B1B, 0xFF1B2D1B,
+    // Lights & warm neutrals
+    0xFFFFFFFF, 0xFFF5F5F5, 0xFFFFF8F2, 0xFFF5F0E8,
+    0xFFEDE0D4, 0xFFD4C5B0, 0xFFC9B9A0, 0xFFBDAD96,
+    // Pastels & colors
+    0xFFE8B4B8, 0xFFD4A5A5, 0xFFB5C4B1, 0xFFB8CCE0,
+    0xFFC9B8D4, 0xFFF2D4A0, 0xFFC07842, 0xFF4A3728,
   ];
 
   @override
@@ -2453,12 +2415,21 @@ class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
     return v != null ? (0xFF000000 | v) : null;
   }
 
+  static bool _isLight(int c) {
+    final r = (c >> 16) & 0xFF;
+    final g = (c >> 8) & 0xFF;
+    final b = c & 0xFF;
+    return (r * 299 + g * 587 + b * 114) / 1000 > 160;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: _presets.map((c) {
             final sel = c == widget.current;
             return GestureDetector(
@@ -2468,9 +2439,8 @@ class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                width: 26,
-                height: 26,
-                margin: const EdgeInsets.only(right: 7),
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Color(c),
@@ -2481,17 +2451,15 @@ class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
                   boxShadow: sel
                       ? [
                           BoxShadow(
-                              color: AppTheme.primary.withValues(alpha: 0.4),
-                              blurRadius: 5)
+                              color: AppTheme.primary.withValues(alpha: 0.45),
+                              blurRadius: 6)
                         ]
                       : null,
                 ),
                 child: sel
                     ? Icon(Icons.check,
-                        size: 12,
-                        color: (c == 0xFFFFFFFF || c == 0xFFF5F0E8)
-                            ? Colors.black
-                            : Colors.white)
+                        size: 14,
+                        color: _isLight(c) ? Colors.black : Colors.white)
                     : null,
               ),
             );
@@ -2616,8 +2584,17 @@ class _SlideThumbnail extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected ? AppTheme.primary : AppTheme.line,
-            width: isSelected ? 2 : 1,
+            width: isSelected ? 3 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primary.withValues(alpha: 0.55),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  )
+                ]
+              : null,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(7),

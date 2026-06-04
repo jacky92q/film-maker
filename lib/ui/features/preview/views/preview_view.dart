@@ -180,25 +180,33 @@ class _PreviewViewState extends State<PreviewView>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.black.withValues(alpha: 0.6), Colors.transparent],
+            colors: [Colors.black.withValues(alpha: 0.75), Colors.transparent],
           ),
         ),
         padding: EdgeInsets.only(
           top: MediaQuery.of(context).padding.top + 8,
-          left: 8, right: 16, bottom: 16,
+          left: 4, right: 16, bottom: 24,
         ),
         child: Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white, size: 20),
               onPressed: () => Navigator.of(context).pop(),
             ),
             Expanded(
               child: Text(
                 widget.viewModel.project.title,
-                style: TextStyle(fontFamily: AppTheme.fontTheme,
-                    color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.gold,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.5,
+                ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(width: 48),
@@ -212,29 +220,48 @@ class _PreviewViewState extends State<PreviewView>
     return ListenableBuilder(
       listenable: widget.viewModel,
       builder: (context, _) {
+        final isPlaying = widget.viewModel.isPlaying;
         return Center(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildIconButton(
+              _buildNavButton(
                 icon: Icons.skip_previous_rounded,
-                onTap: widget.viewModel.isFirstSlide ? null : widget.viewModel.previousSlide,
-                size: 36,
+                onTap: widget.viewModel.isFirstSlide
+                    ? null
+                    : widget.viewModel.previousSlide,
               ),
-              const SizedBox(width: 20),
-              _buildIconButton(
-                icon: widget.viewModel.isPlaying
-                    ? Icons.pause_circle_filled_rounded
-                    : Icons.play_circle_filled_rounded,
+              const SizedBox(width: 32),
+              GestureDetector(
                 onTap: _onPlayPause,
-                size: 64,
-                color: AppTheme.gold,
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.45),
+                    border: Border.all(color: AppTheme.gold, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.gold.withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    size: 38,
+                    color: AppTheme.gold,
+                  ),
+                ),
               ),
-              const SizedBox(width: 20),
-              _buildIconButton(
+              const SizedBox(width: 32),
+              _buildNavButton(
                 icon: Icons.skip_next_rounded,
-                onTap: widget.viewModel.isLastSlide ? null : widget.viewModel.nextSlide,
-                size: 36,
+                onTap: widget.viewModel.isLastSlide
+                    ? null
+                    : widget.viewModel.nextSlide,
               ),
             ],
           ),
@@ -243,18 +270,25 @@ class _PreviewViewState extends State<PreviewView>
     );
   }
 
-  Widget _buildIconButton({
-    required IconData icon,
-    VoidCallback? onTap,
-    double size = 32,
-    Color color = Colors.white,
-  }) {
+  Widget _buildNavButton({required IconData icon, VoidCallback? onTap}) {
+    final enabled = onTap != null;
     return GestureDetector(
       onTap: onTap,
-      child: Icon(
-        icon,
-        size: size,
-        color: onTap == null ? color.withValues(alpha: 0.3) : color.withValues(alpha: 0.9),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.black.withValues(alpha: 0.35),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: enabled ? 0.3 : 0.1),
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 22,
+          color: Colors.white.withValues(alpha: enabled ? 0.9 : 0.25),
+        ),
       ),
     );
   }
@@ -267,23 +301,39 @@ class _PreviewViewState extends State<PreviewView>
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent],
+            colors: [
+              Colors.black.withValues(alpha: 0.85),
+              Colors.black.withValues(alpha: 0.3),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.6, 1.0],
           ),
         ),
         padding: EdgeInsets.only(
-          left: 20, right: 20,
-          bottom: MediaQuery.of(context).padding.bottom + 16,
-          top: 24,
+          left: 28, right: 28,
+          bottom: MediaQuery.of(context).padding.bottom + 24,
+          top: 40,
         ),
         child: ListenableBuilder(
           listenable: widget.viewModel,
           builder: (context, _) {
+            final current = widget.viewModel.currentIndex + 1;
+            final total = widget.viewModel.project.slides.length;
             return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildSlideIndicators(),
-                const SizedBox(height: 8),
+                const SizedBox(height: 14),
                 _buildProgressBar(),
+                const SizedBox(height: 8),
+                Text(
+                  '$current / $total',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    color: Colors.white.withValues(alpha: 0.45),
+                    fontSize: 11,
+                    letterSpacing: 0.8,
+                  ),
+                ),
               ],
             );
           },
@@ -294,12 +344,12 @@ class _PreviewViewState extends State<PreviewView>
 
   Widget _buildProgressBar() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: BorderRadius.circular(4),
       child: LinearProgressIndicator(
         value: widget.viewModel.progress,
-        backgroundColor: Colors.white.withValues(alpha: 0.2),
+        backgroundColor: Colors.white.withValues(alpha: 0.15),
         valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.gold),
-        minHeight: 3,
+        minHeight: 4,
       ),
     );
   }
@@ -311,13 +361,15 @@ class _PreviewViewState extends State<PreviewView>
       children: List.generate(total, (i) {
         final isCurrent = i == widget.viewModel.currentIndex;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: isCurrent ? 20 : 6,
-          height: 6,
-          margin: const EdgeInsets.symmetric(horizontal: 2),
+          duration: const Duration(milliseconds: 250),
+          width: isCurrent ? 24 : 6,
+          height: 4,
+          margin: const EdgeInsets.symmetric(horizontal: 2.5),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(3),
-            color: isCurrent ? AppTheme.gold : Colors.white.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(2),
+            color: isCurrent
+                ? AppTheme.gold
+                : Colors.white.withValues(alpha: 0.35),
           ),
         );
       }),
