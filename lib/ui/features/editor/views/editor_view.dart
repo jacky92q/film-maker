@@ -456,22 +456,24 @@ class _EditorViewState extends State<EditorView> {
 
   Widget _buildPortraitLayout(BoxConstraints constraints, Slide slide) {
     _isPortraitLayout = true;
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Column(
       children: [
-        // Canvas — always fully visible, never dimmed
-        ColoredBox(
-          color: const Color(0xFF1C1C1C),
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: _SlideCanvas(viewModel: widget.viewModel),
+        // Canvas — hide when keyboard is open to give more room to editing
+        if (!keyboardOpen)
+          ColoredBox(
+            color: const Color(0xFF1C1C1C),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: _SlideCanvas(viewModel: widget.viewModel),
+            ),
           ),
-        ),
         // Section selector — switches edit context without any overlay/dim
         _buildSectionTabBar(slide),
         // Edit panel — always inline, always visible alongside canvas
         Expanded(child: _buildSectionContent(slide)),
-        // Timeline strip
-        _buildTimeline(height: 108),
+        // Timeline strip — hidden when keyboard is open
+        if (!keyboardOpen) _buildTimeline(height: 108),
       ],
     );
   }
