@@ -283,6 +283,21 @@ extension SlideOverlayX on SlideOverlay {
   }
 }
 
+enum DimDirection { none, bottom, top, left, right, radial }
+
+extension DimDirectionX on DimDirection {
+  String get label {
+    switch (this) {
+      case DimDirection.none:   return 'None';
+      case DimDirection.bottom: return 'Bottom';
+      case DimDirection.top:    return 'Top';
+      case DimDirection.left:   return 'Left';
+      case DimDirection.right:  return 'Right';
+      case DimDirection.radial: return 'Radial';
+    }
+  }
+}
+
 enum SlideTextBg { none, pill, box }
 
 extension SlideTextBgX on SlideTextBg {
@@ -558,6 +573,8 @@ class Slide {
     this.imagePath2,
     this.imagePath3,
     this.contentAnimation = SlideContentAnimation.none,
+    this.dimDirection = DimDirection.none,
+    this.dimOpacity = 0.5,
   });
 
   final String id;
@@ -567,10 +584,10 @@ class Slide {
   final TransitionEffect transition;
   final int durationSeconds;
   final PhotoFilter photoFilter;
-  final double photoScale;      // 1.0 = photo fits canvas (contain), < 1 zooms out, > 1 zooms in
-  final double photoOffsetX;    // fraction of canvas width, 0 = center
-  final double photoOffsetY;    // fraction of canvas height, 0 = center
-  final int backgroundColor;    // ARGB int shown behind the photo (default black)
+  final double photoScale;
+  final double photoOffsetX;
+  final double photoOffsetY;
+  final int backgroundColor;
   final SlideOverlay overlay;
   final PhotoShape photoShape;
   final PhotoFrame photoFrame;
@@ -578,6 +595,8 @@ class Slide {
   final String? imagePath2;
   final String? imagePath3;
   final SlideContentAnimation contentAnimation;
+  final DimDirection dimDirection;
+  final double dimOpacity;
 
   Slide copyWith({
     String? imagePath,
@@ -597,6 +616,8 @@ class Slide {
     String? imagePath2,
     String? imagePath3,
     SlideContentAnimation? contentAnimation,
+    DimDirection? dimDirection,
+    double? dimOpacity,
   }) {
     return Slide(
       id: id,
@@ -617,6 +638,8 @@ class Slide {
       imagePath2: imagePath2 ?? this.imagePath2,
       imagePath3: imagePath3 ?? this.imagePath3,
       contentAnimation: contentAnimation ?? this.contentAnimation,
+      dimDirection: dimDirection ?? this.dimDirection,
+      dimOpacity: dimOpacity ?? this.dimOpacity,
     );
   }
 }
