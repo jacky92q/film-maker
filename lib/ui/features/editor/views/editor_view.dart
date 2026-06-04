@@ -2649,26 +2649,12 @@ class _SlideThumbnail extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Background color always shown
               ColoredBox(color: Color(slide.backgroundColor)),
-              // Best photo preview
               if (thumbPath != null)
                 Image.file(File(thumbPath),
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => const SizedBox.shrink()),
-              // Per-slide dim overlay
               buildSlideDim(slide.dimDirection, slide.dimOpacity),
-              // Fixed subtle gradient so the number stays readable
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Color(0x99000000)],
-                    stops: [0.5, 1.0],
-                  ),
-                ),
-              ),
               Positioned(
                 bottom: 3,
                 left: 0,
@@ -2678,14 +2664,16 @@ class _SlideThumbnail extends StatelessWidget {
                     '${index + 1}',
                     style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
-                      color: isSelected ? AppTheme.primary : Colors.white70,
+                      color: isSelected ? AppTheme.primary : Colors.white,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
+                      shadows: const [
+                        Shadow(color: Colors.black54, blurRadius: 4),
+                      ],
                     ),
                   ),
                 ),
               ),
-              // Animation badge
               if (hasAnimation)
                 const Positioned(
                   top: 3,
