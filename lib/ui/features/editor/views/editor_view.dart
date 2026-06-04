@@ -412,7 +412,11 @@ class _EditorViewState extends State<EditorView> {
     return Container(
       height: height,
       color: AppTheme.bg,
-      child: Row(
+      child: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        child: Row(
         children: [
           _MusicTimelineButton(
             musicName: widget.viewModel.project.musicName,
@@ -446,6 +450,7 @@ class _EditorViewState extends State<EditorView> {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -465,10 +470,8 @@ class _EditorViewState extends State<EditorView> {
         _buildSectionTabBar(slide),
         // Edit panel — always inline, always visible alongside canvas
         Expanded(child: _buildSectionContent(slide)),
-        // Compact add-layer row + delete
-        _buildPortraitAddBar(slide),
         // Timeline strip
-        _buildTimeline(height: 78),
+        _buildTimeline(height: 108),
       ],
     );
   }
@@ -587,55 +590,6 @@ class _EditorViewState extends State<EditorView> {
           onRemove: () => widget.viewModel.setMusic(null, null),
         );
     }
-  }
-
-  Widget _buildPortraitAddBar(Slide slide) {
-    final canDelete = widget.viewModel.project.slides.length > 1;
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        border: Border(top: BorderSide(color: AppTheme.line)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          _AddChip(
-            label: '+ Photo',
-            onTap: () {
-              widget.viewModel.addPhotoLayer();
-              setState(() => _section = _EditSection.photo);
-            },
-          ),
-          const SizedBox(width: 6),
-          _AddChip(
-            label: '+ Title',
-            onTap: () {
-              widget.viewModel.addTextLayer(isSubtitle: false);
-              setState(() => _section = _EditSection.text);
-            },
-          ),
-          const SizedBox(width: 6),
-          _AddChip(
-            label: '+ Sub',
-            onTap: () {
-              widget.viewModel.addTextLayer(isSubtitle: true);
-              setState(() => _section = _EditSection.text);
-            },
-          ),
-          const Spacer(),
-          if (canDelete)
-            IconButton(
-              icon: const Icon(Icons.delete_outline,
-                  color: Color(0xFFE85D4A), size: 18),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              tooltip: 'Delete slide',
-              onPressed: widget.viewModel.deleteSelectedSlide,
-            ),
-        ],
-      ),
-    );
   }
 
   Widget _buildLandscapeLayout(BoxConstraints constraints, Slide slide) {
@@ -3156,37 +3110,3 @@ class _PlaceholderAction extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Compact add-layer chip used in the portrait add bar
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _AddChip extends StatelessWidget {
-  const _AddChip({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppTheme.surface2,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppTheme.line),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontFamily: AppTheme.fontTheme,
-            color: AppTheme.textDark,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
