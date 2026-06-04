@@ -2656,7 +2656,9 @@ class _SlideThumbnail extends StatelessWidget {
                 Image.file(File(thumbPath),
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => const SizedBox.shrink()),
-              // Subtle dark gradient so the number stays readable
+              // Per-slide dim overlay
+              buildSlideDim(slide.dimDirection, slide.dimOpacity),
+              // Fixed subtle gradient so the number stays readable
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
