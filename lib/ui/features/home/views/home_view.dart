@@ -341,8 +341,6 @@ class _HomeViewState extends State<HomeView> {
             _buildStatCard(icon: Icons.movie_outlined, value: _viewModel.projectCount.toString(), label: 'Films'),
             const SizedBox(width: 12),
             _buildStatCard(icon: Icons.photo_library_outlined, value: _viewModel.totalSlides.toString(), label: 'Slides'),
-            const SizedBox(width: 12),
-            _buildStatCard(icon: Icons.favorite_outline, value: 'Wedding', label: 'Theme'),
           ],
         );
       },
