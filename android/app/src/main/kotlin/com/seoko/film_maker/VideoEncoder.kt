@@ -58,17 +58,24 @@ class VideoEncoder(
         val nv12 = rgbaToNV12(rgba)
         val pts  = frameIndex * frameDurationUs
 
-        val inputId = codec.dequeueInputBuffer(10_000L)
-        if (inputId >= 0) {
-            val buf = codec.getInputBuffer(inputId)!!
-            buf.clear()
-            buf.put(nv12)
-            codec.queueInputBuffer(inputId, 0, nv12.size, pts, 0)
+        // Keep trying until an input buffer is free, draining output in between
+        // so a momentarily-full pipeline never silently drops a frame.
+        while (true) {
+            val inputId = codec.dequeueInputBuffer(10_000L)
+            if (inputId >= 0) {
+                val buf = codec.getInputBuffer(inputId)!!
+                buf.clear()
+                buf.put(nv12)
+                codec.queueInputBuffer(inputId, 0, nv12.size, pts, 0)
+                break
+            }
+            drainEncoder(false)
         }
         drainEncoder(false)
     }
 
     fun finalize(musicPath: String?, outputName: String): String {
+        signalEndOfStream()
         drainEncoder(true)
         codec.stop()
         codec.release()
@@ -99,17 +106,41 @@ class VideoEncoder(
 
     // ── Encoder drain ────────────────────────────────────────────────────────
 
-    private fun drainEncoder(eos: Boolean) {
-        if (eos) codec.signalEndOfInputStream()
+    /**
+     * Signals end-of-stream for a byte-buffer-input encoder by queuing an empty
+     * input buffer flagged with [MediaCodec.BUFFER_FLAG_END_OF_STREAM].
+     * (signalEndOfInputStream() is only valid for Surface-input encoders.)
+     */
+    private fun signalEndOfStream() {
         while (true) {
-            val outId = codec.dequeueOutputBuffer(bufInfo, 0L)
+            val inputId = codec.dequeueInputBuffer(10_000L)
+            if (inputId >= 0) {
+                codec.queueInputBuffer(
+                    inputId, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM,
+                )
+                return
+            }
+        }
+    }
+
+    private fun drainEncoder(endOfStream: Boolean) {
+        val timeoutUs = if (endOfStream) 10_000L else 0L
+        while (true) {
+            val outId = codec.dequeueOutputBuffer(bufInfo, timeoutUs)
             when {
+                outId == MediaCodec.INFO_TRY_AGAIN_LATER -> {
+                    // No output yet. When flushing the final stream we must keep
+                    // waiting for the EOS buffer; otherwise we're done for now.
+                    if (!endOfStream) break
+                }
                 outId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
                     videoTrack = muxer.addTrack(codec.outputFormat)
                     muxer.start()
                     muxerStarted = true
                 }
-                outId < 0 -> break
+                outId < 0 -> {
+                    // Other negative codes (e.g. deprecated buffers-changed): ignore.
+                }
                 else -> {
                     val buf = codec.getOutputBuffer(outId)!!
                     if (bufInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
