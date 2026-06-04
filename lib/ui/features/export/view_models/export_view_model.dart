@@ -32,9 +32,9 @@ extension ExportResolutionX on ExportResolution {
       };
 
   int get bitrateBps => switch (this) {
-        ExportResolution.hd => 4_000_000,
-        ExportResolution.fullHd => 8_000_000,
-        ExportResolution.fourK => 20_000_000,
+        ExportResolution.hd => 4000000,
+        ExportResolution.fullHd => 8000000,
+        ExportResolution.fourK => 20000000,
       };
 }
 

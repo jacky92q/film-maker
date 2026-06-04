@@ -467,7 +467,6 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
 
   Widget _buildPortraitLayout(BoxConstraints constraints, Slide slide) {
     _isPortraitLayout = true;
-    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Column(
       children: [
         // Canvas — always present so widget identity is stable (avoids focus loss)
