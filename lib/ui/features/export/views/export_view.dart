@@ -24,7 +24,6 @@ class _ExportViewState extends State<ExportView> {
   OverlayEntry? _canvasOverlay;
   bool _cancelled = false;
 
-  // Dummy placeholder before the first slide is set.
   static final _kDummy = (const Slide(id: '_'), 0.0);
 
   @override
@@ -85,7 +84,6 @@ class _ExportViewState extends State<ExportView> {
     _renderNotifier.value = (project.slides.first, 0.0);
     _installCanvas();
 
-    // One frame so the canvas paints before we start capturing.
     await SchedulerBinding.instance.endOfFrame;
 
     try {
@@ -110,8 +108,8 @@ class _ExportViewState extends State<ExportView> {
       bitrateBps: res.bitrateBps,
     );
 
-    final totalFrames = project.slides
-        .fold<int>(0, (s, sl) => s + sl.durationSeconds * fps);
+    final totalFrames =
+        project.slides.fold<int>(0, (s, sl) => s + sl.durationSeconds * fps);
 
     int done = 0;
 
@@ -128,7 +126,9 @@ class _ExportViewState extends State<ExportView> {
 
         final boundary = _captureKey.currentContext?.findRenderObject()
             as RenderRepaintBoundary?;
-        if (boundary == null) throw Exception('Render boundary lost during export.');
+        if (boundary == null) {
+          throw Exception('Render boundary lost during export.');
+        }
 
         final image = await boundary.toImage(pixelRatio: res.pixelRatio);
         final byteData =
@@ -137,10 +137,11 @@ class _ExportViewState extends State<ExportView> {
 
         if (byteData == null) throw Exception('Failed to capture frame $f.');
 
-        // 70 % budget for capture, 30 % for native finalize
         await service.addFrame(byteData.buffer.asUint8List());
         done++;
-        if (mounted) widget.viewModel.updateProgress(done / totalFrames * 0.7);
+        if (mounted) {
+          widget.viewModel.updateProgress(done / totalFrames * 0.7);
+        }
       }
     }
 
@@ -151,8 +152,7 @@ class _ExportViewState extends State<ExportView> {
 
     if (mounted) widget.viewModel.updateProgress(0.85);
 
-    final safeTitle =
-        project.title.replaceAll(RegExp(r'[^\w가-힣]+'), '_');
+    final safeTitle = project.title.replaceAll(RegExp(r'[^\w가-힣]+'), '_');
 
     final path = await service.finalize(
       musicPath: project.musicPath,
@@ -167,29 +167,30 @@ class _ExportViewState extends State<ExportView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.bg,
       appBar: AppBar(
-        title: Text(
-          'Export Film',
-          style: TextStyle(
-              fontFamily: AppTheme.fontTheme, color: AppTheme.cream),
-        ),
+        title: const Text('Export Film'),
+        backgroundColor: AppTheme.bg,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: AppTheme.textDark,
       ),
       body: ListenableBuilder(
         listenable: widget.viewModel,
         builder: (context, _) {
+          if (widget.viewModel.isExporting) {
+            return _buildExportingScreen();
+          }
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSummary(),
-                const SizedBox(height: 28),
+                _buildSummaryCard(),
+                const SizedBox(height: 24),
                 if (widget.viewModel.status == ExportStatus.idle) ...[
                   _buildResolutionPicker(),
                   const SizedBox(height: 32),
-                  _buildExportButton(context),
-                ] else if (widget.viewModel.isExporting) ...[
-                  _buildExporting(),
+                  _buildExportButton(),
                 ] else if (widget.viewModel.isDone) ...[
                   _buildDone(context),
                 ] else if (widget.viewModel.status == ExportStatus.error) ...[
@@ -203,55 +204,92 @@ class _ExportViewState extends State<ExportView> {
     );
   }
 
-  Widget _buildSummary() {
+  // ── Summary card ──────────────────────────────────────────────────────────
+
+  Widget _buildSummaryCard() {
     final project = widget.viewModel.project;
     final dur = project.totalDurationSeconds;
-    final durStr = dur >= 60
-        ? '${dur ~/ 60}m ${dur % 60}s'
-        : '${dur}s';
+    final durStr = dur >= 60 ? '${dur ~/ 60}m ${dur % 60}s' : '${dur}s';
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.darkSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.border),
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.line),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.movie_creation_outlined,
-                  color: AppTheme.gold, size: 22),
-              const SizedBox(width: 10),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.movie_creation_outlined,
+                    color: AppTheme.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  project.title,
-                  style: TextStyle(
-                      fontFamily: AppTheme.fontTheme,
-                      color: AppTheme.cream,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      project.title,
+                      style: const TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.textDark,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Ready to export',
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.textMid,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          const Divider(color: AppTheme.border),
-          const SizedBox(height: 14),
-          Row(
+          const SizedBox(height: 16),
+          const Divider(color: AppTheme.line, height: 1),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              _Chip(icon: Icons.photo_library_outlined,
-                  label: '${project.slideCount} slides'),
-              const SizedBox(width: 10),
-              _Chip(icon: Icons.timer_outlined, label: durStr),
-              if (project.musicName != null) ...[
-                const SizedBox(width: 10),
-                _Chip(
-                    icon: Icons.music_note_outlined,
-                    label: project.musicName!),
-              ],
+              _InfoChip(
+                icon: Icons.photo_library_outlined,
+                label: '${project.slideCount} slides',
+              ),
+              _InfoChip(
+                icon: Icons.timer_outlined,
+                label: durStr,
+              ),
+              if (project.musicName != null)
+                _InfoChip(
+                  icon: Icons.music_note_outlined,
+                  label: project.musicName!,
+                ),
             ],
           ),
         ],
@@ -259,25 +297,31 @@ class _ExportViewState extends State<ExportView> {
     );
   }
 
+  // ── Resolution picker ─────────────────────────────────────────────────────
+
   Widget _buildResolutionPicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(width: 3, height: 18, color: AppTheme.gold),
-            const SizedBox(width: 10),
-            Text(
-              'Output Quality',
-              style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.cream,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600),
-            ),
-          ],
+        const Text(
+          'Output Quality',
+          style: TextStyle(
+            fontFamily: AppTheme.fontTheme,
+            color: AppTheme.textDark,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 4),
+        const Text(
+          'Choose the resolution for your exported video',
+          style: TextStyle(
+            fontFamily: AppTheme.fontTheme,
+            color: AppTheme.textMid,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 14),
         ...ExportResolution.values.map((res) {
           final selected = widget.viewModel.resolution == res;
           return Padding(
@@ -285,39 +329,46 @@ class _ExportViewState extends State<ExportView> {
             child: GestureDetector(
               onTap: () => widget.viewModel.setResolution(res),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: selected
-                      ? AppTheme.gold.withValues(alpha: 0.1)
-                      : AppTheme.darkSurface,
+                      ? AppTheme.primary.withValues(alpha: 0.07)
+                      : AppTheme.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: selected ? AppTheme.gold : AppTheme.border,
+                    color: selected ? AppTheme.primary : AppTheme.line,
                     width: selected ? 1.5 : 1,
                   ),
+                  boxShadow: selected
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                 ),
                 child: Row(
                   children: [
                     AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 20,
-                      height: 20,
+                      duration: const Duration(milliseconds: 180),
+                      width: 22,
+                      height: 22,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: selected
-                              ? AppTheme.gold
-                              : AppTheme.subtleText,
+                              ? AppTheme.primary
+                              : AppTheme.textMid.withValues(alpha: 0.4),
                           width: 2,
                         ),
-                        color: selected
-                            ? AppTheme.gold
-                            : Colors.transparent,
+                        color: selected ? AppTheme.primary : Colors.transparent,
                       ),
                       child: selected
                           ? const Icon(Icons.check,
-                              color: AppTheme.darkBg, size: 12)
+                              color: Colors.white, size: 12)
                           : null,
                     ),
                     const SizedBox(width: 14),
@@ -328,19 +379,22 @@ class _ExportViewState extends State<ExportView> {
                           Text(
                             res.label,
                             style: TextStyle(
-                                fontFamily: AppTheme.fontTheme,
-                                color: AppTheme.cream,
-                                fontSize: 15,
-                                fontWeight: selected
-                                    ? FontWeight.w700
-                                    : FontWeight.w400),
+                              fontFamily: AppTheme.fontTheme,
+                              color: AppTheme.textDark,
+                              fontSize: 15,
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
                           ),
+                          const SizedBox(height: 2),
                           Text(
                             _resDesc(res),
-                            style: TextStyle(
-                                fontFamily: AppTheme.fontTheme,
-                                color: AppTheme.subtleText,
-                                fontSize: 12),
+                            style: const TextStyle(
+                              fontFamily: AppTheme.fontTheme,
+                              color: AppTheme.textMid,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -350,15 +404,17 @@ class _ExportViewState extends State<ExportView> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppTheme.gold.withValues(alpha: 0.2),
+                          color: AppTheme.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Recommended',
                           style: TextStyle(
-                              fontFamily: AppTheme.fontTheme,
-                              color: AppTheme.gold,
-                              fontSize: 10),
+                            fontFamily: AppTheme.fontTheme,
+                            color: AppTheme.primary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                   ],
@@ -377,7 +433,9 @@ class _ExportViewState extends State<ExportView> {
         ExportResolution.fourK => 'Best for cinema-quality output',
       };
 
-  Widget _buildExportButton(BuildContext context) {
+  // ── Export button ─────────────────────────────────────────────────────────
+
+  Widget _buildExportButton() {
     return Column(
       children: [
         SizedBox(
@@ -389,90 +447,130 @@ class _ExportViewState extends State<ExportView> {
             onPressed: widget.viewModel.startExport,
           ),
         ),
-        const SizedBox(height: 12),
-        Text(
-          'The video will be saved to your device',
-          style: TextStyle(
-              fontFamily: AppTheme.fontTheme,
-              color: AppTheme.subtleText,
-              fontSize: 12),
-          textAlign: TextAlign.center,
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.save_alt_outlined,
+                size: 13, color: AppTheme.textMid.withValues(alpha: 0.7)),
+            const SizedBox(width: 5),
+            Text(
+              'Video will be saved to your device gallery',
+              style: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                color: AppTheme.textMid.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildExporting() {
+  // ── Exporting (full-screen progress) ─────────────────────────────────────
+
+  Widget _buildExportingScreen() {
     final pct = (widget.viewModel.progress * 100).round();
     final phase = _phaseLabel(widget.viewModel.progress);
-    return Column(
-      children: [
-        const SizedBox(height: 24),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 120,
-              height: 120,
-              child: CircularProgressIndicator(
-                value: widget.viewModel.progress,
-                strokeWidth: 6,
-                backgroundColor: AppTheme.border,
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(AppTheme.gold),
+
+    return Container(
+      color: AppTheme.bg,
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Animated ring progress
+          SizedBox(
+            width: 148,
+            height: 148,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox.expand(
+                  child: CircularProgressIndicator(
+                    value: widget.viewModel.progress,
+                    strokeWidth: 7,
+                    backgroundColor: AppTheme.line,
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                    strokeCap: StrokeCap.round,
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$pct%',
+                      style: const TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.textDark,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'done',
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.textMid.withValues(alpha: 0.7),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 36),
+          const Text(
+            'Rendering your wedding film',
+            style: TextStyle(
+              fontFamily: AppTheme.fontTheme,
+              color: AppTheme.textDark,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            phase,
+            style: const TextStyle(
+              fontFamily: AppTheme.fontTheme,
+              color: AppTheme.textMid,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 32),
+          // Linear progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: widget.viewModel.progress,
+              minHeight: 8,
+              backgroundColor: AppTheme.line,
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+            ),
+          ),
+          const SizedBox(height: 32),
+          // Cancel
+          TextButton(
+            onPressed: () {
+              _cancelled = true;
+              widget.viewModel.reset();
+            },
+            style: TextButton.styleFrom(foregroundColor: AppTheme.textMid),
+            child: const Text(
+              'Cancel Export',
+              style: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                fontSize: 14,
               ),
             ),
-            Text(
-              '$pct%',
-              style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.cream,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Rendering your wedding film…',
-          style: TextStyle(
-              fontFamily: AppTheme.fontTheme,
-              color: AppTheme.cream,
-              fontSize: 18,
-              fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          phase,
-          style: TextStyle(
-              fontFamily: AppTheme.fontTheme,
-              color: AppTheme.subtleText,
-              fontSize: 13),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: widget.viewModel.progress,
-            minHeight: 6,
-            backgroundColor: AppTheme.border,
-            valueColor:
-                const AlwaysStoppedAnimation<Color>(AppTheme.gold),
           ),
-        ),
-        const SizedBox(height: 20),
-        TextButton(
-          onPressed: () {
-            _cancelled = true;
-            widget.viewModel.reset();
-          },
-          child: Text('Cancel',
-              style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.subtleText)),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -484,67 +582,75 @@ class _ExportViewState extends State<ExportView> {
     return 'Saving to gallery…';
   }
 
+  // ── Done ──────────────────────────────────────────────────────────────────
+
   Widget _buildDone(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 24),
+        const SizedBox(height: 8),
         Container(
-          width: 100,
-          height: 100,
+          width: 88,
+          height: 88,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppTheme.gold.withValues(alpha: 0.15),
+            color: AppTheme.primary.withValues(alpha: 0.12),
             border: Border.all(
-                color: AppTheme.gold.withValues(alpha: 0.4), width: 2),
+                color: AppTheme.primary.withValues(alpha: 0.35), width: 2),
           ),
-          child:
-              const Icon(Icons.check_rounded, color: AppTheme.gold, size: 52),
+          child: const Icon(Icons.check_rounded,
+              color: AppTheme.primary, size: 44),
         ),
         const SizedBox(height: 20),
-        Text(
+        const Text(
           'Export Complete!',
           style: TextStyle(
-              fontFamily: AppTheme.fontTheme,
-              color: AppTheme.cream,
-              fontSize: 24,
-              fontWeight: FontWeight.bold),
+            fontFamily: AppTheme.fontTheme,
+            color: AppTheme.textDark,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Your wedding film is ready',
+        const SizedBox(height: 6),
+        const Text(
+          'Your wedding film has been saved to your gallery',
           style: TextStyle(
-              fontFamily: AppTheme.fontTheme,
-              color: AppTheme.subtleText,
-              fontSize: 14),
+            fontFamily: AppTheme.fontTheme,
+            color: AppTheme.textMid,
+            fontSize: 13,
+          ),
+          textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 20),
-        if (widget.viewModel.outputPath != null)
+        if (widget.viewModel.outputPath != null) ...[
+          const SizedBox(height: 16),
           Container(
+            width: double.infinity,
             padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: AppTheme.darkSurface,
+              color: AppTheme.surface2,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.border),
+              border: Border.all(color: AppTheme.line),
             ),
             child: Row(
               children: [
                 const Icon(Icons.folder_outlined,
-                    color: AppTheme.gold, size: 18),
+                    color: AppTheme.primary, size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     widget.viewModel.outputPath!,
-                    style: TextStyle(
-                        fontFamily: AppTheme.fontTheme,
-                        color: AppTheme.subtleText,
-                        fontSize: 12),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.textMid,
+                      fontSize: 12,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
           ),
+        ],
         const SizedBox(height: 28),
         Row(
           children: [
@@ -554,10 +660,15 @@ class _ExportViewState extends State<ExportView> {
                 label: const Text('Share'),
                 onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Share: ${widget.viewModel.outputPath}',
-                        style: TextStyle(fontFamily: AppTheme.fontTheme)),
-                    backgroundColor: AppTheme.darkSurface,
+                    content: Text(
+                      'Share: ${widget.viewModel.outputPath}',
+                      style:
+                          const TextStyle(fontFamily: AppTheme.fontTheme),
+                    ),
+                    backgroundColor: AppTheme.textDark,
                     behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
@@ -565,7 +676,7 @@ class _ExportViewState extends State<ExportView> {
             const SizedBox(width: 12),
             Expanded(
               child: FilledButton.icon(
-                icon: const Icon(Icons.save_alt_outlined, size: 18),
+                icon: const Icon(Icons.check_circle_outline, size: 18),
                 label: const Text('Done'),
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -575,34 +686,63 @@ class _ExportViewState extends State<ExportView> {
         const SizedBox(height: 12),
         TextButton(
           onPressed: widget.viewModel.reset,
-          child: Text('Export Again',
-              style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.subtleText)),
+          style: TextButton.styleFrom(foregroundColor: AppTheme.textMid),
+          child: const Text(
+            'Export Again',
+            style: TextStyle(fontFamily: AppTheme.fontTheme, fontSize: 13),
+          ),
         ),
       ],
     );
   }
 
+  // ── Error ─────────────────────────────────────────────────────────────────
+
   Widget _buildError(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 32),
-        const Icon(Icons.error_outline,
-            color: Color(0xFFFF6B6B), size: 64),
         const SizedBox(height: 16),
-        Text(
-          widget.viewModel.error ?? 'Export failed',
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFFE85D4A).withValues(alpha: 0.1),
+            border: Border.all(
+                color: const Color(0xFFE85D4A).withValues(alpha: 0.3),
+                width: 2),
+          ),
+          child: const Icon(Icons.error_outline,
+              color: Color(0xFFE85D4A), size: 40),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Export Failed',
           style: TextStyle(
-              fontFamily: AppTheme.fontTheme,
-              color: AppTheme.cream,
-              fontSize: 16),
+            fontFamily: AppTheme.fontTheme,
+            color: AppTheme.textDark,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          widget.viewModel.error ?? 'An unexpected error occurred.',
+          style: const TextStyle(
+            fontFamily: AppTheme.fontTheme,
+            color: AppTheme.textMid,
+            fontSize: 13,
+          ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 24),
-        FilledButton(
-          onPressed: widget.viewModel.reset,
-          child: const Text('Try Again'),
+        const SizedBox(height: 28),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: FilledButton(
+            onPressed: widget.viewModel.reset,
+            child: const Text('Try Again'),
+          ),
         ),
       ],
     );
@@ -648,8 +788,8 @@ class _RenderCanvasState extends State<_RenderCanvas> {
 
 // ── Info chip ─────────────────────────────────────────────────────────────────
 
-class _Chip extends StatelessWidget {
-  const _Chip({required this.icon, required this.label});
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -657,22 +797,26 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.darkSurface2,
+        color: AppTheme.surface2,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.border),
+        border: Border.all(color: AppTheme.line),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: AppTheme.gold, size: 13),
+          Icon(icon, color: AppTheme.primary, size: 13),
           const SizedBox(width: 5),
-          Text(label,
-              style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.subtleText,
-                  fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: AppTheme.fontTheme,
+              color: AppTheme.textMid,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
