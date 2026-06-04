@@ -199,7 +199,7 @@ class _PreviewViewState extends State<PreviewView>
                 widget.viewModel.project.title,
                 style: const TextStyle(
                   fontFamily: AppTheme.fontTheme,
-                  color: AppTheme.gold,
+                  color: AppTheme.primary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.5,
@@ -240,10 +240,10 @@ class _PreviewViewState extends State<PreviewView>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.black.withValues(alpha: 0.45),
-                    border: Border.all(color: AppTheme.gold, width: 1.5),
+                    border: Border.all(color: AppTheme.primary, width: 1.5),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.gold.withValues(alpha: 0.3),
+                        color: AppTheme.primaryDark.withValues(alpha: 0.5),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
@@ -252,7 +252,7 @@ class _PreviewViewState extends State<PreviewView>
                   child: Icon(
                     isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                     size: 38,
-                    color: AppTheme.gold,
+                    color: AppTheme.primary,
                   ),
                 ),
               ),
@@ -348,7 +348,7 @@ class _PreviewViewState extends State<PreviewView>
       child: LinearProgressIndicator(
         value: widget.viewModel.progress,
         backgroundColor: Colors.white.withValues(alpha: 0.15),
-        valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.gold),
+        valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
         minHeight: 4,
       ),
     );
@@ -368,7 +368,7 @@ class _PreviewViewState extends State<PreviewView>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(2),
             color: isCurrent
-                ? AppTheme.gold
+                ? AppTheme.primary
                 : Colors.white.withValues(alpha: 0.35),
           ),
         );

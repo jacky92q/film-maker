@@ -2946,14 +2946,8 @@ class _SectionPill extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           margin: const EdgeInsets.symmetric(horizontal: 3),
           decoration: BoxDecoration(
-            color: active
-                ? AppTheme.primary.withValues(alpha: 0.12)
-                : Colors.transparent,
+            color: active ? AppTheme.primaryDark : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: active ? AppTheme.primary : Colors.transparent,
-              width: 1,
-            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -2962,7 +2956,7 @@ class _SectionPill extends StatelessWidget {
               Icon(
                 icon,
                 size: 13,
-                color: active ? AppTheme.primary : AppTheme.textMid,
+                color: active ? Colors.white : AppTheme.textMid,
               ),
               const SizedBox(width: 4),
               Text(
@@ -2971,7 +2965,7 @@ class _SectionPill extends StatelessWidget {
                   fontFamily: AppTheme.fontTheme,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: active ? AppTheme.primary : AppTheme.textMid,
+                  color: active ? Colors.white : AppTheme.textMid,
                 ),
               ),
               if (dotted && !active) ...[
