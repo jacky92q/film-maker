@@ -411,8 +411,7 @@ class _HomeViewState extends State<HomeView> {
             icon: Icons.video_library_outlined,
             title: 'My Films',
             subtitle: 'View & edit projects',
-            iconBg: AppTheme.primary.withValues(alpha: 0.1),
-            iconColor: AppTheme.primary,
+            cardColor: AppTheme.primary,
             onTap: _goToProjects,
           ),
         ),
@@ -422,8 +421,7 @@ class _HomeViewState extends State<HomeView> {
             icon: Icons.add_circle_outline,
             title: 'New Film',
             subtitle: 'Start a new story',
-            iconBg: const Color(0xFF1AA38C).withValues(alpha: 0.1),
-            iconColor: const Color(0xFF1AA38C),
+            cardColor: const Color(0xFF1AA38C),
             onTap: _showNewFilmDialog,
           ),
         ),
@@ -435,8 +433,7 @@ class _HomeViewState extends State<HomeView> {
     required IconData icon,
     required String title,
     required String subtitle,
-    required Color iconBg,
-    required Color iconColor,
+    required Color cardColor,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -444,14 +441,13 @@ class _HomeViewState extends State<HomeView> {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppTheme.surface,
+          color: cardColor,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppTheme.line),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: cardColor.withValues(alpha: 0.35),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -460,15 +456,18 @@ class _HomeViewState extends State<HomeView> {
           children: [
             Container(
               width: 44, height: 44,
-              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: iconColor, size: 22),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: Colors.white, size: 22),
             ),
             const SizedBox(height: 14),
             Text(
               title,
               style: const TextStyle(
                 fontFamily: AppTheme.fontTheme,
-                color: AppTheme.textDark,
+                color: Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
               ),
@@ -476,7 +475,11 @@ class _HomeViewState extends State<HomeView> {
             const SizedBox(height: 3),
             Text(
               subtitle,
-              style: const TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textMid, fontSize: 11),
+              style: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 11,
+              ),
             ),
           ],
         ),
