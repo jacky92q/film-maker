@@ -12,3 +12,5 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Exception: project-owned release keystore (personal app, stable SHA-1 needed)
+!app/release.keystore
