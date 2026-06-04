@@ -2,6 +2,52 @@ import 'dart:math' as math;
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:flutter/material.dart';
 
+/// Returns a dim/gradient overlay widget driven by the slide's dimDirection
+/// and dimOpacity. Returns SizedBox.shrink() when dimDirection is none.
+Widget buildSlideDim(DimDirection direction, double opacity) {
+  if (direction == DimDirection.none || opacity == 0) {
+    return const SizedBox.shrink();
+  }
+  final dark = Colors.black.withValues(alpha: opacity.clamp(0.0, 1.0));
+  final clear = Colors.transparent;
+
+  if (direction == DimDirection.radial) {
+    return IgnorePointer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 1.2,
+            colors: [clear, dark],
+            stops: const [0.4, 1.0],
+          ),
+        ),
+      ),
+    );
+  }
+
+  final (begin, end) = switch (direction) {
+    DimDirection.bottom => (Alignment.topCenter,    Alignment.bottomCenter),
+    DimDirection.top    => (Alignment.bottomCenter, Alignment.topCenter),
+    DimDirection.left   => (Alignment.centerRight,  Alignment.centerLeft),
+    DimDirection.right  => (Alignment.centerLeft,   Alignment.centerRight),
+    _                   => (Alignment.topCenter,    Alignment.bottomCenter),
+  };
+
+  return IgnorePointer(
+    child: Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: begin,
+          end: end,
+          colors: [clear, dark],
+          stops: const [0.35, 1.0],
+        ),
+      ),
+    ),
+  );
+}
+
 /// Returns an IgnorePointer overlay widget for the given [overlay] type,
 /// or an empty SizedBox for [SlideOverlay.none].
 Widget buildSlideOverlay(SlideOverlay overlay) {

@@ -944,7 +944,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
           clipBehavior: Clip.none,
           children: [
             background,
-            _gradientOverlay(),
+            buildSlideDim(slide.dimDirection, slide.dimOpacity),
             buildSlideOverlay(slide.overlay),
             ..._buildSortedLayers(slide, canonicalW, canonicalH, selectedLayerId),
             if (hasPhoto && selectedLayerId == null)
@@ -995,21 +995,6 @@ class _SlideCanvasState extends State<_SlideCanvas> {
     );
   }
 
-  Widget _gradientOverlay() => IgnorePointer(
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black.withValues(alpha: 0.45)
-              ],
-              stops: const [0.4, 1.0],
-            ),
-          ),
-        ),
-      );
 }
 
 class _LayerWidget extends StatelessWidget {
@@ -2007,6 +1992,69 @@ class _SlideTabs extends StatelessWidget {
             current: slide.backgroundColor,
             onSelect: (c) => viewModel.updateSelectedSlide(slide.copyWith(backgroundColor: c)),
           ),
+            // ── Dim / Gradient ──────────────────────────────────────────
+          const SizedBox(height: 12),
+          const _SectionHeader('Dim'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: DimDirection.values.map((dir) {
+              final sel = slide.dimDirection == dir;
+              return GestureDetector(
+                onTap: () => viewModel.updateSelectedSlide(
+                    slide.copyWith(dimDirection: dir)),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: sel ? AppTheme.primaryDark : AppTheme.surface2,
+                    border: Border.all(
+                        color: sel ? AppTheme.primaryDark : AppTheme.line,
+                        width: 1),
+                  ),
+                  child: Text(
+                    dir.label,
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: sel ? Colors.white : AppTheme.textMid,
+                      fontSize: 12,
+                      fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          if (slide.dimDirection != DimDirection.none) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.brightness_low, color: AppTheme.textMid, size: 16),
+                Expanded(
+                  child: Slider(
+                    value: slide.dimOpacity.clamp(0.0, 1.0),
+                    min: 0.0,
+                    max: 1.0,
+                    divisions: 20,
+                    onChanged: (v) => viewModel.updateSelectedSlide(
+                        slide.copyWith(dimOpacity: v)),
+                  ),
+                ),
+                const Icon(Icons.brightness_high, color: AppTheme.textMid, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  '${(slide.dimOpacity * 100).round()}%',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    color: AppTheme.textMid,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (slide.imagePath != null) ...[
             const SizedBox(height: 12),
             Row(

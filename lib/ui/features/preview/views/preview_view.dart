@@ -382,19 +382,6 @@ class _PreviewViewState extends State<PreviewView>
 // Each layer widget has its own AnimationController for independent animations.
 // ─────────────────────────────────────────────────────────────────────────────
 
-Widget _gradientOverlay() => IgnorePointer(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.5)],
-            stops: const [0.3, 1.0],
-          ),
-        ),
-      ),
-    );
-
 Duration _durForAnim(SlideContentAnimation a) => switch (a) {
   SlideContentAnimation.none        => const Duration(milliseconds: 100),
   SlideContentAnimation.typewriter  => const Duration(milliseconds: 2800),
@@ -496,7 +483,7 @@ class _AnimatedSlideCanvas extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   _SlidePhotoLayer(slide: slide, kenBurnsController: kenBurnsController, isActive: isActive, isPlaying: isPlaying),
-                  _gradientOverlay(),
+                  buildSlideDim(slide.dimDirection, slide.dimOpacity),
                   buildSlideOverlay(slide.overlay),
                   ..._buildLayers(),
                 ],
