@@ -459,20 +459,19 @@ class _EditorViewState extends State<EditorView> {
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Column(
       children: [
-        // Canvas — hide when keyboard is open to give more room to editing
-        if (!keyboardOpen)
-          ColoredBox(
-            color: const Color(0xFF1C1C1C),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: _SlideCanvas(viewModel: widget.viewModel),
-            ),
+        // Canvas — always present so widget identity is stable (avoids focus loss)
+        ColoredBox(
+          color: const Color(0xFF1C1C1C),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: _SlideCanvas(viewModel: widget.viewModel),
           ),
+        ),
         // Section selector — switches edit context without any overlay/dim
         _buildSectionTabBar(slide),
         // Edit panel — always inline, always visible alongside canvas
         Expanded(child: _buildSectionContent(slide)),
-        // Timeline strip — hidden when keyboard is open
+        // Timeline strip — hidden when keyboard is open to free up space
         if (!keyboardOpen) _buildTimeline(height: 108),
       ],
     );
