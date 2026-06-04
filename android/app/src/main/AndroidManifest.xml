@@ -46,4 +46,9 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <!-- Video export: write MP4 to Movies/ on API < 29 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <!-- Read audio files for music muxing (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 </manifest>
