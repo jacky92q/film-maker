@@ -1,11 +1,11 @@
-import 'package:film_maker/data/services/mock_project_service.dart';
+import 'package:film_maker/data/services/project_service.dart';
 import 'package:film_maker/domain/models/project.dart';
 
 class ProjectRepository {
-  ProjectRepository({required MockProjectService projectService})
+  ProjectRepository({required ProjectService projectService})
       : _projectService = projectService;
 
-  final MockProjectService _projectService;
+  final ProjectService _projectService;
 
   Future<List<Project>> getProjects() => _projectService.fetchProjects();
 

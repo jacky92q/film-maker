@@ -361,6 +361,50 @@ extension SlideTemplateX on SlideTemplate {
 /// A single text element placed at a free (x, y) position on a slide.
 /// x/y are fractions: 0.0 = left/top edge, 1.0 = right/bottom edge.
 class TextLayer {
+  factory TextLayer.fromJson(Map<String, dynamic> j) => TextLayer(
+        id: j['id'] as String,
+        text: j['text'] as String,
+        isSubtitle: j['isSubtitle'] as bool? ?? false,
+        x: (j['x'] as num).toDouble(),
+        y: (j['y'] as num).toDouble(),
+        color: SlideTextColor.values.firstWhere((e) => e.name == j['color'],
+            orElse: () => SlideTextColor.white),
+        barColor: SlideTextColor.values.firstWhere(
+            (e) => e.name == j['barColor'],
+            orElse: () => SlideTextColor.gold),
+        fontSize: (j['fontSize'] as num).toDouble(),
+        rotation: (j['rotation'] as num? ?? 0).toDouble(),
+        fontStyle: SlideFontStyle.values.firstWhere(
+            (e) => e.name == j['fontStyle'],
+            orElse: () => SlideFontStyle.serif),
+        textBg: SlideTextBg.values.firstWhere((e) => e.name == j['textBg'],
+            orElse: () => SlideTextBg.none),
+        strokeWidth: (j['strokeWidth'] as num? ?? 0).toDouble(),
+        letterSpacing: (j['letterSpacing'] as num? ?? 0).toDouble(),
+        zOrder: j['zOrder'] as int? ?? 0,
+        contentAnimation: SlideContentAnimation.values.firstWhere(
+            (e) => e.name == j['contentAnimation'],
+            orElse: () => SlideContentAnimation.none),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'text': text,
+        'isSubtitle': isSubtitle,
+        'x': x,
+        'y': y,
+        'color': color.name,
+        'barColor': barColor.name,
+        'fontSize': fontSize,
+        'rotation': rotation,
+        'fontStyle': fontStyle.name,
+        'textBg': textBg.name,
+        'strokeWidth': strokeWidth,
+        'letterSpacing': letterSpacing,
+        'zOrder': zOrder,
+        'contentAnimation': contentAnimation.name,
+      };
+
   const TextLayer({
     required this.id,
     required this.text,
@@ -432,6 +476,49 @@ class TextLayer {
 }
 
 class PhotoLayer {
+  factory PhotoLayer.fromJson(Map<String, dynamic> j) => PhotoLayer(
+        id: j['id'] as String,
+        imagePath: j['imagePath'] as String?,
+        x: (j['x'] as num).toDouble(),
+        y: (j['y'] as num).toDouble(),
+        widthFraction: (j['widthFraction'] as num).toDouble(),
+        heightFraction: (j['heightFraction'] as num).toDouble(),
+        rotation: (j['rotation'] as num? ?? 0).toDouble(),
+        shape: PhotoShape.values.firstWhere((e) => e.name == j['shape'],
+            orElse: () => PhotoShape.none),
+        frame: PhotoFrame.values.firstWhere((e) => e.name == j['frame'],
+            orElse: () => PhotoFrame.none),
+        filter: PhotoFilter.values.firstWhere((e) => e.name == j['filter'],
+            orElse: () => PhotoFilter.none),
+        frameWidth: (j['frameWidth'] as num? ?? 16.0).toDouble(),
+        cropScale: (j['cropScale'] as num? ?? 1.0).toDouble(),
+        cropOffsetX: (j['cropOffsetX'] as num? ?? 0).toDouble(),
+        cropOffsetY: (j['cropOffsetY'] as num? ?? 0).toDouble(),
+        zOrder: j['zOrder'] as int? ?? 0,
+        contentAnimation: SlideContentAnimation.values.firstWhere(
+            (e) => e.name == j['contentAnimation'],
+            orElse: () => SlideContentAnimation.none),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'imagePath': imagePath,
+        'x': x,
+        'y': y,
+        'widthFraction': widthFraction,
+        'heightFraction': heightFraction,
+        'rotation': rotation,
+        'shape': shape.name,
+        'frame': frame.name,
+        'filter': filter.name,
+        'frameWidth': frameWidth,
+        'cropScale': cropScale,
+        'cropOffsetX': cropOffsetX,
+        'cropOffsetY': cropOffsetY,
+        'zOrder': zOrder,
+        'contentAnimation': contentAnimation.name,
+      };
+
   PhotoLayer({
     required this.id,
     this.imagePath,
@@ -555,6 +642,71 @@ class SlideDefaults {
 }
 
 class Slide {
+  factory Slide.fromJson(Map<String, dynamic> j) => Slide(
+        id: j['id'] as String,
+        imagePath: j['imagePath'] as String?,
+        imagePath2: j['imagePath2'] as String?,
+        imagePath3: j['imagePath3'] as String?,
+        textLayers: (j['textLayers'] as List? ?? [])
+            .map((e) => TextLayer.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        photoLayers: (j['photoLayers'] as List? ?? [])
+            .map((e) => PhotoLayer.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        transition: TransitionEffect.values.firstWhere(
+            (e) => e.name == j['transition'],
+            orElse: () => TransitionEffect.fade),
+        durationSeconds: j['durationSeconds'] as int? ?? 4,
+        photoFilter: PhotoFilter.values.firstWhere(
+            (e) => e.name == j['photoFilter'],
+            orElse: () => PhotoFilter.none),
+        photoScale: (j['photoScale'] as num? ?? 1.0).toDouble(),
+        photoOffsetX: (j['photoOffsetX'] as num? ?? 0).toDouble(),
+        photoOffsetY: (j['photoOffsetY'] as num? ?? 0).toDouble(),
+        backgroundColor: j['backgroundColor'] as int? ?? 0xFF000000,
+        overlay: SlideOverlay.values.firstWhere(
+            (e) => e.name == j['overlay'],
+            orElse: () => SlideOverlay.none),
+        photoShape: PhotoShape.values.firstWhere(
+            (e) => e.name == j['photoShape'],
+            orElse: () => PhotoShape.none),
+        photoFrame: PhotoFrame.values.firstWhere(
+            (e) => e.name == j['photoFrame'],
+            orElse: () => PhotoFrame.none),
+        layout: SlideLayout.values.firstWhere((e) => e.name == j['layout'],
+            orElse: () => SlideLayout.single),
+        contentAnimation: SlideContentAnimation.values.firstWhere(
+            (e) => e.name == j['contentAnimation'],
+            orElse: () => SlideContentAnimation.none),
+        dimDirection: DimDirection.values.firstWhere(
+            (e) => e.name == j['dimDirection'],
+            orElse: () => DimDirection.none),
+        dimOpacity: (j['dimOpacity'] as num? ?? 0.5).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'imagePath': imagePath,
+        'imagePath2': imagePath2,
+        'imagePath3': imagePath3,
+        'textLayers': textLayers.map((e) => e.toJson()).toList(),
+        'photoLayers': photoLayers.map((e) => e.toJson()).toList(),
+        'transition': transition.name,
+        'durationSeconds': durationSeconds,
+        'photoFilter': photoFilter.name,
+        'photoScale': photoScale,
+        'photoOffsetX': photoOffsetX,
+        'photoOffsetY': photoOffsetY,
+        'backgroundColor': backgroundColor,
+        'overlay': overlay.name,
+        'photoShape': photoShape.name,
+        'photoFrame': photoFrame.name,
+        'layout': layout.name,
+        'contentAnimation': contentAnimation.name,
+        'dimDirection': dimDirection.name,
+        'dimOpacity': dimOpacity,
+      };
+
   const Slide({
     required this.id,
     this.imagePath,

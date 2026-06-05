@@ -1,7 +1,7 @@
 import 'package:film_maker/data/repositories/auth_repository.dart';
 import 'package:film_maker/data/repositories/project_repository.dart';
 import 'package:film_maker/data/services/firebase_auth_service.dart';
-import 'package:film_maker/data/services/mock_project_service.dart';
+import 'package:film_maker/data/services/local_project_service.dart';
 import 'package:film_maker/domain/models/user.dart';
 import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
@@ -39,7 +39,7 @@ class _FilmMakerAppState extends State<FilmMakerApp> {
   Widget build(BuildContext context) {
     final authRepository = AuthRepository(authService: FirebaseAuthService());
     final projectRepository =
-        ProjectRepository(projectService: MockProjectService());
+        ProjectRepository(projectService: LocalProjectService());
 
     return ChangeNotifierProvider<LocaleController>.value(
       value: _localeController,

@@ -1,8 +1,9 @@
+import 'package:film_maker/data/services/project_service.dart';
 import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:uuid/uuid.dart';
 
-class MockProjectService {
+class MockProjectService implements ProjectService {
   final _uuid = const Uuid();
 
   final List<Project> _projects = [];
