@@ -1,22 +1,12 @@
 import 'dart:ui' as ui;
 
 import 'package:film_maker/data/services/video_export_service.dart';
-import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/film_canvas.dart';
 import 'package:film_maker/ui/features/export/view_models/export_view_model.dart';
-import 'package:film_maker/ui/features/export/widgets/export_canvas.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
-
-// Per-frame state passed to the off-screen render canvas.
-typedef _CanvasFrame = ({
-  Slide slide,
-  double slideTime,
-  Slide? prevSlide,
-  double prevSlideTime,
-  double transitionProgress,
-});
 
 class ExportView extends StatefulWidget {
   const ExportView({super.key, required this.viewModel});
@@ -27,19 +17,25 @@ class ExportView extends StatefulWidget {
   State<ExportView> createState() => _ExportViewState();
 }
 
-class _ExportViewState extends State<ExportView> {
-  final _captureKey = GlobalKey();
-  final _renderNotifier = ValueNotifier<_CanvasFrame>(_kDummyFrame);
+class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
+  // ── Capture state ─────────────────────────────────────────────────────────
+  final _captureKey    = GlobalKey();
+  final _filmController = FilmCanvasController();
   OverlayEntry? _canvasOverlay;
-  bool _cancelled = false;
 
-  static final _kDummyFrame = (
-    slide: const Slide(id: '_'),
-    slideTime: 0.0,
-    prevSlide: null as Slide?,
-    prevSlideTime: 0.0,
-    transitionProgress: 0.0,
-  );
+  Ticker?            _exportTicker;
+  VideoExportService? _exportService;
+
+  bool _cancelled  = false;
+  bool _filmDone   = false;
+  bool _finalizing = false;
+  bool _capturing  = false;
+
+  int _lastCapturedFrame = -1;
+  int _totalFrames       = 0;
+  int _doneFrames        = 0;
+
+  static const _fps = 30;
 
   @override
   void initState() {
@@ -50,8 +46,10 @@ class _ExportViewState extends State<ExportView> {
   @override
   void dispose() {
     widget.viewModel.removeListener(_onVmChange);
+    _exportTicker?.stop();
+    _exportService?.cancelExport();
     _canvasOverlay?.remove();
-    _renderNotifier.dispose();
+    _filmController.dispose();
     super.dispose();
   }
 
@@ -61,19 +59,24 @@ class _ExportViewState extends State<ExportView> {
     }
   }
 
-  // ── Off-screen canvas overlay ─────────────────────────────────────────────
+  // ── Off-screen canvas ─────────────────────────────────────────────────────
 
   void _installCanvas() {
     _canvasOverlay = OverlayEntry(
       builder: (_) => Positioned(
         left: -99999,
         top: -99999,
-        width: ExportCanvas.kWidth,
-        height: ExportCanvas.kHeight,
+        width: FilmCanvas.kWidth,
+        height: FilmCanvas.kHeight,
         child: Material(
-          child: _RenderCanvas(
-            captureKey: _captureKey,
-            notifier: _renderNotifier,
+          child: RepaintBoundary(
+            key: _captureKey,
+            child: FilmCanvas(
+              project: widget.viewModel.project,
+              controller: _filmController,
+              autoPlay: false,
+              onComplete: _onFilmComplete,
+            ),
           ),
         ),
       ),
@@ -86,121 +89,131 @@ class _ExportViewState extends State<ExportView> {
     _canvasOverlay = null;
   }
 
-  // ── Export loop ───────────────────────────────────────────────────────────
-
-  // Transition between slides: 0.6 s = 18 frames at 30 fps.
-  static const _kTransitionSec = 0.6;
+  // ── Export entry point ────────────────────────────────────────────────────
 
   Future<void> _startExport() async {
-    _cancelled = false;
+    _cancelled  = false;
+    _filmDone   = false;
+    _finalizing = false;
+    _capturing  = false;
+    _lastCapturedFrame = -1;
+    _doneFrames        = 0;
+
     final project = widget.viewModel.project;
     if (project.slides.isEmpty) {
       widget.viewModel.failExport('No slides to export.');
       return;
     }
 
-    _renderNotifier.value = _kDummyFrame;
-    _installCanvas();
-
-    await SchedulerBinding.instance.endOfFrame;
+    _totalFrames = project.slides.fold<int>(
+      0, (s, sl) => s + sl.durationSeconds * _fps,
+    );
 
     try {
-      await _runExportLoop();
+      final res = widget.viewModel.resolution;
+      _exportService = VideoExportService();
+      await _exportService!.startEncoder(
+        width: res.width,
+        height: res.height,
+        fps: _fps,
+        bitrateBps: res.bitrateBps,
+      );
+
+      _installCanvas();
+      await SchedulerBinding.instance.endOfFrame; // one render pass
+
+      _filmController.play();
+      _exportTicker = createTicker(_onExportTick);
+      _exportTicker!.start();
     } catch (e) {
-      if (mounted) widget.viewModel.failExport(e.toString());
-    } finally {
       _removeCanvas();
+      if (mounted) widget.viewModel.failExport(e.toString());
     }
   }
 
-  Future<void> _runExportLoop() async {
-    final project = widget.viewModel.project;
-    final res = widget.viewModel.resolution;
-    const fps = 30;
-    final transitionFrames = (_kTransitionSec * fps).round(); // 18 frames
+  // ── Ticker callback ───────────────────────────────────────────────────────
 
-    final service = VideoExportService();
-    await service.startEncoder(
-      width: res.width,
-      height: res.height,
-      fps: fps,
-      bitrateBps: res.bitrateBps,
-    );
-
-    final totalFrames =
-        project.slides.fold<int>(0, (s, sl) => s + sl.durationSeconds * fps);
-
-    int done = 0;
-
-    for (int i = 0; i < project.slides.length; i++) {
-      if (_cancelled) break;
-
-      final slide      = project.slides[i];
-      final slideFrames = slide.durationSeconds * fps;
-      final prevSlide  = i > 0 ? project.slides[i - 1] : null;
-      // Render the previous slide at its final time during the transition.
-      final prevEndTime = prevSlide?.durationSeconds.toDouble() ?? 0.0;
-      // Number of transition frames at the START of this slide (0 for first).
-      final tFrames = prevSlide != null
-          ? transitionFrames.clamp(0, slideFrames)
-          : 0;
-
-      for (int f = 0; f < slideFrames; f++) {
-        if (_cancelled) break;
-
-        final t = f / fps.toDouble();
-
-        // Is this frame inside the cross-slide transition zone?
-        final transP = (f < tFrames && tFrames > 0)
-            ? f / tFrames.toDouble()
-            : 0.0;
-
-        _renderNotifier.value = (
-          slide: slide,
-          slideTime: t,
-          prevSlide: transP > 0 ? prevSlide : null,
-          prevSlideTime: prevEndTime,
-          transitionProgress: transP,
-        );
-
-        await SchedulerBinding.instance.endOfFrame;
-
-        final boundary = _captureKey.currentContext?.findRenderObject()
-            as RenderRepaintBoundary?;
-        if (boundary == null) {
-          throw Exception('Render boundary lost during export.');
-        }
-
-        final image = await boundary.toImage(pixelRatio: res.pixelRatio);
-        final byteData =
-            await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-        image.dispose();
-
-        if (byteData == null) throw Exception('Failed to capture frame $f.');
-
-        await service.addFrame(byteData.buffer.asUint8List());
-        done++;
-        if (mounted) {
-          widget.viewModel.updateProgress(done / totalFrames * 0.7);
-        }
-      }
-    }
-
+  void _onExportTick(Duration elapsed) {
     if (_cancelled) {
-      await service.cancelExport();
+      _exportTicker?.stop();
       return;
     }
 
-    if (mounted) widget.viewModel.updateProgress(0.85);
+    if (_filmDone && !_capturing && !_finalizing) {
+      _exportTicker?.stop();
+      _exportTicker = null;
+      _finalizing = true;
+      _doFinalize();
+      return;
+    }
 
-    final safeTitle = project.title.replaceAll(RegExp(r'[^\w가-힣]+'), '_');
+    if (_capturing || _filmDone) return;
 
-    final path = await service.finalize(
-      musicPath: project.musicPath,
-      outputName: safeTitle,
-    );
+    final targetFrame = (elapsed.inMicroseconds * _fps / 1e6).floor();
+    if (targetFrame <= _lastCapturedFrame) return;
 
-    if (mounted) widget.viewModel.completeExport(path);
+    _capturing = true;
+    _doCapture().then((_) {
+      _lastCapturedFrame = targetFrame;
+      _doneFrames++;
+      _capturing = false;
+      if (mounted && _totalFrames > 0) {
+        widget.viewModel.updateProgress(_doneFrames / _totalFrames * 0.85);
+      }
+    }).catchError((Object e) {
+      _capturing = false;
+      if (!_cancelled && mounted) {
+        _cancelled = true;
+        _exportTicker?.stop();
+        _removeCanvas();
+        widget.viewModel.failExport(e.toString());
+      }
+    });
+  }
+
+  Future<void> _doCapture() async {
+    final boundary = _captureKey.currentContext?.findRenderObject()
+        as RenderRepaintBoundary?;
+    if (boundary == null) return;
+
+    final res = widget.viewModel.resolution;
+    final image = await boundary.toImage(pixelRatio: res.pixelRatio);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    image.dispose();
+
+    if (byteData != null) {
+      await _exportService!.addFrame(byteData.buffer.asUint8List());
+    }
+  }
+
+  void _onFilmComplete() => _filmDone = true;
+
+  Future<void> _doFinalize() async {
+    try {
+      if (mounted) widget.viewModel.updateProgress(0.9);
+      final project  = widget.viewModel.project;
+      final safeTitle = project.title.replaceAll(RegExp(r'[^\w가-힣]+'), '_');
+      final path = await _exportService!.finalize(
+        musicPath: project.musicPath,
+        outputName: safeTitle,
+      );
+      _exportService = null;
+      _removeCanvas();
+      if (mounted) widget.viewModel.completeExport(path);
+    } catch (e) {
+      _removeCanvas();
+      if (mounted) widget.viewModel.failExport(e.toString());
+    }
+  }
+
+  void _cancelExport() {
+    _cancelled = true;
+    _exportTicker?.stop();
+    _exportTicker = null;
+    _exportService?.cancelExport();
+    _exportService = null;
+    _removeCanvas();
+    widget.viewModel.reset();
   }
 
   // ── UI ────────────────────────────────────────────────────────────────────
@@ -218,9 +231,7 @@ class _ExportViewState extends State<ExportView> {
       body: ListenableBuilder(
         listenable: widget.viewModel,
         builder: (context, _) {
-          if (widget.viewModel.isExporting) {
-            return _buildExportingScreen();
-          }
+          if (widget.viewModel.isExporting) return _buildExportingScreen();
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
             child: Column(
@@ -249,8 +260,8 @@ class _ExportViewState extends State<ExportView> {
 
   Widget _buildSummaryCard() {
     final project = widget.viewModel.project;
-    final dur = project.totalDurationSeconds;
-    final durStr = dur >= 60 ? '${dur ~/ 60}m ${dur % 60}s' : '${dur}s';
+    final dur     = project.totalDurationSeconds;
+    final durStr  = dur >= 60 ? '${dur ~/ 60}m ${dur % 60}s' : '${dur}s';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -405,7 +416,8 @@ class _ExportViewState extends State<ExportView> {
                               : AppTheme.textMid.withValues(alpha: 0.4),
                           width: 2,
                         ),
-                        color: selected ? AppTheme.primary : Colors.transparent,
+                        color:
+                            selected ? AppTheme.primary : Colors.transparent,
                       ),
                       child: selected
                           ? const Icon(Icons.check,
@@ -469,14 +481,15 @@ class _ExportViewState extends State<ExportView> {
   }
 
   String _resDesc(ExportResolution res) => switch (res) {
-        ExportResolution.hd => 'Good for sharing on mobile',
+        ExportResolution.hd     => 'Good for sharing on mobile',
         ExportResolution.fullHd => 'Great for TV and displays',
-        ExportResolution.fourK => 'Best for cinema-quality output',
+        ExportResolution.fourK  => 'Best for cinema-quality output',
       };
 
   // ── Export button ─────────────────────────────────────────────────────────
 
   Widget _buildExportButton() {
+    final totalSec = widget.viewModel.project.totalDurationSeconds;
     return Column(
       children: [
         SizedBox(
@@ -488,12 +501,41 @@ class _ExportViewState extends State<ExportView> {
             onPressed: widget.viewModel.startExport,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppTheme.primary.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: AppTheme.primary.withValues(alpha: 0.18)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.schedule_outlined,
+                  color: AppTheme.primary, size: 16),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '예상 소요 시간: 약 ${totalSec}초\n실시간 렌더링으로 영상 재생 시간과 동일합니다.',
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    color: AppTheme.textMid,
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.save_alt_outlined,
-                size: 13, color: AppTheme.textMid.withValues(alpha: 0.7)),
+                size: 13,
+                color: AppTheme.textMid.withValues(alpha: 0.7)),
             const SizedBox(width: 5),
             Text(
               'Video will be saved to your device gallery',
@@ -509,10 +551,10 @@ class _ExportViewState extends State<ExportView> {
     );
   }
 
-  // ── Exporting (full-screen progress) ─────────────────────────────────────
+  // ── Exporting screen ──────────────────────────────────────────────────────
 
   Widget _buildExportingScreen() {
-    final pct = (widget.viewModel.progress * 100).round();
+    final pct   = (widget.viewModel.progress * 100).round();
     final phase = _phaseLabel(widget.viewModel.progress);
 
     return Container(
@@ -521,7 +563,6 @@ class _ExportViewState extends State<ExportView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Animated ring progress
           SizedBox(
             width: 148,
             height: 148,
@@ -533,8 +574,7 @@ class _ExportViewState extends State<ExportView> {
                     value: widget.viewModel.progress,
                     strokeWidth: 7,
                     backgroundColor: AppTheme.line,
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
                     strokeCap: StrokeCap.round,
                   ),
                 ),
@@ -583,31 +623,22 @@ class _ExportViewState extends State<ExportView> {
             ),
           ),
           const SizedBox(height: 32),
-          // Linear progress bar
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: widget.viewModel.progress,
               minHeight: 8,
               backgroundColor: AppTheme.line,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
             ),
           ),
           const SizedBox(height: 32),
-          // Cancel
           TextButton(
-            onPressed: () {
-              _cancelled = true;
-              widget.viewModel.reset();
-            },
+            onPressed: _cancelExport,
             style: TextButton.styleFrom(foregroundColor: AppTheme.textMid),
             child: const Text(
               'Cancel Export',
-              style: TextStyle(
-                fontFamily: AppTheme.fontTheme,
-                fontSize: 14,
-              ),
+              style: TextStyle(fontFamily: AppTheme.fontTheme, fontSize: 14),
             ),
           ),
         ],
@@ -616,10 +647,9 @@ class _ExportViewState extends State<ExportView> {
   }
 
   String _phaseLabel(double p) {
-    if (p < 0.2) return 'Capturing frames…';
-    if (p < 0.6) return 'Compositing slides…';
-    if (p < 0.75) return 'Sending to encoder…';
-    if (p < 0.95) return 'Encoding to MP4…';
+    if (p < 0.4)  return 'Capturing frames…';
+    if (p < 0.75) return 'Compositing slides…';
+    if (p < 0.9)  return 'Encoding to MP4…';
     return 'Saving to gallery…';
   }
 
@@ -703,8 +733,7 @@ class _ExportViewState extends State<ExportView> {
                   SnackBar(
                     content: Text(
                       'Share: ${widget.viewModel.outputPath}',
-                      style:
-                          const TextStyle(fontFamily: AppTheme.fontTheme),
+                      style: const TextStyle(fontFamily: AppTheme.fontTheme),
                     ),
                     backgroundColor: AppTheme.textDark,
                     behavior: SnackBarBehavior.floating,
@@ -753,8 +782,8 @@ class _ExportViewState extends State<ExportView> {
                 color: const Color(0xFFE85D4A).withValues(alpha: 0.3),
                 width: 2),
           ),
-          child: const Icon(Icons.error_outline,
-              color: Color(0xFFE85D4A), size: 40),
+          child:
+              const Icon(Icons.error_outline, color: Color(0xFFE85D4A), size: 40),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -786,49 +815,6 @@ class _ExportViewState extends State<ExportView> {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ── Off-screen render canvas ──────────────────────────────────────────────────
-
-class _RenderCanvas extends StatefulWidget {
-  const _RenderCanvas({required this.captureKey, required this.notifier});
-
-  final GlobalKey captureKey;
-  final ValueNotifier<_CanvasFrame> notifier;
-
-  @override
-  State<_RenderCanvas> createState() => _RenderCanvasState();
-}
-
-class _RenderCanvasState extends State<_RenderCanvas> {
-  @override
-  void initState() {
-    super.initState();
-    widget.notifier.addListener(_onNotify);
-  }
-
-  @override
-  void dispose() {
-    widget.notifier.removeListener(_onNotify);
-    super.dispose();
-  }
-
-  void _onNotify() => setState(() {});
-
-  @override
-  Widget build(BuildContext context) {
-    final f = widget.notifier.value;
-    return RepaintBoundary(
-      key: widget.captureKey,
-      child: ExportCanvas(
-        slide: f.slide,
-        slideTimeSeconds: f.slideTime,
-        prevSlide: f.prevSlide,
-        prevSlideTimeSeconds: f.prevSlideTime,
-        transitionProgress: f.transitionProgress,
-      ),
     );
   }
 }
