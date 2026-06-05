@@ -191,6 +191,33 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
 
   void _onFilmComplete() => _filmDone = true;
 
+  // ── Share ─────────────────────────────────────────────────────────────────
+
+  Future<void> _shareVideo() async {
+    final path = widget.viewModel.outputPath;
+    if (path == null) return;
+    try {
+      await VideoExportService().shareVideo(
+        path: path,
+        title: widget.viewModel.project.title,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            L10n.s.shareError,
+            style: const TextStyle(fontFamily: AppTheme.fontTheme),
+          ),
+          backgroundColor: AppTheme.textDark,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+
   Future<void> _doFinalize() async {
     try {
       if (mounted) widget.viewModel.updateProgress(0.9);
@@ -733,18 +760,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.share_outlined, size: 18),
                 label: Text(L10n.s.share),
-                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      L10n.s.shareSnack('${widget.viewModel.outputPath}'),
-                      style: const TextStyle(fontFamily: AppTheme.fontTheme),
-                    ),
-                    backgroundColor: AppTheme.textDark,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
+                onPressed: _shareVideo,
               ),
             ),
             const SizedBox(width: 12),

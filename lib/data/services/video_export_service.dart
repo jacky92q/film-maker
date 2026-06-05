@@ -36,4 +36,12 @@ class VideoExportService {
   }
 
   Future<void> cancelExport() => _ch.invokeMethod<void>('cancelExport');
+
+  /// Opens the system share sheet for the exported video at [path].
+  /// [path] is the gallery URI / file path returned by [finalize].
+  Future<void> shareVideo({required String path, String? title}) =>
+      _ch.invokeMethod<void>('shareVideo', {
+        'path': path,
+        'title': title,
+      });
 }

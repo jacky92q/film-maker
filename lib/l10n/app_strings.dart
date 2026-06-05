@@ -149,7 +149,7 @@ abstract class AppStrings {
   String get exportFailed;
   String get exportFailedDefault;
   String get noSlidesToExport;
-  String shareSnack(String path);
+  String get shareError;
   String durationLabel(int seconds);
 
   // ── Editor ────────────────────────────────────────────────────────────────
@@ -444,7 +444,7 @@ class _EnStrings extends AppStrings {
   @override String get exportFailed => 'Export Failed';
   @override String get exportFailedDefault => 'An unexpected error occurred.';
   @override String get noSlidesToExport => 'No slides to export.';
-  @override String shareSnack(String path) => 'Share: $path';
+  @override String get shareError => 'Could not open the share sheet.';
   @override String durationLabel(int seconds) =>
       seconds >= 60 ? '${seconds ~/ 60}m ${seconds % 60}s' : '${seconds}s';
 
@@ -731,7 +731,7 @@ class _KoStrings extends AppStrings {
   @override String get exportFailed => '내보내기 실패';
   @override String get exportFailedDefault => '예기치 않은 오류가 발생했습니다.';
   @override String get noSlidesToExport => '내보낼 슬라이드가 없습니다.';
-  @override String shareSnack(String path) => '공유: $path';
+  @override String get shareError => '공유 시트를 열 수 없습니다.';
   @override String durationLabel(int seconds) =>
       seconds >= 60 ? '${seconds ~/ 60}분 ${seconds % 60}초' : '$seconds초';
 
