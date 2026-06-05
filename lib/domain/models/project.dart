@@ -19,6 +19,28 @@ class Project {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  factory Project.fromJson(Map<String, dynamic> j) => Project(
+        id: j['id'] as String,
+        title: j['title'] as String,
+        slides: (j['slides'] as List)
+            .map((e) => Slide.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        musicPath: j['musicPath'] as String?,
+        musicName: j['musicName'] as String?,
+        createdAt: DateTime.parse(j['createdAt'] as String),
+        updatedAt: DateTime.parse(j['updatedAt'] as String),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'slides': slides.map((s) => s.toJson()).toList(),
+        'musicPath': musicPath,
+        'musicName': musicName,
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+      };
+
   int get slideCount => slides.length;
   String? get thumbnailPath => slides.isNotEmpty ? slides.first.imagePath : null;
   int get totalDurationSeconds =>
