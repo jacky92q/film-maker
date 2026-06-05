@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Exported MP4s saved to public Movies/ on API < 29 -->
+    <external-path name="movies" path="Movies/" />
+    <!-- Encoder temp files in app cache -->
+    <cache-path name="cache" path="." />
+</paths>
