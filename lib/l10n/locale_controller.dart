@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:film_maker/l10n/app_strings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,7 +20,14 @@ class LocaleController extends ChangeNotifier {
   Future<void> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _language = AppLanguage.fromCode(prefs.getString(_prefsKey));
+      final saved = prefs.getString(_prefsKey);
+      if (saved != null) {
+        _language = AppLanguage.fromCode(saved);
+      } else {
+        // First launch: use device locale.
+        final deviceLang = PlatformDispatcher.instance.locale.languageCode;
+        _language = deviceLang == 'ko' ? AppLanguage.ko : AppLanguage.en;
+      }
     } catch (_) {
       _language = AppLanguage.en;
     }
