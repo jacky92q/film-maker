@@ -1,4 +1,5 @@
 import 'package:film_maker/data/repositories/auth_repository.dart';
+import 'package:film_maker/l10n/app_strings.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthViewModel extends ChangeNotifier {
@@ -65,32 +66,32 @@ class AuthViewModel extends ChangeNotifier {
     if (message.contains('user-not-found') ||
         message.contains('wrong-password') ||
         message.contains('invalid-credential')) {
-      return 'Incorrect email or password.';
+      return L10n.s.errIncorrectCredentials;
     }
     if (message.contains('email-already-in-use')) {
-      return 'An account with this email already exists.';
+      return L10n.s.errEmailInUse;
     }
     if (message.contains('weak-password')) {
-      return 'Password must be at least 6 characters.';
+      return L10n.s.errWeakPassword;
     }
     if (message.contains('invalid-email')) {
-      return 'Please enter a valid email address.';
+      return L10n.s.errInvalidEmail;
     }
     if (message.contains('network-request-failed') ||
         message.contains('network_error')) {
-      return 'Network error. Check your connection.';
+      return L10n.s.errNetwork;
     }
     if (message.contains('too-many-requests')) {
-      return 'Too many attempts. Please try again later.';
+      return L10n.s.errTooManyRequests;
     }
     if (message.contains('operation-not-allowed')) {
-      return 'This sign-in method is not enabled. Contact the app admin.';
+      return L10n.s.errOperationNotAllowed;
     }
     if (message.contains('sign_in_failed') ||
         message.contains('ApiException') ||
         message.contains('DEVELOPER_ERROR')) {
-      return 'Google Sign-In failed. Android SHA-1 fingerprint may need to be registered in Firebase Console.';
+      return L10n.s.errGoogleSignIn;
     }
-    return 'Something went wrong. Please try again.';
+    return L10n.s.errGeneric;
   }
 }

@@ -1,12 +1,15 @@
 import 'dart:ui' as ui;
 
 import 'package:film_maker/data/services/video_export_service.dart';
+import 'package:film_maker/l10n/app_strings.dart';
+import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/core/film_canvas.dart';
 import 'package:film_maker/ui/features/export/view_models/export_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:provider/provider.dart';
 
 class ExportView extends StatefulWidget {
   const ExportView({super.key, required this.viewModel});
@@ -101,7 +104,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
 
     final project = widget.viewModel.project;
     if (project.slides.isEmpty) {
-      widget.viewModel.failExport('No slides to export.');
+      widget.viewModel.failExport(L10n.s.noSlidesToExport);
       return;
     }
 
@@ -220,10 +223,11 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleController>();
     return Scaffold(
       backgroundColor: AppTheme.bg,
       appBar: AppBar(
-        title: const Text('Export Film'),
+        title: Text(L10n.s.exportFilm),
         backgroundColor: AppTheme.bg,
         surfaceTintColor: Colors.transparent,
         foregroundColor: AppTheme.textDark,
@@ -261,7 +265,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
   Widget _buildSummaryCard() {
     final project = widget.viewModel.project;
     final dur     = project.totalDurationSeconds;
-    final durStr  = dur >= 60 ? '${dur ~/ 60}m ${dur % 60}s' : '${dur}s';
+    final durStr  = L10n.s.durationLabel(dur);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -309,9 +313,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    const Text(
-                      'Ready to export',
-                      style: TextStyle(
+                    Text(
+                      L10n.s.readyToExport,
+                      style: const TextStyle(
                         fontFamily: AppTheme.fontTheme,
                         color: AppTheme.textMid,
                         fontSize: 12,
@@ -331,7 +335,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
             children: [
               _InfoChip(
                 icon: Icons.photo_library_outlined,
-                label: '${project.slideCount} slides',
+                label: L10n.s.slidesCount(project.slideCount),
               ),
               _InfoChip(
                 icon: Icons.timer_outlined,
@@ -355,9 +359,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Output Quality',
-          style: TextStyle(
+        Text(
+          L10n.s.outputQuality,
+          style: const TextStyle(
             fontFamily: AppTheme.fontTheme,
             color: AppTheme.textDark,
             fontSize: 16,
@@ -365,9 +369,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Choose the resolution for your exported video',
-          style: TextStyle(
+        Text(
+          L10n.s.outputQualitySub,
+          style: const TextStyle(
             fontFamily: AppTheme.fontTheme,
             color: AppTheme.textMid,
             fontSize: 13,
@@ -460,9 +464,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
                           color: AppTheme.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
-                          'Recommended',
-                          style: TextStyle(
+                        child: Text(
+                          L10n.s.recommended,
+                          style: const TextStyle(
                             fontFamily: AppTheme.fontTheme,
                             color: AppTheme.primary,
                             fontSize: 10,
@@ -481,9 +485,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
   }
 
   String _resDesc(ExportResolution res) => switch (res) {
-        ExportResolution.hd     => 'Good for sharing on mobile',
-        ExportResolution.fullHd => 'Great for TV and displays',
-        ExportResolution.fourK  => 'Best for cinema-quality output',
+        ExportResolution.hd     => L10n.s.resHdDesc,
+        ExportResolution.fullHd => L10n.s.resFullHdDesc,
+        ExportResolution.fourK  => L10n.s.res4kDesc,
       };
 
   // ── Export button ─────────────────────────────────────────────────────────
@@ -497,7 +501,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
           height: 56,
           child: FilledButton.icon(
             icon: const Icon(Icons.movie_creation_outlined, size: 20),
-            label: const Text('Export to MP4'),
+            label: Text(L10n.s.exportToMp4),
             onPressed: widget.viewModel.startExport,
           ),
         ),
@@ -517,7 +521,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  '예상 소요 시간: 약 ${totalSec.toString()}초\n실시간 렌더링으로 영상 재생 시간과 동일합니다.',
+                  L10n.s.estimatedTime(totalSec),
                   style: const TextStyle(
                     fontFamily: AppTheme.fontTheme,
                     color: AppTheme.textMid,
@@ -538,7 +542,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
                 color: AppTheme.textMid.withValues(alpha: 0.7)),
             const SizedBox(width: 5),
             Text(
-              'Video will be saved to your device gallery',
+              L10n.s.savedToGallery,
               style: TextStyle(
                 fontFamily: AppTheme.fontTheme,
                 color: AppTheme.textMid.withValues(alpha: 0.7),
@@ -591,7 +595,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
                       ),
                     ),
                     Text(
-                      'done',
+                      L10n.s.doneLabel,
                       style: TextStyle(
                         fontFamily: AppTheme.fontTheme,
                         color: AppTheme.textMid.withValues(alpha: 0.7),
@@ -604,9 +608,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
             ),
           ),
           const SizedBox(height: 36),
-          const Text(
-            'Rendering your wedding film',
-            style: TextStyle(
+          Text(
+            L10n.s.renderingTitle,
+            style: const TextStyle(
               fontFamily: AppTheme.fontTheme,
               color: AppTheme.textDark,
               fontSize: 20,
@@ -636,9 +640,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
           TextButton(
             onPressed: _cancelExport,
             style: TextButton.styleFrom(foregroundColor: AppTheme.textMid),
-            child: const Text(
-              'Cancel Export',
-              style: TextStyle(fontFamily: AppTheme.fontTheme, fontSize: 14),
+            child: Text(
+              L10n.s.cancelExport,
+              style: const TextStyle(fontFamily: AppTheme.fontTheme, fontSize: 14),
             ),
           ),
         ],
@@ -647,10 +651,10 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
   }
 
   String _phaseLabel(double p) {
-    if (p < 0.4)  return 'Capturing frames…';
-    if (p < 0.75) return 'Compositing slides…';
-    if (p < 0.9)  return 'Encoding to MP4…';
-    return 'Saving to gallery…';
+    if (p < 0.4)  return L10n.s.phaseCapturing;
+    if (p < 0.75) return L10n.s.phaseCompositing;
+    if (p < 0.9)  return L10n.s.phaseEncoding;
+    return L10n.s.phaseSaving;
   }
 
   // ── Done ──────────────────────────────────────────────────────────────────
@@ -672,9 +676,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
               color: AppTheme.primary, size: 44),
         ),
         const SizedBox(height: 20),
-        const Text(
-          'Export Complete!',
-          style: TextStyle(
+        Text(
+          L10n.s.exportComplete,
+          style: const TextStyle(
             fontFamily: AppTheme.fontTheme,
             color: AppTheme.textDark,
             fontSize: 22,
@@ -682,9 +686,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
-          'Your wedding film has been saved to your gallery',
-          style: TextStyle(
+        Text(
+          L10n.s.exportCompleteSub,
+          style: const TextStyle(
             fontFamily: AppTheme.fontTheme,
             color: AppTheme.textMid,
             fontSize: 13,
@@ -728,11 +732,11 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
             Expanded(
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.share_outlined, size: 18),
-                label: const Text('Share'),
+                label: Text(L10n.s.share),
                 onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Share: ${widget.viewModel.outputPath}',
+                      L10n.s.shareSnack('${widget.viewModel.outputPath}'),
                       style: const TextStyle(fontFamily: AppTheme.fontTheme),
                     ),
                     backgroundColor: AppTheme.textDark,
@@ -747,7 +751,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
             Expanded(
               child: FilledButton.icon(
                 icon: const Icon(Icons.check_circle_outline, size: 18),
-                label: const Text('Done'),
+                label: Text(L10n.s.doneButton),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
@@ -757,9 +761,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
         TextButton(
           onPressed: widget.viewModel.reset,
           style: TextButton.styleFrom(foregroundColor: AppTheme.textMid),
-          child: const Text(
-            'Export Again',
-            style: TextStyle(fontFamily: AppTheme.fontTheme, fontSize: 13),
+          child: Text(
+            L10n.s.exportAgain,
+            style: const TextStyle(fontFamily: AppTheme.fontTheme, fontSize: 13),
           ),
         ),
       ],
@@ -786,9 +790,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
               const Icon(Icons.error_outline, color: Color(0xFFE85D4A), size: 40),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Export Failed',
-          style: TextStyle(
+        Text(
+          L10n.s.exportFailed,
+          style: const TextStyle(
             fontFamily: AppTheme.fontTheme,
             color: AppTheme.textDark,
             fontSize: 18,
@@ -797,7 +801,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
         ),
         const SizedBox(height: 8),
         Text(
-          widget.viewModel.error ?? 'An unexpected error occurred.',
+          widget.viewModel.error ?? L10n.s.exportFailedDefault,
           style: const TextStyle(
             fontFamily: AppTheme.fontTheme,
             color: AppTheme.textMid,
@@ -811,7 +815,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
           height: 52,
           child: FilledButton(
             onPressed: widget.viewModel.reset,
-            child: const Text('Try Again'),
+            child: Text(L10n.s.tryAgain),
           ),
         ),
       ],
