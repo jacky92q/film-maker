@@ -56,7 +56,7 @@ class VideoExportPlugin: NSObject, FlutterPlugin {
         case "finalize":
             let args = call.arguments as? [String: Any]
             let musicPath  = args?["musicPath"]  as? String
-            let outputName = args?["outputName"] as? String ?? "wedding_film"
+            let outputName = args?["outputName"] as? String ?? "film"
             encoder?.finalize(musicPath: musicPath, outputName: outputName) { path, error in
                 if let error = error {
                     result(FlutterError(code: "FINALIZE", message: error.localizedDescription, details: nil))
@@ -73,9 +73,56 @@ class VideoExportPlugin: NSObject, FlutterPlugin {
             frameIndex = 0
             result(nil)
 
+        case "shareVideo":
+            let args = call.arguments as? [String: Any]
+            guard let path = args?["path"] as? String else {
+                result(FlutterError(code: "BAD_ARGS", message: "Missing path", details: nil))
+                return
+            }
+            let title = args?["title"] as? String
+            DispatchQueue.main.async {
+                self.shareVideo(path: path, title: title, result: result)
+            }
+
         default:
             result(FlutterMethodNotImplemented)
         }
+    }
+
+    /// Presents the iOS share sheet (UIActivityViewController) for the exported
+    /// MP4 at [path].
+    private func shareVideo(path: String, title: String?, result: @escaping FlutterResult) {
+        guard FileManager.default.fileExists(atPath: path) else {
+            result(FlutterError(code: "SHARE", message: "File not found", details: nil))
+            return
+        }
+
+        var items: [Any] = [URL(fileURLWithPath: path)]
+        if let title = title, !title.isEmpty { items.append(title) }
+
+        let activityVC = UIActivityViewController(activityItems: items, applicationActivities: nil)
+
+        // Resolve the top-most presented view controller.
+        let keyWindow = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+        guard var top = keyWindow?.rootViewController else {
+            result(FlutterError(code: "SHARE", message: "No root view controller", details: nil))
+            return
+        }
+        while let presented = top.presentedViewController { top = presented }
+
+        // iPad requires a popover anchor.
+        if let pop = activityVC.popoverPresentationController {
+            pop.sourceView = top.view
+            pop.sourceRect = CGRect(x: top.view.bounds.midX, y: top.view.bounds.midY,
+                                    width: 0, height: 0)
+            pop.permittedArrowDirections = []
+        }
+
+        top.present(activityVC, animated: true)
+        result(nil)
     }
 }
 
@@ -247,10 +294,9 @@ private class VideoEncoder {
         session.exportAsynchronously {
             try? FileManager.default.removeItem(at: videoURL)
             if session.status == .completed {
-                self.saveToPhotos(videoURL: outURL, outputName: outputName) { path, err in
-                    try? FileManager.default.removeItem(at: outURL)
-                    completion(path, err)
-                }
+                // Keep outURL on disk so the saved path stays valid for sharing.
+                self.saveToPhotos(videoURL: outURL, outputName: outputName,
+                                  completion: completion)
             } else {
                 completion(nil, session.error)
             }
