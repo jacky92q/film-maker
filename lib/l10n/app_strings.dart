@@ -359,10 +359,10 @@ class _EnStrings extends AppStrings {
   @override String get discard => 'Discard';
   @override String get share => 'Share';
 
-  @override String get appTagline => 'Tell your love story through film';
+  @override String get appTagline => 'Capture your memories as film';
 
   @override String get loginHeroTitle => 'Create Beautiful\nMemory Films';
-  @override String get loginHeroSubtitle => 'Sign in to continue your love story.';
+  @override String get loginHeroSubtitle => 'Sign in to start capturing memories.';
   @override String get email => 'Email';
   @override String get password => 'Password';
   @override String get signIn => 'Sign In';
@@ -372,7 +372,7 @@ class _EnStrings extends AppStrings {
   @override String get register => 'Register';
 
   @override String get createAccountTitle => 'Create Your Account';
-  @override String get registerSubtitle => 'Start telling your love story today.';
+  @override String get registerSubtitle => 'Start capturing your memories today.';
   @override String get passwordHintRegister => 'At least 6 characters';
   @override String get confirmPassword => 'Confirm Password';
   @override String get createAccountButton => 'Create Account';
@@ -403,13 +403,13 @@ class _EnStrings extends AppStrings {
   @override String get tip1 => 'Choose photos that tell a story';
   @override String get tip2 => 'Add a meaningful song for emotion';
   @override String get tip3 => 'Use Ken Burns for cinematic feel';
-  @override String get newWeddingFilm => 'New Wedding Film';
+  @override String get newWeddingFilm => 'New Memory Film';
   @override String get filmTitlePrompt => 'Give your film a title to remember';
-  @override String get filmTitleHint => 'e.g. Our Love Story';
+  @override String get filmTitleHint => 'e.g. Summer Vacation 2024';
 
-  @override String get myWeddingFilms => 'My Wedding Films';
+  @override String get myWeddingFilms => 'My Films';
   @override String get noFilmsYet => 'No films yet';
-  @override String get noFilmsSub => 'Tap the button below to create\nyour first wedding film';
+  @override String get noFilmsSub => 'Tap the button below to create\nyour first memory film';
   @override String get deleteFilmTitle => 'Delete Film?';
   @override String deleteFilmConfirm(String title) => '"$title" will be permanently deleted.';
   @override String get today => 'Today';
@@ -430,7 +430,7 @@ class _EnStrings extends AppStrings {
   @override String estimatedTime(int seconds) =>
       'Estimated time: about ${seconds}s\nReal-time rendering — same as your film length.';
   @override String get savedToGallery => 'Video will be saved to your device gallery';
-  @override String get renderingTitle => 'Rendering your wedding film';
+  @override String get renderingTitle => 'Rendering your film';
   @override String get phaseCapturing => 'Capturing frames…';
   @override String get phaseCompositing => 'Compositing slides…';
   @override String get phaseEncoding => 'Encoding to MP4…';
@@ -438,7 +438,7 @@ class _EnStrings extends AppStrings {
   @override String get doneLabel => 'done';
   @override String get cancelExport => 'Cancel Export';
   @override String get exportComplete => 'Export Complete!';
-  @override String get exportCompleteSub => 'Your wedding film has been saved to your gallery';
+  @override String get exportCompleteSub => 'Your film has been saved to your gallery';
   @override String get doneButton => 'Done';
   @override String get exportAgain => 'Export Again';
   @override String get exportFailed => 'Export Failed';
@@ -622,7 +622,7 @@ class _EnStrings extends AppStrings {
   @override String get templateClosingDesc => 'Elegant ending card';
 
   @override String get tplOurStory => 'Our Story';
-  @override String get tplAWeddingFilm => 'A Wedding Film';
+  @override String get tplAWeddingFilm => 'A Memory Film';
   @override String get tplCherishedMoment => 'A cherished moment';
   @override String get tplLoveQuote => '"You are my greatest adventure"';
   @override String get tplForeverAlways => 'Forever & Always';
@@ -646,10 +646,10 @@ class _KoStrings extends AppStrings {
   @override String get discard => '저장 안 함';
   @override String get share => '공유';
 
-  @override String get appTagline => '영상으로 당신의 사랑 이야기를 전하세요';
+  @override String get appTagline => '당신의 추억을 영상으로 담아보세요';
 
   @override String get loginHeroTitle => '아름다운\n추억 영상 만들기';
-  @override String get loginHeroSubtitle => '로그인하고 사랑 이야기를 이어가세요.';
+  @override String get loginHeroSubtitle => '로그인하고 소중한 추억을 기록하세요.';
   @override String get email => '이메일';
   @override String get password => '비밀번호';
   @override String get signIn => '로그인';
@@ -659,7 +659,7 @@ class _KoStrings extends AppStrings {
   @override String get register => '회원가입';
 
   @override String get createAccountTitle => '계정 만들기';
-  @override String get registerSubtitle => '오늘 당신의 사랑 이야기를 시작하세요.';
+  @override String get registerSubtitle => '오늘부터 소중한 추억을 기록해보세요.';
   @override String get passwordHintRegister => '6자 이상';
   @override String get confirmPassword => '비밀번호 확인';
   @override String get createAccountButton => '계정 만들기';
@@ -690,13 +690,13 @@ class _KoStrings extends AppStrings {
   @override String get tip1 => '이야기가 담긴 사진을 골라보세요';
   @override String get tip2 => '감동을 더할 의미 있는 음악을 넣어보세요';
   @override String get tip3 => '켄 번스 효과로 영화 같은 느낌을 더하세요';
-  @override String get newWeddingFilm => '새 웨딩 영상';
+  @override String get newWeddingFilm => '새 추억 영상';
   @override String get filmTitlePrompt => '기억하기 좋은 영상 제목을 지어주세요';
-  @override String get filmTitleHint => '예: 우리의 사랑 이야기';
+  @override String get filmTitleHint => '예: 2024 여름 휴가';
 
-  @override String get myWeddingFilms => '내 웨딩 영상';
+  @override String get myWeddingFilms => '내 영상';
   @override String get noFilmsYet => '아직 영상이 없어요';
-  @override String get noFilmsSub => '아래 버튼을 눌러\n첫 웨딩 영상을 만들어보세요';
+  @override String get noFilmsSub => '아래 버튼을 눌러\n첫 번째 추억 영상을 만들어보세요';
   @override String get deleteFilmTitle => '영상을 삭제할까요?';
   @override String deleteFilmConfirm(String title) => '"$title"이(가) 영구적으로 삭제됩니다.';
   @override String get today => '오늘';
@@ -717,7 +717,7 @@ class _KoStrings extends AppStrings {
   @override String estimatedTime(int seconds) =>
       '예상 소요 시간: 약 $seconds초\n실시간 렌더링으로 영상 길이와 동일합니다.';
   @override String get savedToGallery => '영상이 기기 갤러리에 저장됩니다';
-  @override String get renderingTitle => '웨딩 영상을 렌더링하는 중';
+  @override String get renderingTitle => '영상을 렌더링하는 중';
   @override String get phaseCapturing => '프레임 캡처 중…';
   @override String get phaseCompositing => '슬라이드 합성 중…';
   @override String get phaseEncoding => 'MP4로 인코딩 중…';
@@ -725,7 +725,7 @@ class _KoStrings extends AppStrings {
   @override String get doneLabel => '완료';
   @override String get cancelExport => '내보내기 취소';
   @override String get exportComplete => '내보내기 완료!';
-  @override String get exportCompleteSub => '웨딩 영상이 갤러리에 저장되었습니다';
+  @override String get exportCompleteSub => '영상이 갤러리에 저장되었습니다';
   @override String get doneButton => '완료';
   @override String get exportAgain => '다시 내보내기';
   @override String get exportFailed => '내보내기 실패';
@@ -909,7 +909,7 @@ class _KoStrings extends AppStrings {
   @override String get templateClosingDesc => '우아한 엔딩 카드';
 
   @override String get tplOurStory => '우리 이야기';
-  @override String get tplAWeddingFilm => '웨딩 필름';
+  @override String get tplAWeddingFilm => '추억 영상';
   @override String get tplCherishedMoment => '소중한 순간';
   @override String get tplLoveQuote => '"당신은 나의 가장 큰 모험"';
   @override String get tplForeverAlways => '영원히 함께';

@@ -225,14 +225,14 @@ class VideoEncoder(
     // ── Gallery save ─────────────────────────────────────────────────────────
 
     private fun saveToGallery(file: File, name: String): String {
-        val fileName = "${name}_wedding_film.mp4"
+        val fileName = "${name}_film.mp4"
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val values = ContentValues().apply {
                 put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
                 put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
                 put(
                     MediaStore.Video.Media.RELATIVE_PATH,
-                    "${Environment.DIRECTORY_MOVIES}/WeddingFilm",
+                    "${Environment.DIRECTORY_MOVIES}/FilmMaker",
                 )
                 put(MediaStore.Video.Media.IS_PENDING, 1)
             }
@@ -249,7 +249,7 @@ class VideoEncoder(
             @Suppress("DEPRECATION")
             val dir = File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
-                "WeddingFilm",
+                "FilmMaker",
             )
             dir.mkdirs()
             val dest = File(dir, fileName)
