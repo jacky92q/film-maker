@@ -34,6 +34,11 @@ class FilmCanvasController extends ChangeNotifier {
   void toggle()  => isPlaying ? pause() : play();
   void next()    => _state?._skipTo(currentIndex + 1);
   void previous()=> _state?._skipTo(currentIndex - 1);
+
+  // Called by _FilmCanvasState to trigger listener notifications from
+  // within the controller (avoids calling the protected notifyListeners
+  // from outside the ChangeNotifier subclass).
+  void _notifyChanged() => notifyListeners();
 }
 
 // ── FilmCanvas ────────────────────────────────────────────────────────────────
@@ -116,7 +121,7 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
       _slideTimer?.cancel();
       _kenBurnsCtrl.stop();
     }
-    widget.controller?.notifyListeners();
+    widget.controller?._notifyChanged();
     if (mounted) setState(() {});
   }
 
@@ -143,7 +148,7 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
     }
 
     widget.onSlideChanged?.call(index);
-    widget.controller?.notifyListeners();
+    widget.controller?._notifyChanged();
 
     if (_isPlaying) _startSlideTimer();
   }
@@ -315,7 +320,6 @@ class _SingleSlide extends StatelessWidget {
 
 class _Background extends StatefulWidget {
   const _Background({
-    super.key,
     required this.slide,
     required this.kenBurnsCtrl,
     required this.playing,
