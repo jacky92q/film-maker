@@ -517,7 +517,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  '예상 소요 시간: 약 ${totalSec}초\n실시간 렌더링으로 영상 재생 시간과 동일합니다.',
+                  '예상 소요 시간: 약 ${totalSec.toString()}초\n실시간 렌더링으로 영상 재생 시간과 동일합니다.',
                   style: const TextStyle(
                     fontFamily: AppTheme.fontTheme,
                     color: AppTheme.textMid,
