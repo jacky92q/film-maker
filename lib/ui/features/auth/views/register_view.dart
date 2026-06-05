@@ -1,6 +1,9 @@
+import 'package:film_maker/l10n/app_strings.dart';
+import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/auth/view_models/auth_view_model.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key, required this.viewModel});
@@ -30,7 +33,7 @@ class _RegisterViewState extends State<RegisterView> {
     final confirm = _confirmController.text;
     if (password != confirm) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match.')),
+        SnackBar(content: Text(L10n.s.passwordsDoNotMatch)),
       );
       return;
     }
@@ -45,6 +48,7 @@ class _RegisterViewState extends State<RegisterView> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleController>();
     return Scaffold(
       backgroundColor: AppTheme.bg,
       body: Column(
@@ -107,9 +111,9 @@ class _RegisterViewState extends State<RegisterView> {
                           child: const Icon(Icons.person_add_outlined, color: Colors.white, size: 26),
                         ),
                         const SizedBox(height: 14),
-                        const Text(
-                          'Create Your Account',
-                          style: TextStyle(
+                        Text(
+                          L10n.s.createAccountTitle,
+                          style: const TextStyle(
                             fontFamily: AppTheme.fontTheme,
                             color: Colors.white,
                             fontSize: 24,
@@ -118,7 +122,7 @@ class _RegisterViewState extends State<RegisterView> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Start telling your love story today.',
+                          L10n.s.registerSubtitle,
                           style: TextStyle(
                             fontFamily: AppTheme.fontTheme,
                             color: Colors.white.withValues(alpha: 0.75),
@@ -149,9 +153,9 @@ class _RegisterViewState extends State<RegisterView> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               style: const TextStyle(color: AppTheme.textDark),
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email_outlined),
+              decoration: InputDecoration(
+                labelText: L10n.s.email,
+                prefixIcon: const Icon(Icons.email_outlined),
               ),
             ),
             const SizedBox(height: 14),
@@ -160,8 +164,8 @@ class _RegisterViewState extends State<RegisterView> {
               obscureText: _obscurePassword,
               style: const TextStyle(color: AppTheme.textDark),
               decoration: InputDecoration(
-                labelText: 'Password',
-                hintText: 'At least 6 characters',
+                labelText: L10n.s.password,
+                hintText: L10n.s.passwordHintRegister,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(_obscurePassword
@@ -177,7 +181,7 @@ class _RegisterViewState extends State<RegisterView> {
               obscureText: _obscureConfirm,
               style: const TextStyle(color: AppTheme.textDark),
               decoration: InputDecoration(
-                labelText: 'Confirm Password',
+                labelText: L10n.s.confirmPassword,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(_obscureConfirm
@@ -198,7 +202,7 @@ class _RegisterViewState extends State<RegisterView> {
                         width: 22, height: 22,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Create Account'),
+                    : Text(L10n.s.createAccountButton),
               ),
             ),
             if (widget.viewModel.error != null) ...[
@@ -210,13 +214,13 @@ class _RegisterViewState extends State<RegisterView> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Already have an account? ',
+                  L10n.s.alreadyHaveAccount,
                   style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textMid, fontSize: 14),
                 ),
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
                   child: Text(
-                    'Sign In',
+                    L10n.s.signIn,
                     style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
                       color: AppTheme.primary,

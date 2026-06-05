@@ -1,3 +1,4 @@
+import 'package:film_maker/l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 
 enum TransitionEffect { fade, slideLeft, slideRight, zoomIn, kenBurns, blurDissolve, wipeLeft, wipeRight }
@@ -14,18 +15,18 @@ extension TransitionEffectLabel on TransitionEffect {
   String get label {
     switch (this) {
       case TransitionEffect.fade:
-        return 'Fade';
+        return L10n.s.transitionFade;
       case TransitionEffect.slideLeft:
-        return 'Slide ←';
+        return L10n.s.transitionSlideLeft;
       case TransitionEffect.slideRight:
-        return 'Slide →';
+        return L10n.s.transitionSlideRight;
       case TransitionEffect.zoomIn:
-        return 'Zoom';
+        return L10n.s.transitionZoom;
       case TransitionEffect.kenBurns:
-        return 'Ken Burns';
-      case TransitionEffect.blurDissolve: return 'Blur';
-      case TransitionEffect.wipeLeft:     return 'Wipe ←';
-      case TransitionEffect.wipeRight:    return 'Wipe →';
+        return L10n.s.transitionKenBurns;
+      case TransitionEffect.blurDissolve: return L10n.s.transitionBlur;
+      case TransitionEffect.wipeLeft:     return L10n.s.transitionWipeLeft;
+      case TransitionEffect.wipeRight:    return L10n.s.transitionWipeRight;
     }
   }
 }
@@ -34,31 +35,31 @@ extension SlideTextColorX on SlideTextColor {
   String get label {
     switch (this) {
       case SlideTextColor.white:
-        return 'White';
+        return L10n.s.colorWhite;
       case SlideTextColor.gold:
-        return 'Gold';
+        return L10n.s.colorGold;
       case SlideTextColor.cream:
-        return 'Cream';
+        return L10n.s.colorCream;
       case SlideTextColor.black:
-        return 'Black';
+        return L10n.s.colorBlack;
       case SlideTextColor.rose:
-        return 'Rose';
+        return L10n.s.colorRose;
       case SlideTextColor.silver:
-        return 'Silver';
+        return L10n.s.colorSilver;
       case SlideTextColor.champagne:
-        return 'Champagne';
+        return L10n.s.colorChampagne;
       case SlideTextColor.blush:
-        return 'Blush';
+        return L10n.s.colorBlush;
       case SlideTextColor.dustyBlue:
-        return 'Blue';
+        return L10n.s.colorBlue;
       case SlideTextColor.sage:
-        return 'Sage';
+        return L10n.s.colorSage;
       case SlideTextColor.lavender:
-        return 'Lavender';
+        return L10n.s.colorLavender;
       case SlideTextColor.warmGray:
-        return 'Gray';
+        return L10n.s.colorGray;
       case SlideTextColor.coral:
-        return 'Coral';
+        return L10n.s.colorCoral;
     }
   }
 
@@ -98,17 +99,17 @@ extension SlideFontStyleX on SlideFontStyle {
   String get label {
     switch (this) {
       case SlideFontStyle.serif:
-        return 'Serif';
+        return L10n.s.fontSerif;
       case SlideFontStyle.sans:
-        return 'Sans';
+        return L10n.s.fontSans;
       case SlideFontStyle.script:
-        return 'Script';
+        return L10n.s.fontScript;
       case SlideFontStyle.display:
-        return 'Display';
+        return L10n.s.fontDisplay;
       case SlideFontStyle.elegant:
-        return 'Elegant';
+        return L10n.s.fontElegant;
       case SlideFontStyle.modern:
-        return 'Modern';
+        return L10n.s.fontModern;
     }
   }
 }
@@ -117,17 +118,17 @@ extension PhotoFilterX on PhotoFilter {
   String get label {
     switch (this) {
       case PhotoFilter.none:
-        return 'None';
+        return L10n.s.filterNone;
       case PhotoFilter.warm:
-        return 'Warm';
+        return L10n.s.filterWarm;
       case PhotoFilter.cool:
-        return 'Cool';
+        return L10n.s.filterCool;
       case PhotoFilter.blackAndWhite:
-        return 'B&W';
+        return L10n.s.filterBw;
       case PhotoFilter.vintage:
-        return 'Vintage';
+        return L10n.s.filterVintage;
       case PhotoFilter.dramatic:
-        return 'Dramatic';
+        return L10n.s.filterDramatic;
     }
   }
 
@@ -179,11 +180,11 @@ enum PhotoShape { none, rounded, circle, heart, arch }
 extension PhotoShapeX on PhotoShape {
   String get label {
     switch (this) {
-      case PhotoShape.none:    return 'None';
-      case PhotoShape.rounded: return 'Rounded';
-      case PhotoShape.circle:  return 'Circle';
-      case PhotoShape.heart:   return 'Heart';
-      case PhotoShape.arch:    return 'Arch';
+      case PhotoShape.none:    return L10n.s.shapeNone;
+      case PhotoShape.rounded: return L10n.s.shapeRounded;
+      case PhotoShape.circle:  return L10n.s.shapeCircle;
+      case PhotoShape.heart:   return L10n.s.shapeHeart;
+      case PhotoShape.arch:    return L10n.s.shapeArch;
     }
   }
 }
@@ -193,10 +194,10 @@ enum PhotoFrame { none, white, gold, polaroid }
 extension PhotoFrameX on PhotoFrame {
   String get label {
     switch (this) {
-      case PhotoFrame.none:     return 'None';
-      case PhotoFrame.white:    return 'White';
-      case PhotoFrame.gold:     return 'Gold';
-      case PhotoFrame.polaroid: return 'Polaroid';
+      case PhotoFrame.none:     return L10n.s.frameNone;
+      case PhotoFrame.white:    return L10n.s.frameWhite;
+      case PhotoFrame.gold:     return L10n.s.frameGold;
+      case PhotoFrame.polaroid: return L10n.s.framePolaroid;
     }
   }
 }
@@ -206,9 +207,9 @@ enum SlideLayout { single, strip2, strip3 }
 extension SlideLayoutX on SlideLayout {
   String get label {
     switch (this) {
-      case SlideLayout.single: return 'Single';
-      case SlideLayout.strip2: return '2 Photos';
-      case SlideLayout.strip3: return '3 Photos';
+      case SlideLayout.single: return L10n.s.layoutSingle;
+      case SlideLayout.strip2: return L10n.s.layout2Photos;
+      case SlideLayout.strip3: return L10n.s.layout3Photos;
     }
   }
 }
@@ -226,14 +227,14 @@ enum SlideContentAnimation {
 
 extension SlideContentAnimationX on SlideContentAnimation {
   String get label => switch (this) {
-    SlideContentAnimation.none        => 'None',
-    SlideContentAnimation.typewriter  => 'Typewriter',
-    SlideContentAnimation.slideUp     => 'Slide Up',
-    SlideContentAnimation.slideIn     => 'Slide In',
-    SlideContentAnimation.fadeStagger => 'Fade In',
-    SlideContentAnimation.float       => 'Float',
-    SlideContentAnimation.zoomPulse   => 'Zoom Pulse',
-    SlideContentAnimation.wipeReveal  => 'Wipe Reveal',
+    SlideContentAnimation.none        => L10n.s.animNone,
+    SlideContentAnimation.typewriter  => L10n.s.animTypewriter,
+    SlideContentAnimation.slideUp     => L10n.s.animSlideUp,
+    SlideContentAnimation.slideIn     => L10n.s.animSlideIn,
+    SlideContentAnimation.fadeStagger => L10n.s.animFadeIn,
+    SlideContentAnimation.float       => L10n.s.animFloat,
+    SlideContentAnimation.zoomPulse   => L10n.s.animZoomPulse,
+    SlideContentAnimation.wipeReveal  => L10n.s.animWipeReveal,
   };
 
   String get emoji => switch (this) {
@@ -274,11 +275,11 @@ enum SlideOverlay { none, vignette, filmGrain, lightLeak, bokeh }
 extension SlideOverlayX on SlideOverlay {
   String get label {
     switch (this) {
-      case SlideOverlay.none:      return 'None';
-      case SlideOverlay.vignette:  return 'Vignette';
-      case SlideOverlay.filmGrain: return 'Grain';
-      case SlideOverlay.lightLeak: return 'Light Leak';
-      case SlideOverlay.bokeh:     return 'Bokeh';
+      case SlideOverlay.none:      return L10n.s.overlayNone;
+      case SlideOverlay.vignette:  return L10n.s.overlayVignette;
+      case SlideOverlay.filmGrain: return L10n.s.overlayGrain;
+      case SlideOverlay.lightLeak: return L10n.s.overlayLightLeak;
+      case SlideOverlay.bokeh:     return L10n.s.overlayBokeh;
     }
   }
 }
@@ -288,12 +289,12 @@ enum DimDirection { none, bottom, top, left, right, radial }
 extension DimDirectionX on DimDirection {
   String get label {
     switch (this) {
-      case DimDirection.none:   return 'None';
-      case DimDirection.bottom: return 'Bottom';
-      case DimDirection.top:    return 'Top';
-      case DimDirection.left:   return 'Left';
-      case DimDirection.right:  return 'Right';
-      case DimDirection.radial: return 'Radial';
+      case DimDirection.none:   return L10n.s.dimNone;
+      case DimDirection.bottom: return L10n.s.dimBottom;
+      case DimDirection.top:    return L10n.s.dimTop;
+      case DimDirection.left:   return L10n.s.dimLeft;
+      case DimDirection.right:  return L10n.s.dimRight;
+      case DimDirection.radial: return L10n.s.dimRadial;
     }
   }
 }
@@ -303,9 +304,9 @@ enum SlideTextBg { none, pill, box }
 extension SlideTextBgX on SlideTextBg {
   String get label {
     switch (this) {
-      case SlideTextBg.none: return 'None';
-      case SlideTextBg.pill: return 'Pill';
-      case SlideTextBg.box:  return 'Box';
+      case SlideTextBg.none: return L10n.s.textBgNone;
+      case SlideTextBg.pill: return L10n.s.textBgPill;
+      case SlideTextBg.box:  return L10n.s.textBgBox;
     }
   }
 }
@@ -314,30 +315,30 @@ extension SlideTemplateX on SlideTemplate {
   String get label {
     switch (this) {
       case SlideTemplate.blank:
-        return 'Blank';
+        return L10n.s.templateBlank;
       case SlideTemplate.opening:
-        return 'Opening';
+        return L10n.s.templateOpening;
       case SlideTemplate.memory:
-        return 'Memory';
+        return L10n.s.templateMemory;
       case SlideTemplate.loveNote:
-        return 'Love Note';
+        return L10n.s.templateLoveNote;
       case SlideTemplate.closing:
-        return 'Closing';
+        return L10n.s.templateClosing;
     }
   }
 
   String get description {
     switch (this) {
       case SlideTemplate.blank:
-        return 'Start from scratch';
+        return L10n.s.templateBlankDesc;
       case SlideTemplate.opening:
-        return 'Bold title card';
+        return L10n.s.templateOpeningDesc;
       case SlideTemplate.memory:
-        return 'Photo with caption';
+        return L10n.s.templateMemoryDesc;
       case SlideTemplate.loveNote:
-        return 'Centered quote';
+        return L10n.s.templateLoveNoteDesc;
       case SlideTemplate.closing:
-        return 'Elegant ending card';
+        return L10n.s.templateClosingDesc;
     }
   }
 
@@ -515,8 +516,8 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_t', text: 'Our Story', x: 0.5, y: 0.50, fontSize: 96.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.cream),
-            TextLayer(id: '${id}_s', text: 'A Wedding Film', isSubtitle: true, x: 0.5, y: 0.66, fontSize: 56.0, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
+            TextLayer(id: '${id}_t', text: L10n.s.tplOurStory, x: 0.5, y: 0.50, fontSize: 96.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.cream),
+            TextLayer(id: '${id}_s', text: L10n.s.tplAWeddingFilm, isSubtitle: true, x: 0.5, y: 0.66, fontSize: 56.0, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
           ],
           transition: TransitionEffect.fade,
           durationSeconds: 5,
@@ -525,7 +526,7 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_s', text: 'A cherished moment', isSubtitle: true, x: 0.5, y: 0.86, fontSize: 56.0, color: SlideTextColor.cream, barColor: SlideTextColor.cream),
+            TextLayer(id: '${id}_s', text: L10n.s.tplCherishedMoment, isSubtitle: true, x: 0.5, y: 0.86, fontSize: 56.0, color: SlideTextColor.cream, barColor: SlideTextColor.cream),
           ],
           transition: TransitionEffect.kenBurns,
           durationSeconds: 5,
@@ -534,7 +535,7 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_t', text: '"You are my greatest adventure"', x: 0.5, y: 0.50, fontSize: 96.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
+            TextLayer(id: '${id}_t', text: L10n.s.tplLoveQuote, x: 0.5, y: 0.50, fontSize: 96.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
           ],
           transition: TransitionEffect.fade,
           durationSeconds: 6,
@@ -543,7 +544,7 @@ class SlideDefaults {
         return Slide(
           id: id,
           textLayers: [
-            TextLayer(id: '${id}_t', text: 'Forever & Always', x: 0.5, y: 0.46, fontSize: 96.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
+            TextLayer(id: '${id}_t', text: L10n.s.tplForeverAlways, x: 0.5, y: 0.46, fontSize: 96.0, fontStyle: SlideFontStyle.serif, color: SlideTextColor.gold),
             TextLayer(id: '${id}_s', text: '${DateTime.now().year}', isSubtitle: true, x: 0.5, y: 0.62, fontSize: 56.0, color: SlideTextColor.gold, barColor: SlideTextColor.gold),
           ],
           transition: TransitionEffect.fade,

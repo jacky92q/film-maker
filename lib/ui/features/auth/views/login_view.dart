@@ -1,8 +1,11 @@
+import 'package:film_maker/l10n/app_strings.dart';
+import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/auth/view_models/auth_view_model.dart';
 import 'package:film_maker/ui/features/auth/views/register_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key, required this.viewModel});
@@ -41,6 +44,7 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleController>();
     return Scaffold(
       backgroundColor: AppTheme.bg,
       body: Column(
@@ -118,9 +122,9 @@ class _LoginViewState extends State<LoginView> {
                         color: Colors.white, size: 26),
                   ),
                   const SizedBox(height: 14),
-                  const Text(
-                    'Create Beautiful\nMemory Films',
-                    style: TextStyle(
+                  Text(
+                    L10n.s.loginHeroTitle,
+                    style: const TextStyle(
                       fontFamily: AppTheme.fontTheme,
                       color: Colors.white,
                       fontSize: 26,
@@ -130,7 +134,7 @@ class _LoginViewState extends State<LoginView> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Sign in to continue your love story.',
+                    L10n.s.loginHeroSubtitle,
                     style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
                       color: Colors.white.withValues(alpha: 0.75),
@@ -157,9 +161,9 @@ class _LoginViewState extends State<LoginView> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               style: const TextStyle(color: AppTheme.textDark),
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email_outlined),
+              decoration: InputDecoration(
+                labelText: L10n.s.email,
+                prefixIcon: const Icon(Icons.email_outlined),
               ),
               onSubmitted: (_) => _handleLogin(),
             ),
@@ -169,7 +173,7 @@ class _LoginViewState extends State<LoginView> {
               obscureText: _obscurePassword,
               style: const TextStyle(color: AppTheme.textDark),
               decoration: InputDecoration(
-                labelText: 'Password',
+                labelText: L10n.s.password,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(_obscurePassword
@@ -193,7 +197,7 @@ class _LoginViewState extends State<LoginView> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Sign In'),
+                    : Text(L10n.s.signIn),
               ),
             ),
             if (widget.viewModel.error != null) ...[
@@ -212,7 +216,7 @@ class _LoginViewState extends State<LoginView> {
         Expanded(child: Container(height: 1, color: AppTheme.line)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('or',
+          child: Text(L10n.s.orDivider,
               style: TextStyle(
                   fontFamily: AppTheme.fontTheme,
                   color: AppTheme.textMid,
@@ -247,7 +251,7 @@ class _LoginViewState extends State<LoginView> {
                 _GoogleLogo(),
                 const SizedBox(width: 12),
                 Text(
-                  'Sign in with Google',
+                  L10n.s.signInWithGoogle,
                   style: TextStyle(
                     fontFamily: AppTheme.fontTheme,
                     color: AppTheme.textDark,
@@ -268,7 +272,7 @@ class _LoginViewState extends State<LoginView> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          "Don't have an account? ",
+          L10n.s.dontHaveAccount,
           style: TextStyle(
               fontFamily: AppTheme.fontTheme,
               color: AppTheme.textMid,
@@ -277,7 +281,7 @@ class _LoginViewState extends State<LoginView> {
         GestureDetector(
           onTap: _goToRegister,
           child: Text(
-            'Register',
+            L10n.s.register,
             style: TextStyle(
               fontFamily: AppTheme.fontTheme,
               color: AppTheme.primary,

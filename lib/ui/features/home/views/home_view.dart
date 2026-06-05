@@ -1,5 +1,7 @@
 import 'package:film_maker/data/repositories/project_repository.dart';
 import 'package:film_maker/domain/models/user.dart';
+import 'package:film_maker/l10n/app_strings.dart';
+import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';
@@ -7,9 +9,11 @@ import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/home/view_models/home_view_model.dart';
 import 'package:film_maker/ui/features/projects/view_models/projects_view_model.dart';
 import 'package:film_maker/ui/features/projects/views/projects_view.dart';
+import 'package:film_maker/ui/features/settings/views/settings_view.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-enum _MenuAction { logout }
+enum _MenuAction { settings, logout }
 
 class HomeView extends StatefulWidget {
   const HomeView({
@@ -46,6 +50,12 @@ class _HomeViewState extends State<HomeView> {
     super.dispose();
   }
 
+  void _goToSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SettingsView()),
+    );
+  }
+
   void _goToProjects() {
     Navigator.of(context).push(
       SlideUpPageRoute(
@@ -62,20 +72,20 @@ class _HomeViewState extends State<HomeView> {
     final title = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('New Wedding Film'),
+        title: Text(L10n.s.newWeddingFilm),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Give your film a title to remember'),
+            Text(L10n.s.filmTitlePrompt),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               autofocus: true,
               style: const TextStyle(color: AppTheme.textDark),
-              decoration: const InputDecoration(
-                hintText: 'e.g. Our Love Story',
-                prefixIcon: Icon(Icons.movie_creation_outlined),
+              decoration: InputDecoration(
+                hintText: L10n.s.filmTitleHint,
+                prefixIcon: const Icon(Icons.movie_creation_outlined),
               ),
               onSubmitted: (v) {
                 if (v.trim().isNotEmpty) Navigator.of(ctx).pop(v.trim());
@@ -86,14 +96,14 @@ class _HomeViewState extends State<HomeView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(L10n.s.cancel),
           ),
           FilledButton(
             onPressed: () {
               final t = controller.text.trim();
               if (t.isNotEmpty) Navigator.of(ctx).pop(t);
             },
-            child: const Text('Create'),
+            child: Text(L10n.s.create),
           ),
         ],
       ),
@@ -120,6 +130,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleController>();
     return Scaffold(
       backgroundColor: AppTheme.bg,
       body: CustomScrollView(
@@ -135,11 +146,11 @@ class _HomeViewState extends State<HomeView> {
                   const SizedBox(height: 24),
                   _buildStatsRow(),
                   const SizedBox(height: 28),
-                  _buildSectionTitle('Quick Actions'),
+                  _buildSectionTitle(L10n.s.quickActions),
                   const SizedBox(height: 14),
                   _buildActionCards(),
                   const SizedBox(height: 28),
-                  _buildSectionTitle('Tips for a Perfect Film'),
+                  _buildSectionTitle(L10n.s.tipsTitle),
                   const SizedBox(height: 14),
                   _buildFilmInspiration(),
                 ],
@@ -184,7 +195,12 @@ class _HomeViewState extends State<HomeView> {
           padding: const EdgeInsets.only(right: 12),
           child: PopupMenuButton<_MenuAction>(
             onSelected: (action) {
-              if (action == _MenuAction.logout) widget.onLogout();
+              switch (action) {
+                case _MenuAction.settings:
+                  _goToSettings();
+                case _MenuAction.logout:
+                  widget.onLogout();
+              }
             },
             color: AppTheme.surface,
             shape: RoundedRectangleBorder(
@@ -193,13 +209,24 @@ class _HomeViewState extends State<HomeView> {
             ),
             itemBuilder: (_) => [
               PopupMenuItem(
+                value: _MenuAction.settings,
+                child: Row(
+                  children: [
+                    const Icon(Icons.settings_outlined, color: AppTheme.textMid, size: 18),
+                    const SizedBox(width: 10),
+                    Text(L10n.s.settings,
+                        style: const TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textDark, fontSize: 14)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
                 value: _MenuAction.logout,
                 child: Row(
                   children: [
                     const Icon(Icons.logout, color: AppTheme.textMid, size: 18),
                     const SizedBox(width: 10),
-                    Text('Sign Out',
-                        style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textDark, fontSize: 14)),
+                    Text(L10n.s.signOut,
+                        style: const TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textDark, fontSize: 14)),
                   ],
                 ),
               ),
@@ -265,7 +292,7 @@ class _HomeViewState extends State<HomeView> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        'Welcome back',
+                        L10n.s.welcomeBack,
                         style: TextStyle(
                           fontFamily: AppTheme.fontTheme,
                           color: Colors.white.withValues(alpha: 0.9),
@@ -289,7 +316,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Tell your love story through film',
+                  L10n.s.appTagline,
                   style: TextStyle(
                     fontFamily: AppTheme.fontTheme,
                     color: Colors.white.withValues(alpha: 0.75),
@@ -311,12 +338,12 @@ class _HomeViewState extends State<HomeView> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add, size: 18),
-                        SizedBox(width: 6),
-                        Text('New Film'),
+                        const Icon(Icons.add, size: 18),
+                        const SizedBox(width: 6),
+                        Text(L10n.s.newFilm),
                       ],
                     ),
                   ),
@@ -335,9 +362,9 @@ class _HomeViewState extends State<HomeView> {
       builder: (context, _) {
         return Row(
           children: [
-            _buildStatCard(icon: Icons.movie_outlined, value: _viewModel.projectCount.toString(), label: 'Films'),
+            _buildStatCard(icon: Icons.movie_outlined, value: _viewModel.projectCount.toString(), label: L10n.s.statFilms),
             const SizedBox(width: 12),
-            _buildStatCard(icon: Icons.photo_library_outlined, value: _viewModel.totalSlides.toString(), label: 'Slides'),
+            _buildStatCard(icon: Icons.photo_library_outlined, value: _viewModel.totalSlides.toString(), label: L10n.s.statSlides),
           ],
         );
       },
@@ -409,8 +436,8 @@ class _HomeViewState extends State<HomeView> {
         Expanded(
           child: _buildActionCard(
             icon: Icons.video_library_outlined,
-            title: 'My Films',
-            subtitle: 'View & edit projects',
+            title: L10n.s.myFilms,
+            subtitle: L10n.s.myFilmsSub,
             cardColor: AppTheme.primary,
             onTap: _goToProjects,
           ),
@@ -419,8 +446,8 @@ class _HomeViewState extends State<HomeView> {
         Expanded(
           child: _buildActionCard(
             icon: Icons.add_circle_outline,
-            title: 'New Film',
-            subtitle: 'Start a new story',
+            title: L10n.s.newFilm,
+            subtitle: L10n.s.newFilmSub,
             cardColor: const Color(0xFF1AA38C),
             onTap: _showNewFilmDialog,
           ),
@@ -489,9 +516,9 @@ class _HomeViewState extends State<HomeView> {
 
   Widget _buildFilmInspiration() {
     final tips = [
-      (Icons.photo_camera_outlined, AppTheme.primary, 'Choose photos that tell a story'),
-      (Icons.music_note_outlined, const Color(0xFF1AA38C), 'Add a meaningful song for emotion'),
-      (Icons.auto_awesome_outlined, const Color(0xFF6B5CE7), 'Use Ken Burns for cinematic feel'),
+      (Icons.photo_camera_outlined, AppTheme.primary, L10n.s.tip1),
+      (Icons.music_note_outlined, const Color(0xFF1AA38C), L10n.s.tip2),
+      (Icons.auto_awesome_outlined, const Color(0xFF6B5CE7), L10n.s.tip3),
     ];
     return Container(
       decoration: BoxDecoration(

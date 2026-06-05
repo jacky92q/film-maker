@@ -1,5 +1,7 @@
 ﻿import 'dart:io';
 
+import 'package:film_maker/l10n/app_strings.dart';
+import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/photo_frame_widget.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/domain/models/slide.dart';
@@ -11,6 +13,7 @@ import 'package:film_maker/ui/features/export/views/export_view.dart';
 import 'package:film_maker/ui/features/preview/view_models/preview_view_model.dart';
 import 'package:film_maker/ui/features/preview/views/preview_view.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 // Returns the appropriate TextStyle for a given font style using bundled fonts.
 TextStyle slideLayerTextStyle(
@@ -129,16 +132,16 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Unsaved Changes',
+        title: Text(L10n.s.unsavedChanges,
             style: TextStyle(
                 fontFamily: AppTheme.fontTheme, color: AppTheme.textDark)),
-        content: Text('Save your film before leaving?',
+        content: Text(L10n.s.saveBeforeLeaving,
             style: TextStyle(
                 fontFamily: AppTheme.fontTheme, color: AppTheme.textMid)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Discard',
+            child: Text(L10n.s.discard,
                 style: TextStyle(
                     fontFamily: AppTheme.fontTheme,
                     color: AppTheme.textMid)),
@@ -148,7 +151,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
               await widget.viewModel.saveProject();
               if (ctx.mounted) Navigator.of(ctx).pop(true);
             },
-            child: Text('Save',
+            child: Text(L10n.s.save,
                 style: TextStyle(
                     fontFamily: AppTheme.fontTheme, color: AppTheme.primary)),
           ),
@@ -222,12 +225,12 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 0, 20, 10),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Music',
-                      style: TextStyle(
+                    child: Text(L10n.s.tabMusic,
+                      style: const TextStyle(
                         fontFamily: AppTheme.fontTheme,
                         color: AppTheme.textDark,
                         fontSize: 16,
@@ -254,6 +257,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleController>();
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
@@ -271,9 +275,9 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
           builder: (context, _) {
             final slide = widget.viewModel.selectedSlide;
             if (slide == null) {
-              return const Center(
-                child: Text('No slides',
-                    style: TextStyle(color: AppTheme.textMid)),
+              return Center(
+                child: Text(L10n.s.noSlides,
+                    style: const TextStyle(color: AppTheme.textMid)),
               );
             }
             return LayoutBuilder(
@@ -338,7 +342,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
                 Flexible(
                   child: Text(
                     widget.viewModel.project.title.isEmpty
-                        ? 'Untitled Film'
+                        ? L10n.s.untitledFilm
                         : widget.viewModel.project.title,
                     style: TextStyle(
                         fontFamily: AppTheme.fontTheme,
@@ -363,7 +367,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
             children: [
               if (widget.viewModel.hasUnsavedChanges)
                 IconButton(
-                  tooltip: 'Save',
+                  tooltip: L10n.s.saveTooltip,
                   icon: widget.viewModel.isSaving
                       ? const SizedBox(
                           width: 16, height: 16,
@@ -374,12 +378,12 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
                 ),
               TextButton(
                 onPressed: _openPreview,
-                child: Text('Preview',
+                child: Text(L10n.s.preview,
                     style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.primary, fontSize: 13)),
               ),
               TextButton(
                 onPressed: _openExport,
-                child: Text('Export',
+                child: Text(L10n.s.export,
                     style: TextStyle(fontFamily: AppTheme.fontTheme, color: AppTheme.textDark, fontSize: 13)),
               ),
             ],
@@ -505,27 +509,27 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
         children: [
           _SectionPill(
             icon: Icons.layers_outlined,
-            label: 'Slide',
+            label: L10n.s.tabSlide,
             active: _section == _EditSection.slide,
             onTap: () => _switchSection(_EditSection.slide),
           ),
           _SectionPill(
             icon: Icons.photo_outlined,
-            label: 'Photo',
+            label: L10n.s.tabPhoto,
             active: _section == _EditSection.photo,
             dotted: hasPhoto,
             onTap: () => _switchSection(_EditSection.photo),
           ),
           _SectionPill(
             icon: Icons.title_rounded,
-            label: 'Text',
+            label: L10n.s.tabText,
             active: _section == _EditSection.text,
             dotted: hasText,
             onTap: () => _switchSection(_EditSection.text),
           ),
           _SectionPill(
             icon: Icons.music_note_outlined,
-            label: 'Music',
+            label: L10n.s.tabMusic,
             active: _section == _EditSection.music,
             dotted: hasMusic,
             onTap: () => _switchSection(_EditSection.music),
@@ -545,11 +549,11 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
         if (layer == null) {
           return _LayerPlaceholder(
             icon: Icons.photo_outlined,
-            headline: 'No photo selected',
-            sub: 'Tap a photo in the canvas above',
+            headline: L10n.s.noPhotoSelected,
+            sub: L10n.s.tapPhotoHint,
             actions: [
               _PlaceholderAction(
-                label: '+ Add Photo',
+                label: L10n.s.addPhotoBtn,
                 onTap: () => widget.viewModel.addPhotoLayer(),
               ),
             ],
@@ -566,15 +570,15 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
         if (layer == null) {
           return _LayerPlaceholder(
             icon: Icons.title_rounded,
-            headline: 'No text selected',
-            sub: 'Tap a text layer in the canvas above',
+            headline: L10n.s.noTextSelected,
+            sub: L10n.s.tapTextHint,
             actions: [
               _PlaceholderAction(
-                label: '+ Title',
+                label: L10n.s.addTitleBtn,
                 onTap: () => widget.viewModel.addTextLayer(isSubtitle: false),
               ),
               _PlaceholderAction(
-                label: '+ Subtitle',
+                label: L10n.s.addSubtitleBtn,
                 onTap: () => widget.viewModel.addTextLayer(isSubtitle: true),
               ),
             ],
@@ -819,7 +823,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                       color: Colors.orangeAccent,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text('CROP', style: TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold)),
+                    child: Text(L10n.s.crop.toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold)),
                   ),
                 ),
             ],
@@ -976,7 +980,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                         const Icon(Icons.open_with,
                             color: AppTheme.textMid, size: 10),
                         const SizedBox(width: 3),
-                        Text('drag · pinch to zoom',
+                        Text(L10n.s.dragPinchZoom,
                             style: TextStyle(
                                 fontFamily: AppTheme.fontTheme,
                                 color: AppTheme.textMid,
@@ -990,7 +994,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
               IgnorePointer(
                 child: Center(
                   child: Text(
-                    'Tap "+ Main" or "+ Sub" to add text',
+                    L10n.s.tapAddText,
                     style: TextStyle(
                       fontFamily: AppTheme.fontTheme,
                       color: AppTheme.textMid.withValues(alpha: 0.5),
@@ -1125,22 +1129,22 @@ class _AddContentBar extends StatelessWidget {
         children: [
           _BigActionBtn(
             icon: Icons.add_photo_alternate_rounded,
-            label: 'Photo',
+            label: L10n.s.addPhotoShort,
             onTap: onAddPhoto,
           ),
           _BigActionBtn(
             icon: Icons.title_rounded,
-            label: 'Title',
+            label: L10n.s.addTitleShort,
             onTap: onAddTitle,
           ),
           _BigActionBtn(
             icon: Icons.short_text_rounded,
-            label: 'Sub',
+            label: L10n.s.addSubShort,
             onTap: onAddSubtitle,
           ),
           _BigActionBtn(
             icon: Icons.music_note_rounded,
-            label: 'Music',
+            label: L10n.s.tabMusic,
             onTap: onMusic,
             active: hasMusic,
           ),
@@ -1328,10 +1332,10 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                 fontFamily: AppTheme.fontTheme,
                 fontSize: 11,
               ),
-              tabs: const [
-                Tab(icon: Icon(Icons.abc, size: 18), text: 'Text', iconMargin: EdgeInsets.only(bottom: 2)),
-                Tab(icon: Icon(Icons.palette_outlined, size: 18), text: 'Style', iconMargin: EdgeInsets.only(bottom: 2)),
-                Tab(icon: Icon(Icons.auto_awesome_outlined, size: 18), text: 'Motion', iconMargin: EdgeInsets.only(bottom: 2)),
+              tabs: [
+                Tab(icon: const Icon(Icons.abc, size: 18), text: L10n.s.tabText, iconMargin: const EdgeInsets.only(bottom: 2)),
+                Tab(icon: const Icon(Icons.palette_outlined, size: 18), text: L10n.s.tabStyle, iconMargin: const EdgeInsets.only(bottom: 2)),
+                Tab(icon: const Icon(Icons.auto_awesome_outlined, size: 18), text: L10n.s.tabMotion, iconMargin: const EdgeInsets.only(bottom: 2)),
               ],
             ),
             Expanded(
@@ -1359,11 +1363,11 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
           // Z-order buttons row
           Row(
             children: [
-              _SectionHeader(layer.isSubtitle ? 'Subtitle Layer' : 'Main Layer'),
+              _SectionHeader(layer.isSubtitle ? L10n.s.secSubtitleLayer : L10n.s.secMainLayer),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.flip_to_front, size: 16),
-                tooltip: 'Bring to front',
+                tooltip: L10n.s.bringToFront,
                 color: AppTheme.textMid,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -1372,7 +1376,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.flip_to_back, size: 16),
-                tooltip: 'Send to back',
+                tooltip: L10n.s.sendToBack,
                 color: AppTheme.textMid,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -1395,8 +1399,8 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                   color: AppTheme.textDark,
                   fontWeight: FontWeight.normal),
               maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: 'Enter text…',
+              decoration: InputDecoration(
+                hintText: L10n.s.enterText,
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               ),
@@ -1405,19 +1409,19 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
           ),
           const SizedBox(height: 12),
           // Type toggle
-          const _SectionHeader('Type'),
+          _SectionHeader(L10n.s.secType),
           const SizedBox(height: 8),
           Row(
             children: [
               _TypeButton(
-                label: 'Main',
+                label: L10n.s.typeMain,
                 icon: Icons.title,
                 selected: !layer.isSubtitle,
                 onTap: () => _applyStyle((l) => l.copyWith(isSubtitle: false)),
               ),
               const SizedBox(width: 8),
               _TypeButton(
-                label: 'Subtitle',
+                label: L10n.s.typeSubtitle,
                 icon: Icons.short_text,
                 selected: layer.isSubtitle,
                 onTap: () => _applyStyle((l) => l.copyWith(isSubtitle: true)),
@@ -1430,7 +1434,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
             width: double.infinity,
             child: OutlinedButton.icon(
               icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFFF6B6B)),
-              label: const Text('Delete Layer', style: TextStyle(color: Color(0xFFFF6B6B))),
+              label: Text(L10n.s.deleteLayer, style: const TextStyle(color: Color(0xFFFF6B6B))),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Color(0xFFFF6B6B), width: 1),
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1452,7 +1456,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Font picker
-          const _SectionHeader('Font'),
+          _SectionHeader(L10n.s.secFont),
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -1485,7 +1489,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
           ),
           const SizedBox(height: 12),
           // Size slider
-          const _SectionHeader('Size'),
+          _SectionHeader(L10n.s.secSize),
           const SizedBox(height: 4),
           Row(
             children: [
@@ -1507,7 +1511,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
           ),
           const SizedBox(height: 12),
           // Text color
-          const _SectionHeader('Text Color'),
+          _SectionHeader(L10n.s.secTextColor),
           const SizedBox(height: 8),
           _ColorDots(
             current: layer.color,
@@ -1516,7 +1520,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
           // Bar color (subtitle only)
           if (layer.isSubtitle) ...[
             const SizedBox(height: 12),
-            const _SectionHeader('Bar Color'),
+            _SectionHeader(L10n.s.secBarColor),
             const SizedBox(height: 8),
             _ColorDots(
               current: layer.barColor,
@@ -1525,7 +1529,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
           ],
           const SizedBox(height: 12),
           // Text background
-          const _SectionHeader('Text Bg'),
+          _SectionHeader(L10n.s.secTextBg),
           const SizedBox(height: 8),
           Row(
             children: SlideTextBg.values.map((bg) {
@@ -1557,12 +1561,12 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
           ),
           const SizedBox(height: 12),
           // Outline / stroke
-          const _SectionHeader('Outline'),
+          _SectionHeader(L10n.s.secOutline),
           const SizedBox(height: 8),
           Row(
             children: [0.0, 1.0, 2.0, 3.0].map((w) {
               final sel = layer.strokeWidth == w;
-              final lbl = w == 0 ? 'Off' : w == 1 ? 'Thin' : w == 2 ? 'Med' : 'Bold';
+              final lbl = w == 0 ? L10n.s.strokeOff : w == 1 ? L10n.s.strokeThin : w == 2 ? L10n.s.strokeMed : L10n.s.strokeBold;
               return GestureDetector(
                 onTap: () => _applyStyle((l) => l.copyWith(strokeWidth: w)),
                 child: AnimatedContainer(
@@ -1590,14 +1594,14 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
           ),
           const SizedBox(height: 12),
           // Letter spacing
-          const _SectionHeader('Spacing'),
+          _SectionHeader(L10n.s.secSpacing),
           const SizedBox(height: 8),
           Row(
             children: [
-              (0.0, 'Normal'),
-              (1.0, 'Wide'),
-              (3.0, 'Wider'),
-              (6.0, 'Max'),
+              (0.0, L10n.s.spacingNormal),
+              (1.0, L10n.s.spacingWide),
+              (3.0, L10n.s.spacingWider),
+              (6.0, L10n.s.spacingMax),
             ].map(((double, String) entry) {
               final (sp, lbl) = entry;
               final sel = layer.letterSpacing == sp;
@@ -1628,7 +1632,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
           ),
           const SizedBox(height: 12),
           // Rotation
-          const _SectionHeader('Rotation'),
+          _SectionHeader(L10n.s.secRotation),
           const SizedBox(height: 4),
           Slider(
             value: layer.rotation.clamp(-180.0, 180.0),
@@ -1647,7 +1651,7 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader('Animation'),
+          _SectionHeader(L10n.s.secAnimation),
           const SizedBox(height: 8),
           _AnimationPickerRow(
             current: widget.layer.contentAnimation,
@@ -1691,10 +1695,10 @@ class _PhotoLayerTabs extends StatelessWidget {
                 fontFamily: AppTheme.fontTheme,
                 fontSize: 11,
               ),
-              tabs: const [
-                Tab(icon: Icon(Icons.tune, size: 18), text: 'Adjust', iconMargin: EdgeInsets.only(bottom: 2)),
-                Tab(icon: Icon(Icons.style_outlined, size: 18), text: 'Style', iconMargin: EdgeInsets.only(bottom: 2)),
-                Tab(icon: Icon(Icons.auto_awesome_outlined, size: 18), text: 'Motion', iconMargin: EdgeInsets.only(bottom: 2)),
+              tabs: [
+                Tab(icon: const Icon(Icons.tune, size: 18), text: L10n.s.tabAdjust, iconMargin: const EdgeInsets.only(bottom: 2)),
+                Tab(icon: const Icon(Icons.style_outlined, size: 18), text: L10n.s.tabStyle, iconMargin: const EdgeInsets.only(bottom: 2)),
+                Tab(icon: const Icon(Icons.auto_awesome_outlined, size: 18), text: L10n.s.tabMotion, iconMargin: const EdgeInsets.only(bottom: 2)),
               ],
             ),
             Expanded(
@@ -1722,11 +1726,11 @@ class _PhotoLayerTabs extends StatelessWidget {
           // Z-order & Crop row
           Row(
             children: [
-              const _SectionHeader('Photo Layer'),
+              _SectionHeader(L10n.s.secPhotoLayer),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.flip_to_front, size: 16),
-                tooltip: 'Bring to front',
+                tooltip: L10n.s.bringToFront,
                 color: AppTheme.textMid,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -1735,7 +1739,7 @@ class _PhotoLayerTabs extends StatelessWidget {
               const SizedBox(width: 4),
               IconButton(
                 icon: const Icon(Icons.flip_to_back, size: 16),
-                tooltip: 'Send to back',
+                tooltip: L10n.s.sendToBack,
                 color: AppTheme.textMid,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -1751,7 +1755,7 @@ class _PhotoLayerTabs extends StatelessWidget {
                 ),
                 onPressed: () => vm.toggleCropMode(),
                 icon: const Icon(Icons.crop, size: 16),
-                label: Text(isCrop ? 'Done' : 'Crop', style: const TextStyle(fontSize: 12)),
+                label: Text(isCrop ? L10n.s.done : L10n.s.crop, style: const TextStyle(fontSize: 12)),
               ),
             ],
           ),
@@ -1767,20 +1771,20 @@ class _PhotoLayerTabs extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.touch_app_outlined, size: 13, color: Colors.orangeAccent),
-                      SizedBox(width: 4),
+                      const Icon(Icons.touch_app_outlined, size: 13, color: Colors.orangeAccent),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          'Drag on photo to pan · Pinch to zoom',
-                          style: TextStyle(fontSize: 11, color: Colors.orangeAccent),
+                          L10n.s.dragPanPinchZoom,
+                          style: const TextStyle(fontSize: 11, color: Colors.orangeAccent),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text('Zoom', style: TextStyle(fontSize: 11, color: AppTheme.textMid, letterSpacing: 1)),
+                  Text(L10n.s.zoom, style: const TextStyle(fontSize: 11, color: AppTheme.textMid, letterSpacing: 1)),
                   Slider(
                     value: layer.cropScale.clamp(1.0, 4.0),
                     min: 1.0, max: 4.0, divisions: 30,
@@ -1800,14 +1804,14 @@ class _PhotoLayerTabs extends StatelessWidget {
                         layer.copyWith(cropScale: 1.0, cropOffsetX: 0.0, cropOffsetY: 0.0),
                       ),
                       icon: const Icon(Icons.refresh, size: 14),
-                      label: const Text('Reset', style: TextStyle(fontSize: 12)),
+                      label: Text(L10n.s.reset, style: const TextStyle(fontSize: 12)),
                     ),
                   ),
                 ],
               ),
             ),
           ] else ...[
-            const _SectionHeader('Width'),
+            _SectionHeader(L10n.s.secWidth),
             const SizedBox(height: 4),
             Slider(
               value: layer.widthFraction.clamp(0.1, 1.0),
@@ -1815,7 +1819,7 @@ class _PhotoLayerTabs extends StatelessWidget {
               label: '${(layer.widthFraction * 100).round()}%',
               onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(widthFraction: v)),
             ),
-            const _SectionHeader('Height'),
+            _SectionHeader(L10n.s.secHeight),
             const SizedBox(height: 4),
             Slider(
               value: layer.heightFraction.clamp(0.1, 1.0),
@@ -1823,7 +1827,7 @@ class _PhotoLayerTabs extends StatelessWidget {
               label: '${(layer.heightFraction * 100).round()}%',
               onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(heightFraction: v)),
             ),
-            const _SectionHeader('Rotation'),
+            _SectionHeader(L10n.s.secRotation),
             const SizedBox(height: 4),
             Slider(
               value: layer.rotation.clamp(-180.0, 180.0),
@@ -1837,7 +1841,7 @@ class _PhotoLayerTabs extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.image_outlined, size: 18),
-                label: const Text('Change Photo'),
+                label: Text(L10n.s.changePhoto),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.textMid,
                   side: const BorderSide(color: AppTheme.line),
@@ -1853,7 +1857,7 @@ class _PhotoLayerTabs extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFFF6B6B)),
-                label: const Text('Delete Layer', style: TextStyle(color: Color(0xFFFF6B6B))),
+                label: Text(L10n.s.deleteLayer, style: const TextStyle(color: Color(0xFFFF6B6B))),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFFFF6B6B), width: 1),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1875,7 +1879,7 @@ class _PhotoLayerTabs extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Shape
-          const _SectionHeader('Shape'),
+          _SectionHeader(L10n.s.secShape),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8, runSpacing: 8,
@@ -1889,7 +1893,7 @@ class _PhotoLayerTabs extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           // Frame
-          const _SectionHeader('Frame'),
+          _SectionHeader(L10n.s.secFrame),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8, runSpacing: 8,
@@ -1903,7 +1907,7 @@ class _PhotoLayerTabs extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           // Filter
-          const _SectionHeader('Filter'),
+          _SectionHeader(L10n.s.secFilter),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8, runSpacing: 8,
@@ -1926,7 +1930,7 @@ class _PhotoLayerTabs extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader('Animation'),
+          _SectionHeader(L10n.s.secAnimation),
           const SizedBox(height: 8),
           _AnimationPickerRow(
             current: layer.contentAnimation,
@@ -1970,10 +1974,10 @@ class _SlideTabs extends StatelessWidget {
                 fontFamily: AppTheme.fontTheme,
                 fontSize: 11,
               ),
-              tabs: const [
-                Tab(icon: Icon(Icons.image_outlined, size: 18), text: 'Canvas', iconMargin: EdgeInsets.only(bottom: 2)),
-                Tab(icon: Icon(Icons.filter_outlined, size: 18), text: 'Style', iconMargin: EdgeInsets.only(bottom: 2)),
-                Tab(icon: Icon(Icons.timer_outlined, size: 18), text: 'Timing', iconMargin: EdgeInsets.only(bottom: 2)),
+              tabs: [
+                Tab(icon: const Icon(Icons.image_outlined, size: 18), text: L10n.s.tabCanvas, iconMargin: const EdgeInsets.only(bottom: 2)),
+                Tab(icon: const Icon(Icons.filter_outlined, size: 18), text: L10n.s.tabStyle, iconMargin: const EdgeInsets.only(bottom: 2)),
+                Tab(icon: const Icon(Icons.timer_outlined, size: 18), text: L10n.s.tabTiming, iconMargin: const EdgeInsets.only(bottom: 2)),
               ],
             ),
             Expanded(
@@ -1997,7 +2001,7 @@ class _SlideTabs extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader('Background'),
+          _SectionHeader(L10n.s.secBackground),
           const SizedBox(height: 8),
           _BackgroundColorPicker(
             current: slide.backgroundColor,
@@ -2005,7 +2009,7 @@ class _SlideTabs extends StatelessWidget {
           ),
             // ── Dim / Gradient ──────────────────────────────────────────
           const SizedBox(height: 12),
-          const _SectionHeader('Dim'),
+          _SectionHeader(L10n.s.secDim),
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
@@ -2070,7 +2074,7 @@ class _SlideTabs extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                const _SectionHeader('Photo Zoom'),
+                _SectionHeader(L10n.s.secPhotoZoom),
                 const Spacer(),
                 Text(
                   '${slide.photoScale.toStringAsFixed(1)}×',
@@ -2090,7 +2094,7 @@ class _SlideTabs extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: AppTheme.line),
                     ),
-                    child: Text('Reset',
+                    child: Text(L10n.s.reset,
                         style: TextStyle(
                           fontFamily: AppTheme.fontTheme,
                           color: AppTheme.textMid,
@@ -2128,7 +2132,7 @@ class _SlideTabs extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Filter
-          const _SectionHeader('Filter'),
+          _SectionHeader(L10n.s.secFilter),
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -2163,7 +2167,7 @@ class _SlideTabs extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           // Overlay
-          const _SectionHeader('Overlay'),
+          _SectionHeader(L10n.s.secOverlay),
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -2198,7 +2202,7 @@ class _SlideTabs extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           // Photo shape
-          const _SectionHeader('Photo Shape'),
+          _SectionHeader(L10n.s.secPhotoShape),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8, runSpacing: 8,
@@ -2212,7 +2216,7 @@ class _SlideTabs extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           // Photo frame
-          const _SectionHeader('Photo Frame'),
+          _SectionHeader(L10n.s.secPhotoFrame),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8, runSpacing: 8,
@@ -2236,7 +2240,7 @@ class _SlideTabs extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Transition
-          const _SectionHeader('Transition'),
+          _SectionHeader(L10n.s.secTransition),
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -2273,7 +2277,7 @@ class _SlideTabs extends StatelessWidget {
           // Duration slider
           Row(
             children: [
-              const _SectionHeader('Duration'),
+              _SectionHeader(L10n.s.secDuration),
               const Spacer(),
               Text('${slide.durationSeconds}s',
                   style: const TextStyle(
@@ -2321,9 +2325,9 @@ class _AnimationPickerRow extends StatelessWidget {
           children: [
             const Icon(Icons.auto_awesome, size: 11, color: AppTheme.primary),
             const SizedBox(width: 4),
-            const Text(
-              'ANIMATION',
-              style: TextStyle(
+            Text(
+              L10n.s.secAnimation.toUpperCase(),
+              style: const TextStyle(
                 fontFamily: 'PlayfairDisplay',
                 color: AppTheme.textMid,
                 fontSize: 11,
@@ -2778,14 +2782,14 @@ class _TemplatePicker extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          Text('Choose a Template',
+          Text(L10n.s.chooseTemplate,
               style: TextStyle(
                   fontFamily: AppTheme.fontTheme,
                   color: AppTheme.textDark,
                   fontSize: 20,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          Text('Start with a pre-designed layout',
+          Text(L10n.s.templateSub,
               style: TextStyle(
                   fontFamily: AppTheme.fontTheme,
                   color: AppTheme.textMid,
@@ -2896,9 +2900,9 @@ class _MusicPanel extends StatelessWidget {
                       if (closeOnSelect) Navigator.of(context).pop();
                     },
                     style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
-                    child: const Text(
-                      'Remove',
-                      style: TextStyle(
+                    child: Text(
+                      L10n.s.remove,
+                      style: const TextStyle(
                         fontFamily: AppTheme.fontTheme,
                         color: Color(0xFFFF6B6B),
                         fontSize: 12,
