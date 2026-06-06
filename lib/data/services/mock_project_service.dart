@@ -35,6 +35,18 @@ class MockProjectService implements ProjectService {
     return updated;
   }
 
+  Future<Project> upsertProject(Project project) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    final index = _projects.indexWhere((p) => p.id == project.id);
+    final updated = project.copyWith(updatedAt: DateTime.now());
+    if (index == -1) {
+      _projects.insert(0, updated);
+    } else {
+      _projects[index] = updated;
+    }
+    return updated;
+  }
+
   Future<void> deleteProject(String projectId) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     _projects.removeWhere((p) => p.id == projectId);

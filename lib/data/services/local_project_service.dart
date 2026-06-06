@@ -56,6 +56,21 @@ class LocalProjectService implements ProjectService {
   }
 
   @override
+  Future<Project> upsertProject(Project project) async {
+    final prefs = await SharedPreferences.getInstance();
+    final projects = await fetchProjects();
+    final index = projects.indexWhere((p) => p.id == project.id);
+    final updated = project.copyWith(updatedAt: DateTime.now());
+    if (index == -1) {
+      projects.insert(0, updated);
+    } else {
+      projects[index] = updated;
+    }
+    await _save(prefs, projects);
+    return updated;
+  }
+
+  @override
   Future<void> deleteProject(String projectId) async {
     final prefs = await SharedPreferences.getInstance();
     final projects = await fetchProjects();

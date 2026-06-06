@@ -394,7 +394,7 @@ class EditorViewModel extends ChangeNotifier {
     _isSaving = true;
     notifyListeners();
     try {
-      _project = await projectRepository.updateProject(_project);
+      _project = await projectRepository.upsertProject(_project);
       _hasUnsavedChanges = false;
       return true;
     } catch (_) {
