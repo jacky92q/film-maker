@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:film_maker/data/services/video_export_service.dart';
@@ -125,6 +126,16 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
       _installCanvas();
       await SchedulerBinding.instance.endOfFrame; // one render pass
 
+      // Decode every photo up front so the very first captured frames are sharp
+      // (no late-loading flicker on slide 0). The off-screen canvas keeps the
+      // rest warm; this guarantees the cache is primed before capture begins.
+      await _precacheAllImages();
+      if (_cancelled || !mounted) {
+        _removeCanvas();
+        return;
+      }
+      await SchedulerBinding.instance.endOfFrame;
+
       _filmController.play();
       _exportTicker = createTicker(_onExportTick);
       _exportTicker!.start();
@@ -190,6 +201,29 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
   }
 
   void _onFilmComplete() => _filmDone = true;
+
+  // Pre-decode every image used in the film into Flutter's image cache so the
+  // FilmCanvas paints each photo instantly the moment its slide appears.
+  Future<void> _precacheAllImages() async {
+    final paths = <String>{};
+    for (final slide in widget.viewModel.project.slides) {
+      for (final p in [slide.imagePath, slide.imagePath2, slide.imagePath3]) {
+        if (p != null && p.isNotEmpty) paths.add(p);
+      }
+      for (final pl in slide.photoLayers) {
+        final p = pl.imagePath;
+        if (p != null && p.isNotEmpty) paths.add(p);
+      }
+    }
+    if (paths.isEmpty || !mounted) return;
+    await Future.wait(paths.map((p) async {
+      try {
+        await precacheImage(FileImage(File(p)), context);
+      } catch (_) {
+        // Missing/unreadable file — skip; FilmCanvas shows its placeholder.
+      }
+    }));
+  }
 
   // ── Share ─────────────────────────────────────────────────────────────────
 

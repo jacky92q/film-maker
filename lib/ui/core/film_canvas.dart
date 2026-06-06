@@ -199,40 +199,59 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
       return const SizedBox(width: FilmCanvas.kWidth, height: FilmCanvas.kHeight);
     }
 
-    final currentSlide = slides[_currentIndex];
-    final prevSlide    = _prevIndex != null ? slides[_prevIndex!] : null;
-
+    // Every slide is mounted simultaneously and kept alive for the whole film.
+    // Inactive slides are painted-invisible (Opacity 0) but stay in the tree, so
+    // their Image.file providers resolve and stay decoded — the moment a slide
+    // becomes current it paints instantly with no decode flicker or late render.
     return SizedBox(
       width:  FilmCanvas.kWidth,
       height: FilmCanvas.kHeight,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Outgoing slide: stays static beneath the entering one.
-          if (prevSlide != null)
-            _SingleSlide(
-              key: ValueKey('prev_${prevSlide.id}'),
-              slide: prevSlide,
-              kenBurnsCtrl: _kenBurnsCtrl,
-              playing: false,
-            ),
-          // Incoming slide: wrapped by transition effect.
-          AnimatedBuilder(
-            animation: _transitionCtrl,
-            builder: (context, child) {
-              final t = prevSlide != null
-                  ? Curves.easeInOut.transform(_transitionCtrl.value)
-                  : 1.0;
-              return _applyTransition(currentSlide.transition, t, child!);
-            },
-            child: _SingleSlide(
-              key: ValueKey('cur_${currentSlide.id}'),
-              slide: currentSlide,
-              kenBurnsCtrl: _kenBurnsCtrl,
-              playing: _isPlaying,
-            ),
-          ),
+          for (int i = 0; i < slides.length; i++)
+            _buildSlideLayer(i, slides[i]),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSlideLayer(int i, Slide slide) {
+    final isCurrent = i == _currentIndex;
+    final isPrev    = i == _prevIndex;
+
+    // Stable key per slide => never remounts => image stays decoded.
+    final slideWidget = _SingleSlide(
+      key: ValueKey(slide.id),
+      slide: slide,
+      kenBurnsCtrl: _kenBurnsCtrl,
+      playing: isCurrent && _isPlaying,
+    );
+
+    // Off-screen slides: kept mounted (warm) but not painted and not hit-tested.
+    if (!isCurrent && !isPrev) {
+      return Positioned.fill(
+        child: IgnorePointer(child: Opacity(opacity: 0.0, child: slideWidget)),
+      );
+    }
+
+    // Outgoing slide: static, fully visible beneath the entering one.
+    if (isPrev) {
+      return Positioned.fill(child: slideWidget);
+    }
+
+    // Entering (current) slide: wrapped by its transition effect while the
+    // transition controller runs. Only this layer rebuilds on transition ticks.
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _transitionCtrl,
+        builder: (context, child) {
+          final t = _prevIndex != null
+              ? Curves.easeInOut.transform(_transitionCtrl.value)
+              : 1.0;
+          return _applyTransition(slide.transition, t, child!);
+        },
+        child: slideWidget,
       ),
     );
   }
