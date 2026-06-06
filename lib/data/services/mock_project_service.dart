@@ -8,11 +8,13 @@ class MockProjectService implements ProjectService {
 
   final List<Project> _projects = [];
 
+  @override
   Future<List<Project>> fetchProjects() async {
     await Future<void>.delayed(const Duration(milliseconds: 150));
     return List.from(_projects);
   }
 
+  @override
   Future<Project> createProject({required String title}) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     final project = Project(
@@ -26,6 +28,7 @@ class MockProjectService implements ProjectService {
     return project;
   }
 
+  @override
   Future<Project> updateProject(Project project) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     final index = _projects.indexWhere((p) => p.id == project.id);
@@ -35,6 +38,7 @@ class MockProjectService implements ProjectService {
     return updated;
   }
 
+  @override
   Future<Project> upsertProject(Project project) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     final index = _projects.indexWhere((p) => p.id == project.id);
@@ -47,6 +51,7 @@ class MockProjectService implements ProjectService {
     return updated;
   }
 
+  @override
   Future<void> deleteProject(String projectId) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     _projects.removeWhere((p) => p.id == projectId);
