@@ -88,7 +88,7 @@ class _ProjectsViewState extends State<ProjectsView> {
         ),
       ),
     );
-    if (updated != null) widget.viewModel.updateProjectInList(updated);
+    if (updated != null) widget.viewModel.upsertProjectInList(updated);
   }
 
   Future<void> _confirmDelete(Project project) async {

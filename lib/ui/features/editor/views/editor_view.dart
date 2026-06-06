@@ -4,6 +4,7 @@ import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/photo_frame_widget.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
+import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
@@ -75,6 +76,9 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
   _EditSection _section = _EditSection.slide;
   bool _isPortraitLayout = true;
   bool _keyboardVisible = false;
+  // Set after each successful save. Null means this project has never been
+  // saved in this session, so Discard should remove it from the list entirely.
+  Project? _committedProject;
 
   @override
   void initState() {
@@ -140,7 +144,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
                 fontFamily: AppTheme.fontTheme, color: AppTheme.textMid)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
+            onPressed: () => Navigator.of(ctx).pop(false),
             child: Text(L10n.s.discard,
                 style: TextStyle(
                     fontFamily: AppTheme.fontTheme,
@@ -148,7 +152,8 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
           ),
           TextButton(
             onPressed: () async {
-              await widget.viewModel.saveProject();
+              final saved = await widget.viewModel.saveProject();
+              if (saved) _committedProject = widget.viewModel.project;
               if (ctx.mounted) Navigator.of(ctx).pop(true);
             },
             child: Text(L10n.s.save,
@@ -264,7 +269,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
         if (didPop) return;
         final canLeave = await _onWillPop();
         if (canLeave && context.mounted) {
-          Navigator.of(context).pop(widget.viewModel.project);
+          Navigator.of(context).pop(_committedProject);
         }
       },
       child: Scaffold(
@@ -306,7 +311,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
         onPressed: () async {
           final canLeave = await _onWillPop();
           if (canLeave && mounted) {
-            Navigator.of(context).pop(widget.viewModel.project);
+            Navigator.of(context).pop(_committedProject);
           }
         },
       ),
@@ -374,7 +379,10 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
                           child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
                         )
                       : const Icon(Icons.save_outlined, color: AppTheme.primary),
-                  onPressed: widget.viewModel.isSaving ? null : () => widget.viewModel.saveProject(),
+                  onPressed: widget.viewModel.isSaving ? null : () async {
+                    final saved = await widget.viewModel.saveProject();
+                    if (saved && mounted) setState(() => _committedProject = widget.viewModel.project);
+                  },
                 ),
               TextButton(
                 onPressed: _openPreview,

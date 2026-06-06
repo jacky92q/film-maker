@@ -1,12 +1,15 @@
 import 'package:film_maker/data/repositories/project_repository.dart';
 import 'package:film_maker/domain/models/project.dart';
+import 'package:film_maker/domain/models/slide.dart';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 
 class ProjectsViewModel extends ChangeNotifier {
   ProjectsViewModel({required ProjectRepository projectRepository})
       : _projectRepository = projectRepository;
 
   final ProjectRepository _projectRepository;
+  final _uuid = const Uuid();
 
   bool _isLoading = false;
   List<Project> _projects = const [];
@@ -30,15 +33,16 @@ class ProjectsViewModel extends ChangeNotifier {
     }
   }
 
+  // Returns an in-memory project only — it gets persisted when the user saves
+  // from the editor. If they discard, nothing is written to storage.
   Future<Project?> createProject(String title) async {
-    try {
-      final project = await _projectRepository.createProject(title: title);
-      _projects = [project, ..._projects];
-      notifyListeners();
-      return project;
-    } catch (_) {
-      return null;
-    }
+    return Project(
+      id: _uuid.v4(),
+      title: title,
+      slides: [Slide(id: _uuid.v4())],
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
   }
 
   Future<void> deleteProject(String projectId) async {
@@ -51,11 +55,16 @@ class ProjectsViewModel extends ChangeNotifier {
     }
   }
 
-  void updateProjectInList(Project updatedProject) {
-    _projects = [
-      for (final p in _projects)
-        if (p.id == updatedProject.id) updatedProject else p,
-    ];
+  void upsertProjectInList(Project project) {
+    final index = _projects.indexWhere((p) => p.id == project.id);
+    if (index == -1) {
+      _projects = [project, ..._projects];
+    } else {
+      _projects = [
+        for (final p in _projects)
+          if (p.id == project.id) project else p,
+      ];
+    }
     notifyListeners();
   }
 }

@@ -15,6 +15,9 @@ class ProjectRepository {
   Future<Project> updateProject(Project project) =>
       _projectService.updateProject(project);
 
+  Future<Project> upsertProject(Project project) =>
+      _projectService.upsertProject(project);
+
   Future<void> deleteProject(String projectId) =>
       _projectService.deleteProject(projectId);
 }
