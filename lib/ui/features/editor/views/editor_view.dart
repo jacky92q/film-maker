@@ -814,14 +814,23 @@ class _SlideCanvasState extends State<_SlideCanvas> {
   double _plStartH = 0.0;
   double _plStartCropScale = 1.0;
 
-  // On Flutter Web, gesture deltas arrive in SCREEN pixels rather than in the
-  // FittedBox child's canonical coordinate space.  We store the actual
-  // rendered canvas size (computed once per build via LayoutBuilder) and use
-  // it as the divisor on web so that a drag spanning the full canvas always
-  // moves the layer by exactly 1.0 in normalised space — regardless of how
-  // small the preview is on screen.
-  double _dragW = 0;   // set in build() via LayoutBuilder
-  double _dragH = 0;
+  // Drag divisors set per-build based on platform + viewport width:
+  //   native: canonical pixels (FittedBox applies inverse transform)
+  //   mobile web: canonical units → matches native app sensitivity
+  //   desktop web: rendered size × 0.4 → ~2.5× faster than 1:1, matches phone-web feel
+  double _dragW = 1280;
+  double _dragH = 720;
+
+  // Resize divisors for corner handles: always 1:1 screen tracking.
+  double _resizeDivW = 1280;
+  double _resizeDivH = 720;
+
+  // True when running on web with a wide viewport (desktop / mouse device).
+  bool _isDesktopWeb = false;
+
+  // Cumulative drag delta since corner-handle resize started.
+  double _cornerDeltaX = 0;
+  double _cornerDeltaY = 0;
 
   Widget _buildTextLayerItem(TextLayer layer, double canvasW, double canvasH, String? selectedLayerId) {
     return Positioned.fill(
@@ -899,6 +908,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
           angle: pl.rotation * 3.14159265 / 180.0,
           child: Stack(
             fit: StackFit.expand,
+            clipBehavior: Clip.none,
             children: [
               buildShapedPhoto(
                 imagePath: pl.imagePath,
@@ -934,11 +944,64 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                     child: Text(L10n.s.crop.toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold)),
                   ),
                 ),
+              if (_isDesktopWeb && isSelectedPL && !isCropMode)
+                ..._buildCornerHandles(pl, pw, ph),
             ],
           ),
         ),
       ),
     );
+  }
+
+  // Corner resize handles for desktop web (mouse users who can't pinch).
+  // Each dot is 14px canonical, offset -7 so it's centered on the corner.
+  List<Widget> _buildCornerHandles(PhotoLayer pl, double pw, double ph) {
+    const dotSize = 14.0;
+    const half = dotSize / 2;
+    final corners = [
+      (-half, -half, -1.0, -1.0),  // TL
+      (pw - half, -half, 1.0, -1.0),  // TR
+      (-half, ph - half, -1.0, 1.0),  // BL
+      (pw - half, ph - half, 1.0, 1.0),  // BR
+    ];
+    return corners.map((c) {
+      final (left, top, signX, signY) = c;
+      return Positioned(
+        left: left,
+        top: top,
+        width: dotSize,
+        height: dotSize,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {},
+          onScaleStart: (_) {
+            _plStartW = pl.widthFraction;
+            _plStartH = pl.heightFraction;
+            _cornerDeltaX = 0;
+            _cornerDeltaY = 0;
+          },
+          onScaleUpdate: (d) {
+            _cornerDeltaX += d.focalPointDelta.dx;
+            _cornerDeltaY += d.focalPointDelta.dy;
+            final dw = signX * _cornerDeltaX / _resizeDivW;
+            final dh = signY * _cornerDeltaY / _resizeDivH;
+            final newW = (_plStartW + dw).clamp(0.08, 1.0);
+            final newH = (_plStartH + dh).clamp(0.08, 1.0);
+            widget.viewModel.updatePhotoLayer(
+              pl.copyWith(widthFraction: newW, heightFraction: newH),
+            );
+          },
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.blueAccent, width: 2),
+              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 3)],
+            ),
+          ),
+        ),
+      );
+    }).toList();
   }
 
   Widget _buildStickerLayerItem(StickerLayer sl, double canvasW, double canvasH) {
@@ -1051,10 +1114,27 @@ class _SlideCanvasState extends State<_SlideCanvas> {
       final scaleH = constraints.maxHeight > 0 ? constraints.maxHeight / canonicalH : 1.0;
       final scale  = math.min(scaleW, scaleH);
       // On web, GestureDetector delivers deltas in screen pixels (not in the
-      // FittedBox child's canonical space).  Use the displayed canvas dimensions
-      // as divisors so a drag spanning the whole preview moves the layer by 1.0.
-      _dragW = kIsWeb ? canonicalW * scale : canonicalW;
-      _dragH = kIsWeb ? canonicalH * scale : canonicalH;
+      // FittedBox child's canonical space). Divisors are tuned per context:
+      //   native: canonical size (Flutter handles scaling internally)
+      //   mobile web: canonical size (touch gestures feel native at 1:1)
+      //   desktop web: rendered size × 0.4 (~2.5× faster, matches mobile feel)
+      if (!kIsWeb) {
+        _dragW = canonicalW;
+        _dragH = canonicalH;
+        _isDesktopWeb = false;
+      } else {
+        _isDesktopWeb = constraints.maxWidth >= 700;
+        if (_isDesktopWeb) {
+          _dragW = canonicalW * scale * 0.4;
+          _dragH = canonicalH * scale * 0.4;
+        } else {
+          _dragW = canonicalW;
+          _dragH = canonicalH;
+        }
+      }
+      // Corner handles track 1:1 screen pixels for precise mouse control.
+      _resizeDivW = kIsWeb ? canonicalW * scale : canonicalW;
+      _resizeDivH = kIsWeb ? canonicalH * scale : canonicalH;
 
       return _buildCanvas(context, canonicalW, canonicalH);
     });

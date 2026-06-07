@@ -1,5 +1,6 @@
 import 'package:film_maker/data/repositories/auth_repository.dart';
 import 'package:film_maker/l10n/app_strings.dart';
+import 'package:film_maker/ui/core/web_utils.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthViewModel extends ChangeNotifier {
@@ -97,7 +98,9 @@ class AuthViewModel extends ChangeNotifier {
     }
     if (message.contains('unauthorized-domain') ||
         message.contains('auth/unauthorized-domain')) {
-      return L10n.s.errUnauthorizedDomain;
+      final domain = getCurrentDomain();
+      final hint = domain != null ? '\n\n→ $domain' : '';
+      return L10n.s.errUnauthorizedDomain + hint;
     }
     return L10n.s.errGeneric;
   }
