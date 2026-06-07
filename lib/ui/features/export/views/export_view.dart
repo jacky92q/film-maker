@@ -6,6 +6,7 @@ import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/core/film_canvas.dart';
+import 'package:film_maker/ui/core/responsive.dart';
 import 'package:film_maker/ui/features/export/view_models/export_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -299,21 +300,24 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
           if (widget.viewModel.isExporting) return _buildExportingScreen();
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSummaryCard(),
-                const SizedBox(height: 24),
-                if (widget.viewModel.status == ExportStatus.idle) ...[
-                  _buildResolutionPicker(),
-                  const SizedBox(height: 32),
-                  _buildExportButton(),
-                ] else if (widget.viewModel.isDone) ...[
-                  _buildDone(context),
-                ] else if (widget.viewModel.status == ExportStatus.error) ...[
-                  _buildError(context),
+            child: ResponsiveCenter(
+              maxWidth: 560,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSummaryCard(),
+                  const SizedBox(height: 24),
+                  if (widget.viewModel.status == ExportStatus.idle) ...[
+                    _buildResolutionPicker(),
+                    const SizedBox(height: 32),
+                    _buildExportButton(),
+                  ] else if (widget.viewModel.isDone) ...[
+                    _buildDone(context),
+                  ] else if (widget.viewModel.status == ExportStatus.error) ...[
+                    _buildError(context),
+                  ],
                 ],
-              ],
+              ),
             ),
           );
         },
@@ -625,7 +629,10 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
     return Container(
       color: AppTheme.bg,
       padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
+      alignment: Alignment.center,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SizedBox(
@@ -707,6 +714,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,7 +20,9 @@ class SettingsView extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         foregroundColor: AppTheme.textDark,
       ),
-      body: ListView(
+      body: ResponsiveCenter(
+        maxWidth: 560,
+        child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
         children: [
           _SectionLabel(L10n.s.language),
@@ -55,6 +58,7 @@ class SettingsView extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

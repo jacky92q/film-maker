@@ -4,6 +4,7 @@ import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/responsive.dart';
 import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/home/view_models/home_view_model.dart';
@@ -137,7 +138,8 @@ class _HomeViewState extends State<HomeView> {
         slivers: [
           _buildAppBar(),
           SliverToBoxAdapter(
-            child: Padding(
+            child: ResponsiveCenter(
+              maxWidth: 760,
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

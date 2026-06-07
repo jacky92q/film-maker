@@ -149,23 +149,31 @@ class _ProjectsViewState extends State<ProjectsView> {
   }
 
   Widget _buildProjectGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.78,
+    // Cards keep a roughly constant target size; the column count grows with the
+    // viewport — 2 on phones, more on tablets/web. Centered with a max width so
+    // cards don't become absurdly spread out on very wide desktop windows.
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1100),
+        child: GridView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 220,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.78,
+          ),
+          itemCount: widget.viewModel.projects.length,
+          itemBuilder: (context, index) {
+            final project = widget.viewModel.projects[index];
+            return _ProjectCard(
+              project: project,
+              onTap: () => _openEditor(project),
+              onDelete: () => _confirmDelete(project),
+            );
+          },
+        ),
       ),
-      itemCount: widget.viewModel.projects.length,
-      itemBuilder: (context, index) {
-        final project = widget.viewModel.projects[index];
-        return _ProjectCard(
-          project: project,
-          onTap: () => _openEditor(project),
-          onDelete: () => _confirmDelete(project),
-        );
-      },
     );
   }
 
