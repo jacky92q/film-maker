@@ -31,16 +31,87 @@
 
   <title>film_maker</title>
   <link rel="manifest" href="manifest.json">
+
+  <script>
+    // Global encoder helper used by the Flutter web export path.
+    // Uses WebCodecs VideoEncoder + mp4-muxer (loaded on first use via dynamic import).
+    window.filmMakerEncoder = {
+      muxer: null,
+      encoder: null,
+      target: null,
+      fps: 30,
+      frameCount: 0,
+      _error: null,
+      _Mp4Muxer: null,
+
+      init: async function (width, height, fps, bitrate) {
+        this.fps = fps;
+        this.frameCount = 0;
+        this._error = null;
+
+        if (typeof VideoEncoder === 'undefined') {
+          throw new Error(
+            'Your browser does not support video encoding. ' +
+            'Please use Chrome 94+, Edge 94+, or Safari 16.4+.'
+          );
+        }
+
+        if (!this._Mp4Muxer) {
+          const mod = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5/build/mp4-muxer.js');
+          this._Mp4Muxer = mod;
+        }
+
+        const { Muxer, ArrayBufferTarget } = this._Mp4Muxer;
+        this.target = new ArrayBufferTarget();
+        this.muxer = new Muxer({
+          target: this.target,
+          video: { codec: 'avc', width: width, height: height },
+          fastStart: 'in-memory',
+        });
+
+        this.encoder = new VideoEncoder({
+          output: (chunk, meta) => this.muxer.addVideoChunk(chunk, meta),
+          error: (e) => { this._error = e.message || String(e); },
+        });
+
+        this.encoder.configure({
+          codec: 'avc1.640033',
+          width: width,
+          height: height,
+          bitrate: bitrate,
+          framerate: fps,
+          hardwareAcceleration: 'prefer-hardware',
+        });
+      },
+
+      addFrame: async function (rgbaBytes, width, height) {
+        if (this._error) throw new Error(this._error);
+        const ts = Math.round(this.frameCount * 1000000 / this.fps);
+        const imageData = new ImageData(new Uint8ClampedArray(rgbaBytes), width, height);
+        const bitmap = await createImageBitmap(imageData);
+        const frame = new VideoFrame(bitmap, {
+          timestamp: ts,
+          duration: Math.round(1000000 / this.fps),
+        });
+        bitmap.close();
+        const keyFrame = (this.frameCount % (this.fps * 2) === 0);
+        this.encoder.encode(frame, { keyFrame });
+        frame.close();
+        this.frameCount++;
+      },
+
+      finalize: async function () {
+        if (this._error) throw new Error(this._error);
+        await this.encoder.flush();
+        if (this._error) throw new Error(this._error);
+        this.encoder.close();
+        this.muxer.finalize();
+        return new Uint8Array(this.target.buffer);
+      },
+    };
+  </script>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

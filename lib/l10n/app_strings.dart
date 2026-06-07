@@ -498,7 +498,7 @@ class _EnStrings extends AppStrings {
   @override String get exportToMp4 => 'Export to MP4';
   @override String get exportSlideImages => 'Download Slide Images';
   @override String get webExportNote =>
-      'Web export downloads each slide as a high-quality PNG.\nFor MP4 video, use the mobile or desktop app.';
+      'Video is encoded in your browser — may take a few minutes.\nRequires Chrome 94+, Edge 94+, or Safari 16.4+.';
   @override String estimatedTime(int seconds) =>
       'Estimated time: about ${seconds}s\nReal-time rendering — same as your film length.';
   @override String get savedToGallery => 'Video will be saved to your device gallery';
@@ -847,7 +847,7 @@ class _KoStrings extends AppStrings {
   @override String get exportToMp4 => 'MP4로 내보내기';
   @override String get exportSlideImages => '슬라이드 이미지 다운로드';
   @override String get webExportNote =>
-      '웹 브라우저에서는 각 슬라이드를 고화질 PNG로 다운로드합니다.\nMP4 영상은 모바일 또는 데스크탑 앱을 이용해 주세요.';
+      '브라우저에서 직접 영상을 인코딩합니다 — 몇 분 정도 소요될 수 있습니다.\nChrome 94+, Edge 94+, Safari 16.4+ 이상 필요합니다.';
   @override String estimatedTime(int seconds) =>
       '예상 소요 시간: 약 $seconds초\n실시간 렌더링으로 영상 길이와 동일합니다.';
   @override String get savedToGallery => '영상이 기기 갤러리에 저장됩니다';
