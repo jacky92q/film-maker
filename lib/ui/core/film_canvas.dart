@@ -47,7 +47,9 @@ class FilmCanvasController extends ChangeNotifier {
 /// with proper transitions and live AnimationController-driven content
 /// animations.
 ///
-/// Always 1280 × 720 logical pixels.
+/// Logical pixel size follows [Project.orientation]: 1280 × 720 (landscape) or
+/// 720 × 1280 (portrait). Layer coordinates are normalized so they render
+/// identically in either orientation.
 ///
 /// Assign a [controller] to pause/resume/skip from outside. Attach a
 /// [RepaintBoundary] with a [GlobalKey] on the outside to capture frames
@@ -68,6 +70,8 @@ class FilmCanvas extends StatefulWidget {
   final VoidCallback? onComplete;
   final void Function(int index)? onSlideChanged;
 
+  // Landscape long/short edges. Use [Project.orientation] for the actual
+  // per-project canvas dimensions.
   static const double kWidth  = 1280.0;
   static const double kHeight =  720.0;
 
@@ -195,8 +199,10 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final slides = widget.project.slides;
+    final canvasW = widget.project.orientation.canvasWidth;
+    final canvasH = widget.project.orientation.canvasHeight;
     if (slides.isEmpty) {
-      return const SizedBox(width: FilmCanvas.kWidth, height: FilmCanvas.kHeight);
+      return SizedBox(width: canvasW, height: canvasH);
     }
 
     // Every slide is mounted simultaneously and kept alive for the whole film.
@@ -204,19 +210,19 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
     // their Image.file providers resolve and stay decoded — the moment a slide
     // becomes current it paints instantly with no decode flicker or late render.
     return SizedBox(
-      width:  FilmCanvas.kWidth,
-      height: FilmCanvas.kHeight,
+      width:  canvasW,
+      height: canvasH,
       child: Stack(
         fit: StackFit.expand,
         children: [
           for (int i = 0; i < slides.length; i++)
-            _buildSlideLayer(i, slides[i]),
+            _buildSlideLayer(i, slides[i], canvasW, canvasH),
         ],
       ),
     );
   }
 
-  Widget _buildSlideLayer(int i, Slide slide) {
+  Widget _buildSlideLayer(int i, Slide slide, double canvasW, double canvasH) {
     final isCurrent = i == _currentIndex;
     final isPrev    = i == _prevIndex;
 
@@ -226,6 +232,8 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
       slide: slide,
       kenBurnsCtrl: _kenBurnsCtrl,
       playing: isCurrent && _isPlaying,
+      canvasW: canvasW,
+      canvasH: canvasH,
     );
 
     // Off-screen slides: kept mounted (warm) but not painted and not hit-tested.
@@ -290,11 +298,15 @@ class _SingleSlide extends StatelessWidget {
     required this.slide,
     required this.kenBurnsCtrl,
     required this.playing,
+    required this.canvasW,
+    required this.canvasH,
   });
 
   final Slide slide;
   final AnimationController kenBurnsCtrl;
   final bool playing;
+  final double canvasW;
+  final double canvasH;
 
   List<Widget> _layers() {
     final items = <({int z, bool isText, Object layer})>[];
@@ -314,6 +326,8 @@ class _SingleSlide extends StatelessWidget {
             key: ValueKey((item.layer as PhotoLayer).id),
             pl: item.layer as PhotoLayer,
             playing: playing,
+            canvasW: canvasW,
+            canvasH: canvasH,
           ),
     ];
   }
@@ -321,7 +335,7 @@ class _SingleSlide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: FilmCanvas.kWidth, height: FilmCanvas.kHeight,
+      width: canvasW, height: canvasH,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -597,9 +611,17 @@ class _TextLayerState extends State<_TextLayer>
 // ── Photo layer ───────────────────────────────────────────────────────────────
 
 class _PhotoLayer extends StatefulWidget {
-  const _PhotoLayer({super.key, required this.pl, required this.playing});
+  const _PhotoLayer({
+    super.key,
+    required this.pl,
+    required this.playing,
+    required this.canvasW,
+    required this.canvasH,
+  });
   final PhotoLayer pl;
   final bool playing;
+  final double canvasW;
+  final double canvasH;
 
   @override
   State<_PhotoLayer> createState() => _PhotoLayerState();
@@ -647,7 +669,7 @@ class _PhotoLayerState extends State<_PhotoLayer>
   @override
   Widget build(BuildContext context) {
     final pl = widget.pl;
-    const w = FilmCanvas.kWidth, h = FilmCanvas.kHeight;
+    final w = widget.canvasW, h = widget.canvasH;
     final left = (pl.x - pl.widthFraction / 2).clamp(0.0, 1.0) * w;
     final top  = (pl.y - pl.heightFraction / 2).clamp(0.0, 1.0) * h;
     final pw   = pl.widthFraction * w;

@@ -67,12 +67,13 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
   // ── Off-screen canvas ─────────────────────────────────────────────────────
 
   void _installCanvas() {
+    final orientation = widget.viewModel.project.orientation;
     _canvasOverlay = OverlayEntry(
       builder: (_) => Positioned(
         left: -99999,
         top: -99999,
-        width: FilmCanvas.kWidth,
-        height: FilmCanvas.kHeight,
+        width: orientation.canvasWidth,
+        height: orientation.canvasHeight,
         child: Material(
           child: RepaintBoundary(
             key: _captureKey,
@@ -116,10 +117,13 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
 
     try {
       final res = widget.viewModel.resolution;
+      // Portrait swaps the encoder dimensions so the output matches the canvas:
+      // the captured frame is (canvasW × pixelRatio) by (canvasH × pixelRatio).
+      final portrait = project.orientation.isPortrait;
       _exportService = VideoExportService();
       await _exportService!.startEncoder(
-        width: res.width,
-        height: res.height,
+        width: portrait ? res.height : res.width,
+        height: portrait ? res.width : res.height,
         fps: _fps,
         bitrateBps: res.bitrateBps,
       );

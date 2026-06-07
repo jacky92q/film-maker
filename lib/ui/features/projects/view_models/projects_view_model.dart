@@ -35,11 +35,15 @@ class ProjectsViewModel extends ChangeNotifier {
 
   // Returns an in-memory project only — it gets persisted when the user saves
   // from the editor. If they discard, nothing is written to storage.
-  Future<Project?> createProject(String title) async {
+  Future<Project?> createProject(
+    String title, {
+    VideoOrientation orientation = VideoOrientation.landscape,
+  }) async {
     return Project(
       id: _uuid.v4(),
       title: title,
       slides: [Slide(id: _uuid.v4())],
+      orientation: orientation,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );

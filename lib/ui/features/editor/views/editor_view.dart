@@ -479,20 +479,44 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
 
   Widget _buildPortraitLayout(BoxConstraints constraints, Slide slide) {
     _isPortraitLayout = true;
+    final orientation = widget.viewModel.project.orientation;
+    // Canvas — always present so widget identity is stable (avoids focus loss).
+    final slideCanvas = _SlideCanvas(viewModel: widget.viewModel);
+
+    // A portrait (9:16) preview is tall, so it shares the vertical space with the
+    // edit panel via flex instead of being width-driven like a landscape preview.
+    // When the keyboard is up we shrink the preview to keep the fields visible.
+    final Widget preview = orientation.isPortrait
+        ? Expanded(
+            flex: _keyboardVisible ? 2 : 7,
+            child: ColoredBox(
+              color: const Color(0xFF1C1C1C),
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: orientation.aspectRatio,
+                  child: slideCanvas,
+                ),
+              ),
+            ),
+          )
+        : ColoredBox(
+            color: const Color(0xFF1C1C1C),
+            child: AspectRatio(
+              aspectRatio: orientation.aspectRatio,
+              child: slideCanvas,
+            ),
+          );
+
     return Column(
       children: [
-        // Canvas — always present so widget identity is stable (avoids focus loss)
-        ColoredBox(
-          color: const Color(0xFF1C1C1C),
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: _SlideCanvas(viewModel: widget.viewModel),
-          ),
-        ),
+        preview,
         // Section selector
         _buildSectionTabBar(slide),
         // Edit panel
-        Expanded(child: _buildSectionContent(slide)),
+        Expanded(
+          flex: orientation.isPortrait ? (_keyboardVisible ? 3 : 6) : 1,
+          child: _buildSectionContent(slide),
+        ),
         // Timeline strip — hidden when keyboard is open to free up space
         if (!_keyboardVisible) _buildTimeline(height: 108),
       ],
@@ -628,7 +652,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
                   color: const Color(0xFF1C1C1C),
                   child: Center(
                     child: AspectRatio(
-                      aspectRatio: 16 / 9,
+                      aspectRatio: widget.viewModel.project.orientation.aspectRatio,
                       child: _SlideCanvas(viewModel: widget.viewModel),
                     ),
                   ),
@@ -664,7 +688,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
                   color: const Color(0xFF1C1C1C),
                   child: Center(
                     child: AspectRatio(
-                      aspectRatio: 16 / 9,
+                      aspectRatio: widget.viewModel.project.orientation.aspectRatio,
                       child: _SlideCanvas(viewModel: widget.viewModel),
                     ),
                   ),
@@ -873,11 +897,13 @@ class _SlideCanvasState extends State<_SlideCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    // All layers rendered in a canonical 1280×720 space so that positions,
-    // sizes, and font sizes are identical between editor and preview at any
-    // screen resolution or orientation. FittedBox scales the whole canvas.
-    const canonicalW = 1280.0;
-    const canonicalH = 720.0;
+    // All layers rendered in a canonical logical space (1280×720 landscape or
+    // 720×1280 portrait) so that positions, sizes, and font sizes are identical
+    // between editor and preview at any screen resolution. FittedBox scales the
+    // whole canvas to fit its slot.
+    final orientation = widget.viewModel.project.orientation;
+    final canonicalW = orientation.canvasWidth;
+    final canonicalH = orientation.canvasHeight;
 
     final slide = widget.viewModel.selectedSlide!;
     final selectedLayerId = widget.viewModel.selectedLayerId;
