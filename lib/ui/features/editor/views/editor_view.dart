@@ -2338,7 +2338,7 @@ class _SlideTabs extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: SlideOverlay.values.map((ov) {
+              children: SlideOverlayX.pickable.map((ov) {
                 final sel = slide.overlay == ov;
                 return GestureDetector(
                   onTap: () => viewModel.updateSelectedSlide(slide.copyWith(overlay: ov)),
@@ -2375,7 +2375,15 @@ class _SlideTabs extends StatelessWidget {
               children: SlideAmbientEffect.values.map((fx) {
                 final sel = slide.ambientEffect == fx;
                 return GestureDetector(
-                  onTap: () => viewModel.updateSelectedSlide(slide.copyWith(ambientEffect: fx)),
+                  onTap: () => viewModel.updateSelectedSlide(slide.copyWith(
+                    ambientEffect: fx,
+                    // An animated ambient effect supersedes the legacy static
+                    // light-leak / bokeh overlays — clear them so they never
+                    // stack on the same slide.
+                    overlay: fx != SlideAmbientEffect.none && slide.overlay.isLegacyAmbient
+                        ? SlideOverlay.none
+                        : slide.overlay,
+                  )),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     height: 44,
