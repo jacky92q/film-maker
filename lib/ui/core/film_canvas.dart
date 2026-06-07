@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/domain/models/slide.dart';
@@ -272,8 +273,18 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
     switch (effect) {
       case TransitionEffect.fade:
       case TransitionEffect.kenBurns:
-      case TransitionEffect.blurDissolve:
         return Opacity(opacity: t, child: child);
+      case TransitionEffect.blurDissolve:
+        // Genuine defocus-to-focus dissolve: blur eases out as the slide
+        // fades in, so it reads distinctly from a plain fade.
+        final blur = (1.0 - t) * 14.0;
+        return Opacity(
+          opacity: t,
+          child: ImageFiltered(
+            imageFilter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+            child: child,
+          ),
+        );
       case TransitionEffect.slideLeft:
         return FractionalTranslation(
             translation: Offset(1.0 - t, 0), child: child);
@@ -979,10 +990,10 @@ List<_Ptcl> _buildParticles(SlideAmbientEffect effect) {
         angle: r() * math.pi * 2, color: pick(cs)));
 
     case SlideAmbientEffect.bokeFloat:
+      const cs = [Color(0xFFFFD700), Color(0xFFFFFFFF), Color(0xFFFFB7C5), Color(0xFFF7E7CE), Color(0xFFDDA0DD)];
       return List.generate(11, (_) => _Ptcl(x: r(), y: r(), phase: r(),
         size: 0.06 + r() * 0.12, speed: 0.08 + r() * 0.15,
-        angle: r() * math.pi * 2,
-        color: [const Color(0x22FFD700), const Color(0x22FFFFFF), const Color(0x22FFB7C5), const Color(0x22F7E7CE), const Color(0x22DDA0DD)][rng.nextInt(5)]));
+        angle: r() * math.pi * 2, color: pick(cs)));
 
     case SlideAmbientEffect.starTwinkle:
       const cs = [Color(0xFFFFFFFF), Color(0xFFFFD700), Color(0xFFFFF8DC), Color(0xFFE0E0E0)];
@@ -997,7 +1008,7 @@ List<_Ptcl> _buildParticles(SlideAmbientEffect effect) {
         angle: r() * math.pi * 2, color: pick(cs)));
 
     case SlideAmbientEffect.lightRays:
-      const cs = [Color(0x18FFD700), Color(0x12FFFFFF), Color(0x15FFF8DC)];
+      const cs = [Color(0xFFFFD700), Color(0xFFFFFFFF), Color(0xFFFFF8DC)];
       return List.generate(7, (_) => _Ptcl(
         x: 0.5 + (r() - 0.5) * 0.3, y: 0.0, phase: r(),
         size: 0.14 + r() * 0.10, speed: 0.04 + r() * 0.06,
@@ -1229,8 +1240,7 @@ class _AmbientPainter extends CustomPainter {
           math.cos(cycle * math.pi * 2 + p.phase * 3) * s.height * 0.025;
       final r = p.size * math.min(s.width, s.height) *
           (0.85 + 0.15 * math.sin(cycle * math.pi * 3));
-      final alphaMul = 0.6 + 0.4 * math.sin(cycle * math.pi * 2);
-      final baseAlpha = (p.color.a / 255.0) * alphaMul;
+      final baseAlpha = 0.16 + 0.10 * math.sin(cycle * math.pi * 2);
       final gradient = RadialGradient(
         colors: [
           p.color.withValues(alpha: baseAlpha),
@@ -1295,8 +1305,7 @@ class _AmbientPainter extends CustomPainter {
     for (final p in particles) {
       final cycle = (t * p.speed + p.phase) % 1.0;
       final rot = p.angle + cycle * math.pi * 0.15;
-      final baseAlpha = (p.color.a / 255.0) *
-          (0.35 + 0.3 * math.sin(cycle * math.pi * 2));
+      final baseAlpha = 0.22 + 0.12 * math.sin(cycle * math.pi * 2);
       final halfSpread = p.size * 0.5;
       final length = s.height * 1.5;
       final ox = p.x * s.width;

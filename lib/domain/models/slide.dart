@@ -326,6 +326,21 @@ extension SlideFrameX on SlideFrame {
 enum SlideOverlay { none, vignette, filmGrain, lightLeak, bokeh }
 
 extension SlideOverlayX on SlideOverlay {
+  /// Overlays offered in the editor. [lightLeak] and [bokeh] are kept in the
+  /// enum for backward compatibility with saved projects, but hidden from the
+  /// picker because the animated ambient effects (lightRays / bokeFloat)
+  /// supersede them. Selecting an ambient effect auto-clears these legacy
+  /// overlays so a slide never stacks the static + animated versions.
+  static const List<SlideOverlay> pickable = [
+    SlideOverlay.none,
+    SlideOverlay.vignette,
+    SlideOverlay.filmGrain,
+  ];
+
+  /// Whether this overlay conflicts with an animated ambient effect.
+  bool get isLegacyAmbient =>
+      this == SlideOverlay.lightLeak || this == SlideOverlay.bokeh;
+
   String get label {
     switch (this) {
       case SlideOverlay.none:      return L10n.s.overlayNone;
