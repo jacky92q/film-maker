@@ -1,6 +1,7 @@
-import 'dart:io';
 import 'dart:math' as math;
+
 import 'package:film_maker/domain/models/slide.dart';
+import 'package:film_maker/ui/core/image_utils.dart';
 import 'package:flutter/material.dart';
 
 /// Builds a photo widget with the given shape clip and frame decoration.
@@ -20,12 +21,11 @@ Widget buildShapedPhoto({
     return Container(color: Colors.black26);
   }
 
-  Widget img = Image.file(
-    File(imagePath),
+  Widget img = imageFromPath(
+    imagePath,
     fit: fit,
     width: double.infinity,
     height: double.infinity,
-    errorBuilder: (_, __, ___) => Container(color: Colors.black26),
   );
 
   if (colorFilter != null) {

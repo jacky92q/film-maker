@@ -5,7 +5,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class FirebaseAuthService {
   final _auth = fb.FirebaseAuth.instance;
-  final _googleSignIn = GoogleSignIn(
+  // Only instantiated for native sign-in; on web we use Firebase's own popup.
+  late final _googleSignIn = GoogleSignIn(
     serverClientId: '609658608834-2uebljieak5cev683vvjk78f826h37pd.apps.googleusercontent.com',
   );
 
@@ -54,9 +55,11 @@ class FirebaseAuthService {
   }
 
   Future<void> signOut() async {
-    try {
-      await _googleSignIn.signOut();
-    } catch (_) {}
+    if (!kIsWeb) {
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {}
+    }
     await _auth.signOut();
   }
 

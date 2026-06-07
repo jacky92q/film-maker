@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+﻿import 'dart:math' as math;
 
 import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
@@ -9,6 +9,7 @@ import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/domain/models/sticker.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/image_utils.dart';
 import 'package:film_maker/ui/core/slide_frame.dart';
 import 'package:film_maker/ui/core/sticker_painter.dart';
 import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';
@@ -17,6 +18,7 @@ import 'package:film_maker/ui/features/export/views/export_view.dart';
 import 'package:film_maker/ui/features/preview/view_models/preview_view_model.dart';
 import 'package:film_maker/ui/features/preview/views/preview_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 
 // Returns the appropriate TextStyle for a given font style using bundled fonts.
@@ -812,6 +814,15 @@ class _SlideCanvasState extends State<_SlideCanvas> {
   double _plStartH = 0.0;
   double _plStartCropScale = 1.0;
 
+  // On Flutter Web, gesture deltas arrive in SCREEN pixels rather than in the
+  // FittedBox child's canonical coordinate space.  We store the actual
+  // rendered canvas size (computed once per build via LayoutBuilder) and use
+  // it as the divisor on web so that a drag spanning the full canvas always
+  // moves the layer by exactly 1.0 in normalised space — regardless of how
+  // small the preview is on screen.
+  double _dragW = 0;   // set in build() via LayoutBuilder
+  double _dragH = 0;
+
   Widget _buildTextLayerItem(TextLayer layer, double canvasW, double canvasH, String? selectedLayerId) {
     return Positioned.fill(
       child: Align(
@@ -824,8 +835,8 @@ class _SlideCanvasState extends State<_SlideCanvas> {
           onTap: () => widget.viewModel.selectLayer(layer.id),
           onPanUpdate: (d) => widget.viewModel.moveTextLayer(
             layer.id,
-            (layer.x + d.delta.dx / canvasW).clamp(0.05, 0.95),
-            (layer.y + d.delta.dy / canvasH).clamp(0.05, 0.95),
+            (layer.x + d.delta.dx / _dragW).clamp(0.05, 0.95),
+            (layer.y + d.delta.dy / _dragH).clamp(0.05, 0.95),
           ),
           child: _LayerWidget(
             layer: layer,
@@ -859,20 +870,24 @@ class _SlideCanvasState extends State<_SlideCanvas> {
           _plStartCropScale = pl.cropScale;
         },
         onScaleUpdate: (d) {
+          // pw/ph are in canonical pixels; on web focalPointDelta is in screen
+          // pixels, so scale the crop divisors the same way as _dragW/_dragH.
+          final cropDivW = kIsWeb ? pw * (_dragW / canvasW) : pw;
+          final cropDivH = kIsWeb ? ph * (_dragH / canvasH) : ph;
           if (!isSelectedPL) {
-            final newX = (pl.x + d.focalPointDelta.dx / canvasW).clamp(0.04, 0.96);
-            final newY = (pl.y + d.focalPointDelta.dy / canvasH).clamp(0.04, 0.96);
+            final newX = (pl.x + d.focalPointDelta.dx / _dragW).clamp(0.04, 0.96);
+            final newY = (pl.y + d.focalPointDelta.dy / _dragH).clamp(0.04, 0.96);
             widget.viewModel.movePhotoLayer(pl.id, newX, newY);
           } else if (isCropMode) {
-            final newOX = (pl.cropOffsetX + d.focalPointDelta.dx / pw).clamp(-0.5, 0.5);
-            final newOY = (pl.cropOffsetY + d.focalPointDelta.dy / ph).clamp(-0.5, 0.5);
+            final newOX = (pl.cropOffsetX + d.focalPointDelta.dx / cropDivW).clamp(-0.5, 0.5);
+            final newOY = (pl.cropOffsetY + d.focalPointDelta.dy / cropDivH).clamp(-0.5, 0.5);
             final newCS = (_plStartCropScale * d.scale).clamp(1.0, 4.0);
             widget.viewModel.updatePhotoLayer(
               pl.copyWith(cropOffsetX: newOX, cropOffsetY: newOY, cropScale: newCS),
             );
           } else {
-            final newX = (pl.x + d.focalPointDelta.dx / canvasW).clamp(0.04, 0.96);
-            final newY = (pl.y + d.focalPointDelta.dy / canvasH).clamp(0.04, 0.96);
+            final newX = (pl.x + d.focalPointDelta.dx / _dragW).clamp(0.04, 0.96);
+            final newY = (pl.y + d.focalPointDelta.dy / _dragH).clamp(0.04, 0.96);
             final newW = (_plStartW * d.scale).clamp(0.08, 1.0);
             final newH = (_plStartH * d.scale).clamp(0.08, 1.0);
             widget.viewModel.updatePhotoLayer(
@@ -943,8 +958,8 @@ class _SlideCanvasState extends State<_SlideCanvas> {
           _plStartW = sl.widthFraction;
         },
         onScaleUpdate: (d) {
-          final newX = (sl.x + d.focalPointDelta.dx / canvasW).clamp(0.02, 0.98);
-          final newY = (sl.y + d.focalPointDelta.dy / canvasH).clamp(0.02, 0.98);
+          final newX = (sl.x + d.focalPointDelta.dx / _dragW).clamp(0.02, 0.98);
+          final newY = (sl.y + d.focalPointDelta.dy / _dragH).clamp(0.02, 0.98);
           final newW = (_plStartW * d.scale).clamp(0.04, 1.2);
           final newRot = sl.rotation + d.rotation * 180 / 3.14159265;
           if (isSelected) {
@@ -1007,10 +1022,14 @@ class _SlideCanvasState extends State<_SlideCanvas> {
   void _onPhotoScaleUpdate(ScaleUpdateDetails d, double w, double h) {
     final newScale = (_scaleStart * d.scale).clamp(0.1, 4.0);
     final delta = d.localFocalPoint - _focalStart;
+    // On web, localFocalPoint is in screen pixels; use the actual displayed
+    // canvas size (_dragW/_dragH) so panning tracks the pointer 1:1.
+    final divW = kIsWeb ? _dragW : w;
+    final divH = kIsWeb ? _dragH : h;
     widget.viewModel.updatePhotoTransform(
       scale: newScale,
-      offsetX: _offsetXStart + delta.dx / w,
-      offsetY: _offsetYStart + delta.dy / h,
+      offsetX: _offsetXStart + delta.dx / divW,
+      offsetY: _offsetYStart + delta.dy / divH,
     );
   }
 
@@ -1023,6 +1042,25 @@ class _SlideCanvasState extends State<_SlideCanvas> {
     final orientation = widget.viewModel.project.orientation;
     final canonicalW = orientation.canvasWidth;
     final canonicalH = orientation.canvasHeight;
+
+    // _dragW/_dragH are set below inside LayoutBuilder so the gesture handlers
+    // always have the correct value before they fire.
+    return LayoutBuilder(builder: (context, constraints) {
+      // Compute the actual on-screen size of the canvas after FittedBox scaling.
+      final scaleW = constraints.maxWidth > 0 ? constraints.maxWidth / canonicalW : 1.0;
+      final scaleH = constraints.maxHeight > 0 ? constraints.maxHeight / canonicalH : 1.0;
+      final scale  = math.min(scaleW, scaleH);
+      // On web, GestureDetector delivers deltas in screen pixels (not in the
+      // FittedBox child's canonical space).  Use the displayed canvas dimensions
+      // as divisors so a drag spanning the whole preview moves the layer by 1.0.
+      _dragW = kIsWeb ? canonicalW * scale : canonicalW;
+      _dragH = kIsWeb ? canonicalH * scale : canonicalH;
+
+      return _buildCanvas(context, canonicalW, canonicalH);
+    });
+  }
+
+  Widget _buildCanvas(BuildContext context, double canonicalW, double canonicalH) {
 
     final slide = widget.viewModel.selectedSlide!;
     final selectedLayerId = widget.viewModel.selectedLayerId;
@@ -3237,7 +3275,7 @@ class _SlideThumbnail extends StatelessWidget {
             children: [
               ColoredBox(color: Color(slide.backgroundColor)),
               if (thumbPath != null)
-                Image.file(File(thumbPath),
+                imageFromPath(thumbPath,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => const SizedBox.shrink()),
               buildSlideDim(slide.dimDirection, slide.dimOpacity),

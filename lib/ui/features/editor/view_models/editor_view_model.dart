@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:film_maker/data/repositories/project_repository.dart';
@@ -315,7 +314,7 @@ class EditorViewModel extends ChangeNotifier {
         final double canvasH = _project.orientation.canvasHeight;
         double wf = 0.45, hf = 0.55; // fallback
         try {
-          final bytes = await File(picked.path).readAsBytes();
+          final bytes = await picked.readAsBytes();
           final codec = await ui.instantiateImageCodec(bytes);
           final frame = await codec.getNextFrame();
           final imgW = frame.image.width.toDouble();
