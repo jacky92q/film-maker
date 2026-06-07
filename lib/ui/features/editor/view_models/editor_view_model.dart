@@ -223,7 +223,8 @@ class EditorViewModel extends ChangeNotifier {
       );
       if (picked != null) {
         // Compute initial size so the full photo is visible (contain within canvas)
-        const double canvasW = 1280, canvasH = 720;
+        final double canvasW = _project.orientation.canvasWidth;
+        final double canvasH = _project.orientation.canvasHeight;
         double wf = 0.45, hf = 0.55; // fallback
         try {
           final bytes = await File(picked.path).readAsBytes();

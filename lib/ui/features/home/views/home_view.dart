@@ -4,6 +4,7 @@ import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/new_film_dialog.dart';
 import 'package:film_maker/ui/core/responsive.dart';
 import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
@@ -69,51 +70,12 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Future<void> _showNewFilmDialog() async {
-    final controller = TextEditingController();
-    final title = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(L10n.s.newWeddingFilm),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(L10n.s.filmTitlePrompt),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              style: const TextStyle(color: AppTheme.textDark),
-              decoration: InputDecoration(
-                hintText: L10n.s.filmTitleHint,
-                prefixIcon: const Icon(Icons.movie_creation_outlined),
-              ),
-              onSubmitted: (v) {
-                if (v.trim().isNotEmpty) Navigator.of(ctx).pop(v.trim());
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(L10n.s.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              final t = controller.text.trim();
-              if (t.isNotEmpty) Navigator.of(ctx).pop(t);
-            },
-            child: Text(L10n.s.create),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    if (title == null || title.isEmpty || !mounted) return;
+    final request = await showNewFilmDialog(context);
+    if (request == null || !mounted) return;
 
     final vm = ProjectsViewModel(projectRepository: widget.projectRepository);
-    final project = await vm.createProject(title);
+    final project =
+        await vm.createProject(request.title, orientation: request.orientation);
     if (project == null || !mounted) return;
 
     await Navigator.of(context).push(

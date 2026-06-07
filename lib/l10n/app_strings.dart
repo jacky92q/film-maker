@@ -110,6 +110,11 @@ abstract class AppStrings {
   String get newWeddingFilm;
   String get filmTitlePrompt;
   String get filmTitleHint;
+  String get videoFormat;
+  String get formatLandscape;
+  String get formatPortrait;
+  String get formatLandscapeDesc;
+  String get formatPortraitDesc;
 
   // ── Projects ──────────────────────────────────────────────────────────────
   String get myWeddingFilms;
@@ -406,6 +411,11 @@ class _EnStrings extends AppStrings {
   @override String get newWeddingFilm => 'New Memory Film';
   @override String get filmTitlePrompt => 'Give your film a title to remember';
   @override String get filmTitleHint => 'e.g. Summer Vacation 2024';
+  @override String get videoFormat => 'Video format';
+  @override String get formatLandscape => 'Landscape';
+  @override String get formatPortrait => 'Portrait';
+  @override String get formatLandscapeDesc => '16:9 · YouTube, TV';
+  @override String get formatPortraitDesc => '9:16 · Reels, Shorts';
 
   @override String get myWeddingFilms => 'My Films';
   @override String get noFilmsYet => 'No films yet';
@@ -693,6 +703,11 @@ class _KoStrings extends AppStrings {
   @override String get newWeddingFilm => '새 추억 영상';
   @override String get filmTitlePrompt => '기억하기 좋은 영상 제목을 지어주세요';
   @override String get filmTitleHint => '예: 2024 여름 휴가';
+  @override String get videoFormat => '영상 형식';
+  @override String get formatLandscape => '가로';
+  @override String get formatPortrait => '세로';
+  @override String get formatLandscapeDesc => '16:9 · 유튜브, TV';
+  @override String get formatPortraitDesc => '9:16 · 릴스, 쇼츠';
 
   @override String get myWeddingFilms => '내 영상';
   @override String get noFilmsYet => '아직 영상이 없어요';

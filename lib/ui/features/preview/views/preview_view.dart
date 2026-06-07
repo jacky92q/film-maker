@@ -77,7 +77,7 @@ class _PreviewViewState extends State<PreviewView> {
           children: [
             Center(
               child: AspectRatio(
-                aspectRatio: 16 / 9,
+                aspectRatio: widget.viewModel.project.orientation.aspectRatio,
                 child: FittedBox(
                   fit: BoxFit.contain,
                   child: FilmCanvas(

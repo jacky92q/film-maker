@@ -6,6 +6,7 @@ import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/new_film_dialog.dart';
 import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:film_maker/ui/features/projects/view_models/projects_view_model.dart';
@@ -34,49 +35,13 @@ class _ProjectsViewState extends State<ProjectsView> {
   }
 
   Future<void> _showNewProjectDialog() async {
-    final controller = TextEditingController();
-    final title = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(L10n.s.newWeddingFilm),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(L10n.s.filmTitlePrompt),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              style: const TextStyle(color: AppTheme.textDark),
-              decoration: InputDecoration(
-                hintText: L10n.s.filmTitleHint,
-                prefixIcon: const Icon(Icons.movie_creation_outlined),
-              ),
-              onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(L10n.s.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              final t = controller.text.trim();
-              if (t.isNotEmpty) Navigator.of(ctx).pop(t);
-            },
-            child: Text(L10n.s.create),
-          ),
-        ],
-      ),
+    final request = await showNewFilmDialog(context);
+    if (request == null || !mounted) return;
+    final project = await widget.viewModel.createProject(
+      request.title,
+      orientation: request.orientation,
     );
-    controller.dispose();
-    if (title != null && title.isNotEmpty && mounted) {
-      final project = await widget.viewModel.createProject(title);
-      if (project != null && mounted) _openEditor(project);
-    }
+    if (project != null && mounted) _openEditor(project);
   }
 
   void _openEditor(Project project) async {
@@ -412,6 +377,25 @@ class _ProjectCard extends StatelessWidget {
                 ),
               ),
             ),
+
+          // Orientation badge.
+          Positioned(
+            top: 6, left: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Icon(
+                project.orientation.isPortrait
+                    ? Icons.crop_portrait
+                    : Icons.crop_landscape,
+                color: Colors.white70,
+                size: 12,
+              ),
+            ),
+          ),
         ],
       ),
     );
