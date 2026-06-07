@@ -2235,6 +2235,40 @@ class _SlideTabs extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+          _SectionHeader(L10n.s.secAmbient),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: SlideAmbientEffect.values.map((fx) {
+                final sel = slide.ambientEffect == fx;
+                return GestureDetector(
+                  onTap: () => viewModel.updateSelectedSlide(slide.copyWith(ambientEffect: fx)),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    height: 44,
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: sel ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surface2,
+                      border: Border.all(color: sel ? AppTheme.primary : AppTheme.line, width: sel ? 1.5 : 1),
+                    ),
+                    child: Center(
+                      child: Text('${fx.emoji} ${fx.label}',
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontTheme,
+                            color: sel ? AppTheme.primary : AppTheme.textMid,
+                            fontSize: 11,
+                            fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                          )),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
           // Photo shape
           _SectionHeader(L10n.s.secPhotoShape),
           const SizedBox(height: 8),
