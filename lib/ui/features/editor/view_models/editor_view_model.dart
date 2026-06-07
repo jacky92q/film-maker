@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:film_maker/data/repositories/project_repository.dart';
 import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/domain/models/slide.dart';
+import 'package:film_maker/domain/models/sticker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -23,6 +24,7 @@ class EditorViewModel extends ChangeNotifier {
   int _selectedSlideIndex;
   String? _selectedLayerId;
   String? _selectedPhotoLayerId;
+  String? _selectedStickerId;
   bool _isSaving = false;
   bool _hasUnsavedChanges = false;
   bool _cropMode = false;
@@ -31,6 +33,7 @@ class EditorViewModel extends ChangeNotifier {
   int get selectedSlideIndex => _selectedSlideIndex;
   String? get selectedLayerId => _selectedLayerId;
   String? get selectedPhotoLayerId => _selectedPhotoLayerId;
+  String? get selectedStickerId => _selectedStickerId;
   bool get isSaving => _isSaving;
   bool get hasUnsavedChanges => _hasUnsavedChanges;
   bool get cropMode => _cropMode;
@@ -58,11 +61,22 @@ class EditorViewModel extends ChangeNotifier {
     }
   }
 
+  StickerLayer? get selectedSticker {
+    final slide = selectedSlide;
+    if (slide == null || _selectedStickerId == null) return null;
+    try {
+      return slide.stickerLayers.firstWhere((l) => l.id == _selectedStickerId);
+    } catch (_) {
+      return null;
+    }
+  }
+
   void selectSlide(int index) {
     if (index >= 0 && index < _project.slides.length) {
       _selectedSlideIndex = index;
       _selectedLayerId = null;
       _selectedPhotoLayerId = null;
+      _selectedStickerId = null;
       _cropMode = false;
       notifyListeners();
     }
@@ -72,6 +86,7 @@ class EditorViewModel extends ChangeNotifier {
     _selectedLayerId = id;
     if (id != null) {
       _selectedPhotoLayerId = null;
+      _selectedStickerId = null;
       _cropMode = false;
     }
     notifyListeners();
@@ -79,8 +94,21 @@ class EditorViewModel extends ChangeNotifier {
 
   void selectPhotoLayer(String? id) {
     _selectedPhotoLayerId = id;
-    if (id != null) _selectedLayerId = null;
+    if (id != null) {
+      _selectedLayerId = null;
+      _selectedStickerId = null;
+    }
     if (id == null) _cropMode = false;
+    notifyListeners();
+  }
+
+  void selectSticker(String? id) {
+    _selectedStickerId = id;
+    if (id != null) {
+      _selectedLayerId = null;
+      _selectedPhotoLayerId = null;
+      _cropMode = false;
+    }
     notifyListeners();
   }
 
@@ -90,14 +118,19 @@ class EditorViewModel extends ChangeNotifier {
     int max = 0;
     for (final l in slide.textLayers) { if (l.zOrder > max) max = l.zOrder; }
     for (final l in slide.photoLayers) { if (l.zOrder > max) max = l.zOrder; }
+    for (final l in slide.stickerLayers) { if (l.zOrder > max) max = l.zOrder; }
     return max + 1;
   }
 
-  void bringToFront(String layerId, {required bool isPhoto}) {
+  void bringToFront(String layerId, {bool isPhoto = false, bool isSticker = false}) {
     final slide = selectedSlide;
     if (slide == null) return;
     final newOrder = _nextZOrder();
-    if (isPhoto) {
+    if (isSticker) {
+      _updateSlide(slide.copyWith(stickerLayers: [
+        for (final l in slide.stickerLayers) if (l.id == layerId) l.copyWith(zOrder: newOrder) else l,
+      ]));
+    } else if (isPhoto) {
       _updateSlide(slide.copyWith(photoLayers: [
         for (final l in slide.photoLayers) if (l.id == layerId) l.copyWith(zOrder: newOrder) else l,
       ]));
@@ -108,14 +141,19 @@ class EditorViewModel extends ChangeNotifier {
     }
   }
 
-  void sendToBack(String layerId, {required bool isPhoto}) {
+  void sendToBack(String layerId, {bool isPhoto = false, bool isSticker = false}) {
     final slide = selectedSlide;
     if (slide == null) return;
     int minOrder = 0;
     for (final l in slide.textLayers) { if (l.zOrder < minOrder) minOrder = l.zOrder; }
     for (final l in slide.photoLayers) { if (l.zOrder < minOrder) minOrder = l.zOrder; }
+    for (final l in slide.stickerLayers) { if (l.zOrder < minOrder) minOrder = l.zOrder; }
     final newOrder = minOrder - 1;
-    if (isPhoto) {
+    if (isSticker) {
+      _updateSlide(slide.copyWith(stickerLayers: [
+        for (final l in slide.stickerLayers) if (l.id == layerId) l.copyWith(zOrder: newOrder) else l,
+      ]));
+    } else if (isPhoto) {
       _updateSlide(slide.copyWith(photoLayers: [
         for (final l in slide.photoLayers) if (l.id == layerId) l.copyWith(zOrder: newOrder) else l,
       ]));
@@ -212,6 +250,56 @@ class EditorViewModel extends ChangeNotifier {
     if (_selectedPhotoLayerId == layerId) _selectedPhotoLayerId = null;
   }
 
+  // ── Stickers ──────────────────────────────────────────────────────────────
+
+  void addStickerLayer(StickerKind kind) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final layer = StickerLayer(
+      id: _uuid.v4(),
+      kind: kind,
+      x: 0.5,
+      y: 0.5,
+      widthFraction: 0.24,
+      filled: kind.defaultFilled,
+      color: SlideTextColor.gold,
+      zOrder: _nextZOrder(),
+    );
+    _selectedStickerId = layer.id;
+    _selectedLayerId = null;
+    _selectedPhotoLayerId = null;
+    _cropMode = false;
+    _updateSlide(slide.copyWith(stickerLayers: [...slide.stickerLayers, layer]));
+  }
+
+  void updateStickerLayer(StickerLayer layer) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final layers = [
+      for (final l in slide.stickerLayers)
+        if (l.id == layer.id) layer else l,
+    ];
+    _updateSlide(slide.copyWith(stickerLayers: layers));
+  }
+
+  void moveStickerLayer(String layerId, double x, double y) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final layers = [
+      for (final l in slide.stickerLayers)
+        if (l.id == layerId) l.copyWith(x: x, y: y) else l,
+    ];
+    _updateSlide(slide.copyWith(stickerLayers: layers));
+  }
+
+  void deleteStickerLayer(String layerId) {
+    final slide = selectedSlide;
+    if (slide == null) return;
+    final layers = slide.stickerLayers.where((l) => l.id != layerId).toList();
+    _updateSlide(slide.copyWith(stickerLayers: layers));
+    if (_selectedStickerId == layerId) _selectedStickerId = null;
+  }
+
   Future<void> addPhotoLayer() async {
     final slide = selectedSlide;
     if (slide == null) return;
@@ -286,6 +374,7 @@ class EditorViewModel extends ChangeNotifier {
     _selectedSlideIndex = slides.length - 1;
     _selectedLayerId = null;
     _selectedPhotoLayerId = null;
+    _selectedStickerId = null;
     _hasUnsavedChanges = true;
     notifyListeners();
   }
@@ -299,6 +388,7 @@ class EditorViewModel extends ChangeNotifier {
     }
     _selectedLayerId = null;
     _selectedPhotoLayerId = null;
+    _selectedStickerId = null;
     _hasUnsavedChanges = true;
     notifyListeners();
   }
@@ -382,6 +472,7 @@ class EditorViewModel extends ChangeNotifier {
       id: _project.id,
       title: _project.title,
       slides: _project.slides,
+      orientation: _project.orientation,
       musicPath: path,
       musicName: name,
       createdAt: _project.createdAt,
