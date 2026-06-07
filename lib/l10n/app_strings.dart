@@ -310,6 +310,20 @@ abstract class AppStrings {
   String get animFloat;
   String get animZoomPulse;
   String get animWipeReveal;
+  String get animHandwriting;
+  // Ambient effects
+  String get secAmbient;
+  String get ambientNone;
+  String get ambientPetalFall;
+  String get ambientSparkle;
+  String get ambientSnowFall;
+  String get ambientHeartFloat;
+  String get ambientGoldDust;
+  String get ambientConfetti;
+  String get ambientBokeh;
+  String get ambientStars;
+  String get ambientRibbon;
+  String get ambientLightRays;
   // Overlay
   String get overlayNone;
   String get overlayVignette;
@@ -602,6 +616,19 @@ class _EnStrings extends AppStrings {
   @override String get animFloat => 'Float';
   @override String get animZoomPulse => 'Zoom Pulse';
   @override String get animWipeReveal => 'Wipe Reveal';
+  @override String get animHandwriting => 'Handwriting';
+  @override String get secAmbient => 'Ambient FX';
+  @override String get ambientNone => 'None';
+  @override String get ambientPetalFall => 'Petals';
+  @override String get ambientSparkle => 'Sparkle';
+  @override String get ambientSnowFall => 'Snow';
+  @override String get ambientHeartFloat => 'Hearts';
+  @override String get ambientGoldDust => 'Gold Dust';
+  @override String get ambientConfetti => 'Confetti';
+  @override String get ambientBokeh => 'Bokeh';
+  @override String get ambientStars => 'Stars';
+  @override String get ambientRibbon => 'Ribbons';
+  @override String get ambientLightRays => 'Light Rays';
 
   @override String get overlayNone => 'None';
   @override String get overlayVignette => 'Vignette';
@@ -894,6 +921,19 @@ class _KoStrings extends AppStrings {
   @override String get animFloat => '떠오르기';
   @override String get animZoomPulse => '줌 펄스';
   @override String get animWipeReveal => '와이프';
+  @override String get animHandwriting => '필기 쓰기';
+  @override String get secAmbient => '앰비언트 FX';
+  @override String get ambientNone => '없음';
+  @override String get ambientPetalFall => '꽃잎 낙하';
+  @override String get ambientSparkle => '반짝임';
+  @override String get ambientSnowFall => '눈송이';
+  @override String get ambientHeartFloat => '하트';
+  @override String get ambientGoldDust => '골드 더스트';
+  @override String get ambientConfetti => '컨페티';
+  @override String get ambientBokeh => '보케';
+  @override String get ambientStars => '별 반짝임';
+  @override String get ambientRibbon => '리본';
+  @override String get ambientLightRays => '빛 줄기';
 
   @override String get overlayNone => '없음';
   @override String get overlayVignette => '비네트';

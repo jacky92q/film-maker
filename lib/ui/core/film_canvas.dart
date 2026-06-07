@@ -343,6 +343,13 @@ class _SingleSlide extends StatelessWidget {
           buildSlideDim(slide.dimDirection, slide.dimOpacity),
           buildSlideOverlay(slide.overlay),
           ..._layers(),
+          if (slide.ambientEffect != SlideAmbientEffect.none)
+            Positioned.fill(
+              child: _AmbientLayer(
+                effect: slide.ambientEffect,
+                playing: playing,
+              ),
+            ),
         ],
       ),
     );
@@ -485,6 +492,7 @@ Duration _animDur(SlideContentAnimation a) => switch (a) {
   SlideContentAnimation.float       => const Duration(milliseconds: 2200),
   SlideContentAnimation.zoomPulse   => const Duration(milliseconds: 3000),
   SlideContentAnimation.wipeReveal  => const Duration(milliseconds: 2200),
+  SlideContentAnimation.handwriting  => const Duration(milliseconds: 2600),
 };
 
 bool _loops(SlideContentAnimation a) =>
@@ -603,6 +611,16 @@ class _TextLayerState extends State<_TextLayer>
           final t = Curves.easeOut.transform(_ctrl.value);
           return Positioned.fill(child: Align(alignment: _align,
             child: ClipRect(clipper: _LeftToRightClipper(t), child: _text())));
+        });
+
+      case SlideContentAnimation.handwriting:
+        return AnimatedBuilder(animation: _ctrl, builder: (_, __) {
+          final t = Curves.easeInOut.transform(_ctrl.value);
+          return Positioned.fill(child: Align(alignment: _align,
+            child: ClipPath(
+              clipper: _BrushRevealClipper(t),
+              child: _text(),
+            )));
         });
     }
   }
@@ -739,4 +757,474 @@ class _RightToLeftClipper extends CustomClipper<Rect> {
     return Rect.fromLTWH(w * (1 - p), 0, w * p, s.height);
   }
   @override bool shouldReclip(_RightToLeftClipper o) => o.p != p;
+}
+
+class _BrushRevealClipper extends CustomClipper<Path> {
+  const _BrushRevealClipper(this.p);
+  final double p;
+
+  @override
+  Path getClip(Size s) {
+    if (p >= 1.0) {
+      return Path()..addRect(Rect.fromLTWH(0, 0, s.width, s.height));
+    }
+    final revealX = s.width * p;
+    const segs = 10;
+    final path = Path()..moveTo(0, 0)..lineTo(revealX, 0);
+    for (int i = 1; i <= segs; i++) {
+      final ty = i / segs;
+      final wobble = math.sin(ty * math.pi * 3 + p * math.pi) *
+          s.width * 0.025 * (1.0 - p * 0.5);
+      path.lineTo(revealX + wobble, ty * s.height);
+    }
+    path.lineTo(0, s.height);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(_BrushRevealClipper old) => old.p != p;
+}
+
+// ── Ambient particle effects ──────────────────────────────────────────────────
+
+class _Ptcl {
+  const _Ptcl({
+    required this.x,
+    required this.y,
+    required this.phase,
+    required this.size,
+    required this.speed,
+    required this.angle,
+    required this.color,
+  });
+  final double x;
+  final double y;
+  final double phase;
+  final double size;
+  final double speed;
+  final double angle;
+  final Color color;
+}
+
+List<_Ptcl> _buildParticles(SlideAmbientEffect effect) {
+  final rng = math.Random(effect.index * 37 + 13);
+  double r() => rng.nextDouble();
+  Color pick(List<Color> cs) => cs[rng.nextInt(cs.length)];
+
+  switch (effect) {
+    case SlideAmbientEffect.none:
+      return [];
+
+    case SlideAmbientEffect.petalFall:
+      const cs = [Color(0xFFFFB7C5), Color(0xFFFFCDD2), Color(0xFFFCE4EC), Color(0xFFF8BBD0), Color(0xFFFFEBEE)];
+      return List.generate(26, (_) => _Ptcl(x: r(), y: r(), phase: r(),
+        size: 0.010 + r() * 0.014, speed: 0.35 + r() * 0.45,
+        angle: r() * math.pi * 2, color: pick(cs)));
+
+    case SlideAmbientEffect.sparkleRise:
+      const cs = [Color(0xFFFFD700), Color(0xFFFFC107), Color(0xFFF7E7CE), Color(0xFFFFFFFF), Color(0xFFFFF8DC)];
+      return List.generate(22, (_) => _Ptcl(x: r(), y: r(), phase: r(),
+        size: 0.006 + r() * 0.016, speed: 0.3 + r() * 0.6,
+        angle: 0, color: pick(cs)));
+
+    case SlideAmbientEffect.snowFall:
+      const cs = [Color(0xFFFFFFFF), Color(0xFFE3F2FD), Color(0xFFECEFF1)];
+      return List.generate(32, (_) => _Ptcl(x: r(), y: r(), phase: r(),
+        size: 0.006 + r() * 0.012, speed: 0.25 + r() * 0.4,
+        angle: 0, color: pick(cs)));
+
+    case SlideAmbientEffect.heartFloat:
+      const cs = [Color(0xFFFF8A9A), Color(0xFFFF6B81), Color(0xFFFF4757), Color(0xFFFFB7C5), Color(0xFFF8BBD0)];
+      return List.generate(16, (_) => _Ptcl(x: r(), y: r(), phase: r(),
+        size: 0.012 + r() * 0.018, speed: 0.25 + r() * 0.45,
+        angle: 0, color: pick(cs)));
+
+    case SlideAmbientEffect.goldDust:
+      const cs = [Color(0xFFFFD700), Color(0xFFFFC107), Color(0xFFFFF8DC), Color(0xFFDAA520), Color(0xFFFFFFFF)];
+      return List.generate(55, (_) => _Ptcl(x: r(), y: r(), phase: r(),
+        size: 0.003 + r() * 0.008, speed: 0.2 + r() * 0.5,
+        angle: r() * math.pi * 2, color: pick(cs)));
+
+    case SlideAmbientEffect.confettiFall:
+      const cs = [Color(0xFFFFD700), Color(0xFFFF6B81), Color(0xFFFFFFFF), Color(0xFFF7E7CE), Color(0xFFB0C4DE), Color(0xFFDDA0DD)];
+      return List.generate(30, (_) => _Ptcl(x: r(), y: r(), phase: r(),
+        size: 0.008 + r() * 0.012, speed: 0.3 + r() * 0.5,
+        angle: r() * math.pi * 2, color: pick(cs)));
+
+    case SlideAmbientEffect.bokeFloat:
+      return List.generate(11, (_) => _Ptcl(x: r(), y: r(), phase: r(),
+        size: 0.06 + r() * 0.12, speed: 0.08 + r() * 0.15,
+        angle: r() * math.pi * 2,
+        color: [const Color(0x22FFD700), const Color(0x22FFFFFF), const Color(0x22FFB7C5), const Color(0x22F7E7CE), const Color(0x22DDA0DD)][rng.nextInt(5)]));
+
+    case SlideAmbientEffect.starTwinkle:
+      const cs = [Color(0xFFFFFFFF), Color(0xFFFFD700), Color(0xFFFFF8DC), Color(0xFFE0E0E0)];
+      return List.generate(22, (_) => _Ptcl(x: r(), y: r(), phase: r(),
+        size: 0.008 + r() * 0.018, speed: 0.4 + r() * 0.6,
+        angle: 0, color: pick(cs)));
+
+    case SlideAmbientEffect.ribbonStream:
+      const cs = [Color(0xFFFFD700), Color(0xFFFF6B81), Color(0xFFFFFFFF), Color(0xFFF7E7CE)];
+      return List.generate(14, (_) => _Ptcl(x: r(), y: r(), phase: r(),
+        size: 0.003 + r() * 0.004, speed: 0.3 + r() * 0.4,
+        angle: r() * math.pi * 2, color: pick(cs)));
+
+    case SlideAmbientEffect.lightRays:
+      const cs = [Color(0x18FFD700), Color(0x12FFFFFF), Color(0x15FFF8DC)];
+      return List.generate(7, (_) => _Ptcl(
+        x: 0.5 + (r() - 0.5) * 0.3, y: 0.0, phase: r(),
+        size: 0.14 + r() * 0.10, speed: 0.04 + r() * 0.06,
+        angle: (r() - 0.5) * math.pi * 0.5, color: pick(cs)));
+  }
+}
+
+class _AmbientLayer extends StatefulWidget {
+  const _AmbientLayer({required this.effect, required this.playing});
+  final SlideAmbientEffect effect;
+  final bool playing;
+
+  @override
+  State<_AmbientLayer> createState() => _AmbientLayerState();
+}
+
+class _AmbientLayerState extends State<_AmbientLayer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late List<_Ptcl> _particles;
+
+  Duration _cycleDur(SlideAmbientEffect e) => switch (e) {
+    SlideAmbientEffect.bokeFloat   => const Duration(seconds: 8),
+    SlideAmbientEffect.lightRays   => const Duration(seconds: 10),
+    SlideAmbientEffect.starTwinkle => const Duration(milliseconds: 1800),
+    _                              => const Duration(seconds: 5),
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _particles = _buildParticles(widget.effect);
+    _ctrl = AnimationController(vsync: this, duration: _cycleDur(widget.effect));
+    if (widget.playing) _ctrl.repeat();
+  }
+
+  @override
+  void didUpdateWidget(_AmbientLayer old) {
+    super.didUpdateWidget(old);
+    if (widget.playing && !old.playing) _ctrl.repeat();
+    else if (!widget.playing && old.playing) _ctrl.stop();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) => CustomPaint(
+        painter: _AmbientPainter(
+          effect: widget.effect,
+          particles: _particles,
+          t: _ctrl.value,
+        ),
+        child: const SizedBox.expand(),
+      ),
+    );
+  }
+}
+
+class _AmbientPainter extends CustomPainter {
+  const _AmbientPainter({
+    required this.effect,
+    required this.particles,
+    required this.t,
+  });
+  final SlideAmbientEffect effect;
+  final List<_Ptcl> particles;
+  final double t;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    switch (effect) {
+      case SlideAmbientEffect.none:
+        break;
+      case SlideAmbientEffect.petalFall:
+        _paintPetalFall(canvas, size);
+      case SlideAmbientEffect.sparkleRise:
+        _paintSparkleRise(canvas, size);
+      case SlideAmbientEffect.snowFall:
+        _paintSnowFall(canvas, size);
+      case SlideAmbientEffect.heartFloat:
+        _paintHeartFloat(canvas, size);
+      case SlideAmbientEffect.goldDust:
+        _paintGoldDust(canvas, size);
+      case SlideAmbientEffect.confettiFall:
+        _paintConfetti(canvas, size);
+      case SlideAmbientEffect.bokeFloat:
+        _paintBokeh(canvas, size);
+      case SlideAmbientEffect.starTwinkle:
+        _paintStarTwinkle(canvas, size);
+      case SlideAmbientEffect.ribbonStream:
+        _paintRibbons(canvas, size);
+      case SlideAmbientEffect.lightRays:
+        _paintLightRays(canvas, size);
+    }
+  }
+
+  double _alpha(double progress) {
+    if (progress < 0.08) return progress / 0.08;
+    if (progress > 0.92) return (1.0 - progress) / 0.08;
+    return 1.0;
+  }
+
+  void _paintPetalFall(Canvas canvas, Size s) {
+    for (final p in particles) {
+      final progress = (t * p.speed + p.phase) % 1.0;
+      final py = progress * s.height * 1.25 - s.height * 0.1;
+      final px = p.x * s.width +
+          math.sin(progress * math.pi * 4 + p.phase * math.pi * 2) * s.width * 0.05;
+      final rot = p.angle + progress * math.pi * 4;
+      final a = _alpha(progress);
+      final pw = p.size * s.width * 0.55;
+      final ph = p.size * s.width;
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: a * 0.85)
+        ..style = PaintingStyle.fill;
+      canvas.save();
+      canvas.translate(px, py);
+      canvas.rotate(rot);
+      final path = Path()
+        ..moveTo(0, -ph * 0.5)
+        ..cubicTo(pw * 0.9, -ph * 0.15, pw * 0.9, ph * 0.2, 0, ph * 0.5)
+        ..cubicTo(-pw * 0.9, ph * 0.2, -pw * 0.9, -ph * 0.15, 0, -ph * 0.5);
+      canvas.drawPath(path, paint);
+      canvas.restore();
+    }
+  }
+
+  void _paintSparkleRise(Canvas canvas, Size s) {
+    for (final p in particles) {
+      final progress = (t * p.speed + p.phase) % 1.0;
+      final py = p.y * s.height - progress * s.height * 0.35;
+      final px = p.x * s.width +
+          math.sin(progress * math.pi * 3 + p.phase * 6) * s.width * 0.02;
+      final a = _alpha(progress);
+      final pulse = 0.7 + 0.3 * math.sin(progress * math.pi * 4);
+      final r = p.size * s.width * pulse;
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: a * 0.9)
+        ..style = PaintingStyle.fill;
+      _drawStar4(canvas, px, py, r, paint);
+    }
+  }
+
+  void _paintSnowFall(Canvas canvas, Size s) {
+    for (final p in particles) {
+      final progress = (t * p.speed + p.phase) % 1.0;
+      final py = progress * s.height * 1.15 - s.height * 0.05;
+      final px = p.x * s.width +
+          math.sin(progress * math.pi * 2 + p.phase * math.pi * 2) * s.width * 0.025;
+      final a = _alpha(progress);
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: a * 0.75)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(px, py), p.size * s.width, paint);
+    }
+  }
+
+  void _paintHeartFloat(Canvas canvas, Size s) {
+    for (final p in particles) {
+      final progress = (t * p.speed + p.phase) % 1.0;
+      final py = p.y * s.height - progress * s.height * 0.4;
+      final px = p.x * s.width +
+          math.sin(progress * math.pi * 3 + p.phase * 5) * s.width * 0.03;
+      final a = _alpha(progress);
+      final scale = p.size * s.width * 0.5;
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: a * 0.8)
+        ..style = PaintingStyle.fill;
+      _drawHeart(canvas, px, py, scale, paint);
+    }
+  }
+
+  void _paintGoldDust(Canvas canvas, Size s) {
+    for (final p in particles) {
+      final cycle = (t * p.speed + p.phase) % 1.0;
+      final a = math.sin(cycle * math.pi) * 0.85;
+      if (a <= 0) continue;
+      final px = p.x * s.width +
+          math.sin(cycle * math.pi * 2 + p.phase * 4) * s.width * 0.015;
+      final py = p.y * s.height - cycle * s.height * 0.08;
+      final r = p.size * s.width * (0.8 + 0.4 * math.sin(cycle * math.pi * 3));
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: a)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(px, py), r, paint);
+    }
+  }
+
+  void _paintConfetti(Canvas canvas, Size s) {
+    for (final p in particles) {
+      final progress = (t * p.speed + p.phase) % 1.0;
+      final py = progress * s.height * 1.2 - s.height * 0.1;
+      final px = p.x * s.width +
+          math.sin(progress * math.pi * 5 + p.phase * math.pi * 2) * s.width * 0.04;
+      final rot = p.angle + progress * math.pi * 6;
+      final a = _alpha(progress);
+      final w = p.size * s.width * 1.8;
+      final h = p.size * s.width * 0.7;
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: a * 0.9)
+        ..style = PaintingStyle.fill;
+      canvas.save();
+      canvas.translate(px, py);
+      canvas.rotate(rot);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset.zero, width: w, height: h),
+          const Radius.circular(1.5),
+        ),
+        paint,
+      );
+      canvas.restore();
+    }
+  }
+
+  void _paintBokeh(Canvas canvas, Size s) {
+    for (final p in particles) {
+      final cycle = (t * p.speed + p.phase) % 1.0;
+      final px = p.x * s.width +
+          math.sin(cycle * math.pi * 2 + p.phase * 4) * s.width * 0.04;
+      final py = p.y * s.height +
+          math.cos(cycle * math.pi * 2 + p.phase * 3) * s.height * 0.025;
+      final r = p.size * math.min(s.width, s.height) *
+          (0.85 + 0.15 * math.sin(cycle * math.pi * 3));
+      final alphaMul = 0.6 + 0.4 * math.sin(cycle * math.pi * 2);
+      final baseAlpha = (p.color.a / 255.0) * alphaMul;
+      final gradient = RadialGradient(
+        colors: [
+          p.color.withValues(alpha: baseAlpha),
+          p.color.withValues(alpha: baseAlpha * 0.3),
+          p.color.withValues(alpha: 0),
+        ],
+        stops: const [0.0, 0.5, 1.0],
+      );
+      final paint = Paint()
+        ..shader = gradient.createShader(
+            Rect.fromCircle(center: Offset(px, py), radius: r));
+      canvas.drawCircle(Offset(px, py), r, paint);
+    }
+  }
+
+  void _paintStarTwinkle(Canvas canvas, Size s) {
+    for (final p in particles) {
+      final cycle = (t * p.speed + p.phase) % 1.0;
+      final brightness =
+          math.pow(math.sin(cycle * math.pi), 1.5).toDouble();
+      if (brightness < 0.05) continue;
+      final px = p.x * s.width;
+      final py = p.y * s.height;
+      final r = p.size * s.width * brightness;
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: brightness * 0.95)
+        ..style = PaintingStyle.fill;
+      _drawStar4(canvas, px, py, r, paint);
+      final glowPaint = Paint()
+        ..color = p.color.withValues(alpha: brightness * 0.25)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      canvas.drawCircle(Offset(px, py), r * 2.5, glowPaint);
+    }
+  }
+
+  void _paintRibbons(Canvas canvas, Size s) {
+    for (final p in particles) {
+      final progress = (t * p.speed + p.phase) % 1.0;
+      final py = progress * s.height * 1.2 - s.height * 0.1;
+      final px = p.x * s.width;
+      final a = _alpha(progress);
+      final rot = p.angle + progress * math.pi * 3;
+      final len = p.size * s.width * 60;
+      final thick = p.size * s.width * 6;
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: a * 0.9)
+        ..strokeWidth = thick
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      canvas.save();
+      canvas.translate(px, py);
+      canvas.rotate(rot);
+      final path = Path()
+        ..moveTo(-len * 0.5, 0)
+        ..cubicTo(-len * 0.2, -len * 0.15, len * 0.2, len * 0.15, len * 0.5, 0);
+      canvas.drawPath(path, paint);
+      canvas.restore();
+    }
+  }
+
+  void _paintLightRays(Canvas canvas, Size s) {
+    for (final p in particles) {
+      final cycle = (t * p.speed + p.phase) % 1.0;
+      final rot = p.angle + cycle * math.pi * 0.15;
+      final baseAlpha = (p.color.a / 255.0) *
+          (0.35 + 0.3 * math.sin(cycle * math.pi * 2));
+      final halfSpread = p.size * 0.5;
+      final length = s.height * 1.5;
+      final ox = p.x * s.width;
+      const oy = 0.0;
+      final paint = Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            p.color.withValues(alpha: baseAlpha),
+            p.color.withValues(alpha: baseAlpha * 0.4),
+            p.color.withValues(alpha: 0),
+          ],
+          stops: const [0.0, 0.4, 1.0],
+        ).createShader(Rect.fromLTWH(
+            ox - length * halfSpread, oy,
+            length * halfSpread * 2, length));
+      canvas.save();
+      canvas.translate(ox, oy);
+      canvas.rotate(rot);
+      final path = Path()
+        ..moveTo(0, 0)
+        ..lineTo(-length * halfSpread, length)
+        ..lineTo(length * halfSpread, length)
+        ..close();
+      canvas.drawPath(path, paint);
+      canvas.restore();
+    }
+  }
+
+  void _drawStar4(Canvas canvas, double cx, double cy, double r, Paint paint) {
+    final path = Path();
+    for (int i = 0; i < 8; i++) {
+      final angle = i * math.pi / 4 - math.pi / 2;
+      final radius = i.isEven ? r : r * 0.3;
+      final x = cx + radius * math.cos(angle);
+      final y = cy + radius * math.sin(angle);
+      if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawHeart(Canvas canvas, double cx, double cy, double size, Paint paint) {
+    final path = Path()
+      ..moveTo(cx, cy + size * 0.4)
+      ..cubicTo(cx - size * 1.1, cy - size * 0.05,
+                cx - size * 1.1, cy - size * 0.7, cx, cy - size * 0.25)
+      ..cubicTo(cx + size * 1.1, cy - size * 0.7,
+                cx + size * 1.1, cy - size * 0.05, cx, cy + size * 0.4);
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_AmbientPainter old) =>
+      old.t != t || old.effect != effect;
 }

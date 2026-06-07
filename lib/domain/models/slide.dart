@@ -223,6 +223,7 @@ enum SlideContentAnimation {
   float,
   zoomPulse,
   wipeReveal,
+  handwriting,
 }
 
 extension SlideContentAnimationX on SlideContentAnimation {
@@ -235,6 +236,7 @@ extension SlideContentAnimationX on SlideContentAnimation {
     SlideContentAnimation.float       => L10n.s.animFloat,
     SlideContentAnimation.zoomPulse   => L10n.s.animZoomPulse,
     SlideContentAnimation.wipeReveal  => L10n.s.animWipeReveal,
+    SlideContentAnimation.handwriting  => L10n.s.animHandwriting,
   };
 
   String get emoji => switch (this) {
@@ -246,6 +248,7 @@ extension SlideContentAnimationX on SlideContentAnimation {
     SlideContentAnimation.float       => '〜',
     SlideContentAnimation.zoomPulse   => '⊙',
     SlideContentAnimation.wipeReveal  => '▶',
+    SlideContentAnimation.handwriting  => '✍',
   };
 
   // Animations that make sense on text layers
@@ -257,6 +260,7 @@ extension SlideContentAnimationX on SlideContentAnimation {
     SlideContentAnimation.fadeStagger,
     SlideContentAnimation.float,
     SlideContentAnimation.wipeReveal,
+    SlideContentAnimation.handwriting,
   ];
 
   // Animations that make sense on photo layers
@@ -593,6 +597,50 @@ class PhotoLayer {
   }
 }
 
+enum SlideAmbientEffect {
+  none,
+  petalFall,
+  sparkleRise,
+  snowFall,
+  heartFloat,
+  goldDust,
+  confettiFall,
+  bokeFloat,
+  starTwinkle,
+  ribbonStream,
+  lightRays,
+}
+
+extension SlideAmbientEffectX on SlideAmbientEffect {
+  String get label => switch (this) {
+    SlideAmbientEffect.none         => L10n.s.ambientNone,
+    SlideAmbientEffect.petalFall    => L10n.s.ambientPetalFall,
+    SlideAmbientEffect.sparkleRise  => L10n.s.ambientSparkle,
+    SlideAmbientEffect.snowFall     => L10n.s.ambientSnowFall,
+    SlideAmbientEffect.heartFloat   => L10n.s.ambientHeartFloat,
+    SlideAmbientEffect.goldDust     => L10n.s.ambientGoldDust,
+    SlideAmbientEffect.confettiFall => L10n.s.ambientConfetti,
+    SlideAmbientEffect.bokeFloat    => L10n.s.ambientBokeh,
+    SlideAmbientEffect.starTwinkle  => L10n.s.ambientStars,
+    SlideAmbientEffect.ribbonStream => L10n.s.ambientRibbon,
+    SlideAmbientEffect.lightRays    => L10n.s.ambientLightRays,
+  };
+
+  String get emoji => switch (this) {
+    SlideAmbientEffect.none         => '✦',
+    SlideAmbientEffect.petalFall    => '🌸',
+    SlideAmbientEffect.sparkleRise  => '✨',
+    SlideAmbientEffect.snowFall     => '❄',
+    SlideAmbientEffect.heartFloat   => '♡',
+    SlideAmbientEffect.goldDust     => '✦',
+    SlideAmbientEffect.confettiFall => '🎊',
+    SlideAmbientEffect.bokeFloat    => '◎',
+    SlideAmbientEffect.starTwinkle  => '★',
+    SlideAmbientEffect.ribbonStream => '〰',
+    SlideAmbientEffect.lightRays    => '☀',
+  };
+}
+
 // ignore: avoid_classes_with_only_static_members
 class SlideDefaults {
   static Slide fromTemplate(String id, SlideTemplate template) {
@@ -682,6 +730,9 @@ class Slide {
             (e) => e.name == j['dimDirection'],
             orElse: () => DimDirection.none),
         dimOpacity: (j['dimOpacity'] as num? ?? 0.5).toDouble(),
+        ambientEffect: SlideAmbientEffect.values.firstWhere(
+            (e) => e.name == j['ambientEffect'],
+            orElse: () => SlideAmbientEffect.none),
       );
 
   Map<String, dynamic> toJson() => {
@@ -705,6 +756,7 @@ class Slide {
         'contentAnimation': contentAnimation.name,
         'dimDirection': dimDirection.name,
         'dimOpacity': dimOpacity,
+        'ambientEffect': ambientEffect.name,
       };
 
   const Slide({
@@ -728,6 +780,7 @@ class Slide {
     this.contentAnimation = SlideContentAnimation.none,
     this.dimDirection = DimDirection.none,
     this.dimOpacity = 0.5,
+    this.ambientEffect = SlideAmbientEffect.none,
   });
 
   final String id;
@@ -750,6 +803,7 @@ class Slide {
   final SlideContentAnimation contentAnimation;
   final DimDirection dimDirection;
   final double dimOpacity;
+  final SlideAmbientEffect ambientEffect;
 
   Slide copyWith({
     String? imagePath,
@@ -771,6 +825,7 @@ class Slide {
     SlideContentAnimation? contentAnimation,
     DimDirection? dimDirection,
     double? dimOpacity,
+    SlideAmbientEffect? ambientEffect,
   }) {
     return Slide(
       id: id,
@@ -793,6 +848,7 @@ class Slide {
       contentAnimation: contentAnimation ?? this.contentAnimation,
       dimDirection: dimDirection ?? this.dimDirection,
       dimOpacity: dimOpacity ?? this.dimOpacity,
+      ambientEffect: ambientEffect ?? this.ambientEffect,
     );
   }
 }
