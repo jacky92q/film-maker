@@ -653,7 +653,7 @@ class _TextLayerState extends State<_TextLayer>
           final p = _ctrl.value;
           return Positioned.fill(child: Align(alignment: _align,
             child: ShaderMask(
-              blendMode: BlendMode.srcATOP,
+              blendMode: BlendMode.srcATop,
               shaderCallback: (rect) => LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
