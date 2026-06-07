@@ -167,6 +167,7 @@ abstract class AppStrings {
   String get tabSlide;
   String get tabPhoto;
   String get tabText;
+  String get tabSticker;
   String get tabMusic;
   String get noPhotoSelected;
   String get tapPhotoHint;
@@ -324,6 +325,31 @@ abstract class AppStrings {
   String get ambientStars;
   String get ambientRibbon;
   String get ambientLightRays;
+  // Stickers
+  String get stickerPickPrompt;
+  String get stickerKindLabel;
+  String get stickerStyle;
+  String get stickerFilled;
+  String get stickerLine;
+  String get stickerOpacity;
+  String get stickerHeart;
+  String get stickerDoubleHeart;
+  String get stickerRings;
+  String get stickerRibbonBow;
+  String get stickerBanner;
+  String get stickerOliveBranch;
+  String get stickerLeafSprig;
+  String get stickerWreath;
+  String get stickerRose;
+  String get stickerSparkle;
+  String get stickerStar;
+  String get stickerFlourish;
+  String get stickerCorner;
+  String get stickerOval;
+  String get stickerCrown;
+  String get stickerChampagne;
+  String get stickerDove;
+  String get stickerArch;
   // Overlay
   String get overlayNone;
   String get overlayVignette;
@@ -481,6 +507,7 @@ class _EnStrings extends AppStrings {
   @override String get tabSlide => 'Slide';
   @override String get tabPhoto => 'Photo';
   @override String get tabText => 'Text';
+  @override String get tabSticker => 'Sticker';
   @override String get tabMusic => 'Music';
   @override String get noPhotoSelected => 'No photo selected';
   @override String get tapPhotoHint => 'Tap a photo in the canvas above';
@@ -629,6 +656,31 @@ class _EnStrings extends AppStrings {
   @override String get ambientStars => 'Stars';
   @override String get ambientRibbon => 'Ribbons';
   @override String get ambientLightRays => 'Light Rays';
+
+  @override String get stickerPickPrompt => 'Choose a sticker';
+  @override String get stickerKindLabel => 'Sticker';
+  @override String get stickerStyle => 'Style';
+  @override String get stickerFilled => 'Filled';
+  @override String get stickerLine => 'Line art';
+  @override String get stickerOpacity => 'Opacity';
+  @override String get stickerHeart => 'Heart';
+  @override String get stickerDoubleHeart => 'Two Hearts';
+  @override String get stickerRings => 'Rings';
+  @override String get stickerRibbonBow => 'Bow';
+  @override String get stickerBanner => 'Banner';
+  @override String get stickerOliveBranch => 'Olive Branch';
+  @override String get stickerLeafSprig => 'Leaf Sprig';
+  @override String get stickerWreath => 'Wreath';
+  @override String get stickerRose => 'Rose';
+  @override String get stickerSparkle => 'Sparkle';
+  @override String get stickerStar => 'Star';
+  @override String get stickerFlourish => 'Flourish';
+  @override String get stickerCorner => 'Corner';
+  @override String get stickerOval => 'Oval Frame';
+  @override String get stickerCrown => 'Crown';
+  @override String get stickerChampagne => 'Champagne';
+  @override String get stickerDove => 'Dove';
+  @override String get stickerArch => 'Arch';
 
   @override String get overlayNone => 'None';
   @override String get overlayVignette => 'Vignette';
@@ -786,6 +838,7 @@ class _KoStrings extends AppStrings {
   @override String get tabSlide => '슬라이드';
   @override String get tabPhoto => '사진';
   @override String get tabText => '텍스트';
+  @override String get tabSticker => '스티커';
   @override String get tabMusic => '음악';
   @override String get noPhotoSelected => '선택된 사진 없음';
   @override String get tapPhotoHint => '위 캔버스에서 사진을 탭하세요';
@@ -934,6 +987,31 @@ class _KoStrings extends AppStrings {
   @override String get ambientStars => '별 반짝임';
   @override String get ambientRibbon => '리본';
   @override String get ambientLightRays => '빛 줄기';
+
+  @override String get stickerPickPrompt => '스티커 선택';
+  @override String get stickerKindLabel => '스티커';
+  @override String get stickerStyle => '스타일';
+  @override String get stickerFilled => '채움';
+  @override String get stickerLine => '선화';
+  @override String get stickerOpacity => '투명도';
+  @override String get stickerHeart => '하트';
+  @override String get stickerDoubleHeart => '두 하트';
+  @override String get stickerRings => '반지';
+  @override String get stickerRibbonBow => '리본';
+  @override String get stickerBanner => '배너';
+  @override String get stickerOliveBranch => '올리브 가지';
+  @override String get stickerLeafSprig => '잎사귀';
+  @override String get stickerWreath => '화환';
+  @override String get stickerRose => '장미';
+  @override String get stickerSparkle => '반짝임';
+  @override String get stickerStar => '별';
+  @override String get stickerFlourish => '장식선';
+  @override String get stickerCorner => '코너 장식';
+  @override String get stickerOval => '타원 프레임';
+  @override String get stickerCrown => '왕관';
+  @override String get stickerChampagne => '샴페인';
+  @override String get stickerDove => '비둘기';
+  @override String get stickerArch => '아치';
 
   @override String get overlayNone => '없음';
   @override String get overlayVignette => '비네트';

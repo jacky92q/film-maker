@@ -6,8 +6,10 @@ import 'package:film_maker/ui/core/photo_frame_widget.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/domain/models/slide.dart';
+import 'package:film_maker/domain/models/sticker.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/sticker_painter.dart';
 import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';
 import 'package:film_maker/ui/features/export/view_models/export_view_model.dart';
 import 'package:film_maker/ui/features/export/views/export_view.dart';
@@ -56,7 +58,7 @@ TextStyle slideLayerTextStyle(
   );
 }
 
-enum _EditSection { slide, photo, text, music }
+enum _EditSection { slide, photo, text, sticker, music }
 
 class EditorView extends StatefulWidget {
   const EditorView({
@@ -113,7 +115,10 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
     if (!_isPortraitLayout) return;
     final photo = widget.viewModel.selectedPhotoLayer;
     final text = widget.viewModel.selectedLayer;
-    if (photo != null && _section != _EditSection.photo) {
+    final sticker = widget.viewModel.selectedSticker;
+    if (sticker != null && _section != _EditSection.sticker) {
+      setState(() => _section = _EditSection.sticker);
+    } else if (photo != null && _section != _EditSection.photo) {
       setState(() => _section = _EditSection.photo);
     } else if (text != null && photo == null && _section != _EditSection.text) {
       setState(() => _section = _EditSection.text);
@@ -126,6 +131,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
     if (s == _EditSection.slide || s == _EditSection.music) {
       widget.viewModel.selectLayer(null);
       widget.viewModel.selectPhotoLayer(null);
+      widget.viewModel.selectSticker(null);
     }
   }
 
@@ -404,6 +410,15 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
   // ── Adaptive edit panel ───────────────────────────────────────────────────
 
   Widget _buildEditPanel() {
+    final sticker = widget.viewModel.selectedSticker;
+    if (sticker != null) {
+      return _StickerLayerPanel(
+        key: ValueKey(sticker.id),
+        vm: widget.viewModel,
+        sticker: sticker,
+        onDelete: () => widget.viewModel.deleteStickerLayer(sticker.id),
+      );
+    }
     final photoLayer = widget.viewModel.selectedPhotoLayer;
     if (photoLayer != null) {
       return _PhotoLayerTabs(
@@ -526,6 +541,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
   Widget _buildSectionTabBar(Slide slide) {
     final hasPhoto = slide.photoLayers.isNotEmpty;
     final hasText = slide.textLayers.isNotEmpty;
+    final hasSticker = slide.stickerLayers.isNotEmpty;
     final hasMusic = widget.viewModel.project.musicName != null;
 
     return Container(
@@ -558,6 +574,13 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
             active: _section == _EditSection.text,
             dotted: hasText,
             onTap: () => _switchSection(_EditSection.text),
+          ),
+          _SectionPill(
+            icon: Icons.auto_awesome_outlined,
+            label: L10n.s.tabSticker,
+            active: _section == _EditSection.sticker,
+            dotted: hasSticker,
+            onTap: () => _switchSection(_EditSection.sticker),
           ),
           _SectionPill(
             icon: Icons.music_note_outlined,
@@ -628,6 +651,23 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
               widget.viewModel.bringToFront(layer.id, isPhoto: false),
           onSendToBack: () =>
               widget.viewModel.sendToBack(layer.id, isPhoto: false),
+        );
+
+      case _EditSection.sticker:
+        final sticker = widget.viewModel.selectedSticker;
+        if (sticker == null) {
+          return _StickerPicker(
+            onPick: (kind) => widget.viewModel.addStickerLayer(kind),
+          );
+        }
+        return _StickerLayerPanel(
+          key: ValueKey(sticker.id),
+          vm: widget.viewModel,
+          sticker: sticker,
+          onDelete: () {
+            widget.viewModel.deleteStickerLayer(sticker.id);
+            setState(() => _section = _EditSection.sticker);
+          },
         );
 
       case _EditSection.music:
@@ -722,7 +762,27 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
       onAddPhoto: () => widget.viewModel.addPhotoLayer(),
       onAddTitle: () => widget.viewModel.addTextLayer(isSubtitle: false),
       onAddSubtitle: () => widget.viewModel.addTextLayer(isSubtitle: true),
+      onAddSticker: _showStickerPickerSheet,
       onMusic: _onMusicTimelineButtonTap,
+    );
+  }
+
+  void _showStickerPickerSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SizedBox(
+        height: 420,
+        child: _StickerPicker(
+          onPick: (kind) {
+            widget.viewModel.addStickerLayer(kind);
+            Navigator.of(ctx).pop();
+          },
+        ),
+      ),
     );
   }
 }
@@ -865,6 +925,61 @@ class _SlideCanvasState extends State<_SlideCanvas> {
     );
   }
 
+  Widget _buildStickerLayerItem(StickerLayer sl, double canvasW, double canvasH) {
+    final isSelected = widget.viewModel.selectedStickerId == sl.id;
+    final w = sl.widthFraction * canvasW;
+    final h = w / sl.kind.aspectRatio;
+    final left = sl.x * canvasW - w / 2;
+    final top = sl.y * canvasH - h / 2;
+
+    return Positioned(
+      key: ValueKey('sk_${sl.id}'),
+      left: left, top: top, width: w, height: h,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => widget.viewModel.selectSticker(sl.id),
+        onScaleStart: (_) {
+          _plStartW = sl.widthFraction;
+        },
+        onScaleUpdate: (d) {
+          final newX = (sl.x + d.focalPointDelta.dx / canvasW).clamp(0.02, 0.98);
+          final newY = (sl.y + d.focalPointDelta.dy / canvasH).clamp(0.02, 0.98);
+          final newW = (_plStartW * d.scale).clamp(0.04, 1.2);
+          final newRot = sl.rotation + d.rotation * 180 / 3.14159265;
+          if (isSelected) {
+            widget.viewModel.updateStickerLayer(
+              sl.copyWith(x: newX, y: newY, widthFraction: newW, rotation: newRot),
+            );
+          } else {
+            widget.viewModel.moveStickerLayer(sl.id, newX, newY);
+          }
+        },
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Transform.rotate(
+              angle: sl.rotation * 3.14159265 / 180.0,
+              child: StickerWidget(
+                kind: sl.kind,
+                color: sl.color.color,
+                filled: sl.filled,
+                opacity: sl.opacity,
+              ),
+            ),
+            if (isSelected)
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blueAccent, width: 1.5),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   List<Widget> _buildSortedLayers(Slide slide, double canvasW, double canvasH, String? selectedLayerId) {
     final items = <({int z, Widget w})>[];
     for (final layer in slide.textLayers) {
@@ -872,6 +987,9 @@ class _SlideCanvasState extends State<_SlideCanvas> {
     }
     for (final pl in slide.photoLayers) {
       items.add((z: pl.zOrder, w: _buildPhotoLayerItem(pl, canvasW, canvasH)));
+    }
+    for (final sl in slide.stickerLayers) {
+      items.add((z: sl.zOrder, w: _buildStickerLayerItem(sl, canvasW, canvasH)));
     }
     items.sort((a, b) => a.z.compareTo(b.z));
     return items.map((e) => e.w).toList();
@@ -966,6 +1084,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
         onTap: () {
           widget.viewModel.selectLayer(null);
           widget.viewModel.selectPhotoLayer(null);
+          widget.viewModel.selectSticker(null);
         },
         onScaleStart: slide.layout == SlideLayout.single ? _onPhotoScaleStart : null,
         onScaleUpdate: slide.layout == SlideLayout.single
@@ -978,6 +1097,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
         onTap: () {
           widget.viewModel.selectLayer(null);
           widget.viewModel.selectPhotoLayer(null);
+          widget.viewModel.selectSticker(null);
         },
         child: ColoredBox(color: Color(slide.backgroundColor)),
       );
@@ -1151,6 +1271,7 @@ class _AddContentBar extends StatelessWidget {
   final VoidCallback onAddPhoto;
   final VoidCallback onAddTitle;
   final VoidCallback onAddSubtitle;
+  final VoidCallback onAddSticker;
   final VoidCallback onMusic;
 
   @override
@@ -1175,6 +1296,11 @@ class _AddContentBar extends StatelessWidget {
             icon: Icons.short_text_rounded,
             label: L10n.s.addSubShort,
             onTap: onAddSubtitle,
+          ),
+          _BigActionBtn(
+            icon: Icons.auto_awesome_rounded,
+            label: L10n.s.tabSticker,
+            onTap: onAddSticker,
           ),
           _BigActionBtn(
             icon: Icons.music_note_rounded,
@@ -1217,7 +1343,9 @@ class _BigActionBtn extends StatelessWidget {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Column(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedContainer(
@@ -1260,6 +1388,7 @@ class _BigActionBtn extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ),
@@ -2494,6 +2623,327 @@ class _ColorDots extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Stickers — picker grid + selected-sticker edit panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _StickerPicker extends StatelessWidget {
+  const _StickerPicker({required this.onPick});
+  final void Function(StickerKind) onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppTheme.surface,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(L10n.s.stickerPickPrompt),
+          const SizedBox(height: 12),
+          Expanded(
+            child: GridView.count(
+              crossAxisCount: 4,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 0.82,
+              children: StickerKind.values.map((kind) {
+                return GestureDetector(
+                  onTap: () => onPick(kind),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surface2,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.line),
+                          ),
+                          child: Center(
+                            child: AspectRatio(
+                              aspectRatio: kind.aspectRatio,
+                              child: StickerWidget(
+                                kind: kind,
+                                color: const Color(0xFFC9A84C),
+                                filled: kind.defaultFilled,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        kind.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: AppTheme.textMid,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StickerLayerPanel extends StatelessWidget {
+  const _StickerLayerPanel({
+    super.key,
+    required this.vm,
+    required this.sticker,
+    required this.onDelete,
+  });
+  final EditorViewModel vm;
+  final StickerLayer sticker;
+  final VoidCallback onDelete;
+
+  void _apply(StickerLayer Function(StickerLayer) f) =>
+      vm.updateStickerLayer(f(sticker));
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppTheme.surface,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header + z-order
+            Row(
+              children: [
+                _SectionHeader(sticker.kind.label),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.flip_to_front, size: 16),
+                  tooltip: L10n.s.bringToFront,
+                  color: AppTheme.textMid,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => vm.bringToFront(sticker.id, isSticker: true),
+                ),
+                const SizedBox(width: 10),
+                IconButton(
+                  icon: const Icon(Icons.flip_to_back, size: 16),
+                  tooltip: L10n.s.sendToBack,
+                  color: AppTheme.textMid,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => vm.sendToBack(sticker.id, isSticker: true),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            // Change sticker shape
+            _SectionHeader(L10n.s.stickerKindLabel),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 56,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: StickerKind.values.map((kind) {
+                  final sel = sticker.kind == kind;
+                  return GestureDetector(
+                    onTap: () => _apply((s) => s.copyWith(kind: kind)),
+                    child: Container(
+                      width: 56,
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: sel ? AppTheme.primary.withValues(alpha: 0.15) : AppTheme.surface2,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: sel ? AppTheme.primary : AppTheme.line,
+                          width: sel ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Center(
+                        child: AspectRatio(
+                          aspectRatio: kind.aspectRatio,
+                          child: StickerWidget(
+                            kind: kind,
+                            color: const Color(0xFFC9A84C),
+                            filled: kind.defaultFilled,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Color
+            _SectionHeader(L10n.s.secTextColor),
+            const SizedBox(height: 10),
+            _ColorDots(
+              current: sticker.color,
+              onSelect: (c) => _apply((s) => s.copyWith(color: c)),
+            ),
+            const SizedBox(height: 16),
+            // Fill style
+            _SectionHeader(L10n.s.stickerStyle),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _StickerStyleChip(
+                  label: L10n.s.stickerFilled,
+                  selected: sticker.filled,
+                  onTap: () => _apply((s) => s.copyWith(filled: true)),
+                ),
+                const SizedBox(width: 8),
+                _StickerStyleChip(
+                  label: L10n.s.stickerLine,
+                  selected: !sticker.filled,
+                  onTap: () => _apply((s) => s.copyWith(filled: false)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Size
+            _SliderRow(
+              label: L10n.s.secSize,
+              value: sticker.widthFraction,
+              min: 0.04, max: 1.2,
+              onChanged: (v) => _apply((s) => s.copyWith(widthFraction: v)),
+            ),
+            // Rotation
+            _SliderRow(
+              label: L10n.s.secRotation,
+              value: sticker.rotation,
+              min: -180, max: 180,
+              valueLabel: '${sticker.rotation.round()}°',
+              onChanged: (v) => _apply((s) => s.copyWith(rotation: v)),
+            ),
+            // Opacity
+            _SliderRow(
+              label: L10n.s.stickerOpacity,
+              value: sticker.opacity,
+              min: 0.15, max: 1.0,
+              valueLabel: '${(sticker.opacity * 100).round()}%',
+              onChanged: (v) => _apply((s) => s.copyWith(opacity: v)),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: Text(L10n.s.deleteLayer),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFD9534F),
+                  side: const BorderSide(color: Color(0xFFD9534F)),
+                  minimumSize: const Size(double.infinity, 44),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StickerStyleChip extends StatelessWidget {
+  const _StickerStyleChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          height: 40,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: selected ? AppTheme.primary.withValues(alpha: 0.18) : AppTheme.surface2,
+            border: Border.all(
+              color: selected ? AppTheme.primary : AppTheme.line,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: AppTheme.fontTheme,
+                color: selected ? AppTheme.primary : AppTheme.textMid,
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SliderRow extends StatelessWidget {
+  const _SliderRow({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+    this.valueLabel,
+  });
+  final String label;
+  final double value;
+  final double min;
+  final double max;
+  final ValueChanged<double> onChanged;
+  final String? valueLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _SectionHeader(label),
+            const Spacer(),
+            Text(
+              valueLabel ?? value.toStringAsFixed(2),
+              style: const TextStyle(
+                fontFamily: 'PlayfairDisplay',
+                color: AppTheme.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        Slider(
+          value: value.clamp(min, max),
+          min: min,
+          max: max,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
 class _BackgroundColorPicker extends StatefulWidget {
   const _BackgroundColorPicker({required this.current, required this.onSelect});
   final int current;
@@ -3081,13 +3531,17 @@ class _SectionPill extends StatelessWidget {
                 color: active ? Colors.white : AppTheme.textMid,
               ),
               const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontFamily: AppTheme.fontTheme,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: active ? Colors.white : AppTheme.textMid,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: active ? Colors.white : AppTheme.textMid,
+                  ),
                 ),
               ),
               if (dotted && !active) ...[

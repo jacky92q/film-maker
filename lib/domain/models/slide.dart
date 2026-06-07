@@ -1,3 +1,4 @@
+import 'package:film_maker/domain/models/sticker.dart';
 import 'package:film_maker/l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 
@@ -701,6 +702,9 @@ class Slide {
         photoLayers: (j['photoLayers'] as List? ?? [])
             .map((e) => PhotoLayer.fromJson(e as Map<String, dynamic>))
             .toList(),
+        stickerLayers: (j['stickerLayers'] as List? ?? [])
+            .map((e) => StickerLayer.fromJson(e as Map<String, dynamic>))
+            .toList(),
         transition: TransitionEffect.values.firstWhere(
             (e) => e.name == j['transition'],
             orElse: () => TransitionEffect.fade),
@@ -742,6 +746,7 @@ class Slide {
         'imagePath3': imagePath3,
         'textLayers': textLayers.map((e) => e.toJson()).toList(),
         'photoLayers': photoLayers.map((e) => e.toJson()).toList(),
+        'stickerLayers': stickerLayers.map((e) => e.toJson()).toList(),
         'transition': transition.name,
         'durationSeconds': durationSeconds,
         'photoFilter': photoFilter.name,
@@ -764,6 +769,7 @@ class Slide {
     this.imagePath,
     this.textLayers = const [],
     this.photoLayers = const [],
+    this.stickerLayers = const [],
     this.transition = TransitionEffect.fade,
     this.durationSeconds = 4,
     this.photoFilter = PhotoFilter.none,
@@ -787,6 +793,7 @@ class Slide {
   final String? imagePath;
   final List<TextLayer> textLayers;
   final List<PhotoLayer> photoLayers;
+  final List<StickerLayer> stickerLayers;
   final TransitionEffect transition;
   final int durationSeconds;
   final PhotoFilter photoFilter;
@@ -809,6 +816,7 @@ class Slide {
     String? imagePath,
     List<TextLayer>? textLayers,
     List<PhotoLayer>? photoLayers,
+    List<StickerLayer>? stickerLayers,
     TransitionEffect? transition,
     int? durationSeconds,
     PhotoFilter? photoFilter,
@@ -832,6 +840,7 @@ class Slide {
       imagePath: imagePath ?? this.imagePath,
       textLayers: textLayers ?? this.textLayers,
       photoLayers: photoLayers ?? this.photoLayers,
+      stickerLayers: stickerLayers ?? this.stickerLayers,
       transition: transition ?? this.transition,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       photoFilter: photoFilter ?? this.photoFilter,

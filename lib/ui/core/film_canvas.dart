@@ -3,7 +3,9 @@ import 'dart:math' as math;
 
 import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/domain/models/slide.dart';
+import 'package:film_maker/domain/models/sticker.dart';
 import 'package:film_maker/ui/core/photo_frame_widget.dart';
+import 'package:film_maker/ui/core/sticker_painter.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:flutter/material.dart';
@@ -309,23 +311,31 @@ class _SingleSlide extends StatelessWidget {
   final double canvasH;
 
   List<Widget> _layers() {
-    final items = <({int z, bool isText, Object layer})>[];
-    for (final l in slide.textLayers)  items.add((z: l.zOrder, isText: true,  layer: l));
-    for (final p in slide.photoLayers) items.add((z: p.zOrder, isText: false, layer: p));
+    final items = <({int z, int type, Object layer})>[];
+    for (final l in slide.textLayers)    items.add((z: l.zOrder, type: 0, layer: l));
+    for (final p in slide.photoLayers)   items.add((z: p.zOrder, type: 1, layer: p));
+    for (final s in slide.stickerLayers) items.add((z: s.zOrder, type: 2, layer: s));
     items.sort((a, b) => a.z.compareTo(b.z));
     return [
       for (final item in items)
-        if (item.isText)
+        if (item.type == 0)
           _TextLayer(
             key: ValueKey((item.layer as TextLayer).id),
             layer: item.layer as TextLayer,
             playing: playing,
           )
-        else
+        else if (item.type == 1)
           _PhotoLayer(
             key: ValueKey((item.layer as PhotoLayer).id),
             pl: item.layer as PhotoLayer,
             playing: playing,
+            canvasW: canvasW,
+            canvasH: canvasH,
+          )
+        else
+          _StickerLayer(
+            key: ValueKey((item.layer as StickerLayer).id),
+            sl: item.layer as StickerLayer,
             canvasW: canvasW,
             canvasH: canvasH,
           ),
@@ -738,6 +748,43 @@ class _PhotoLayerState extends State<_PhotoLayer>
             width: pw * sc, height: ph * sc, child: child!)]);
         }, child: _photo());
     }
+  }
+}
+
+// ── Sticker layer ───────────────────────────────────────────────────────────────
+
+class _StickerLayer extends StatelessWidget {
+  const _StickerLayer({
+    super.key,
+    required this.sl,
+    required this.canvasW,
+    required this.canvasH,
+  });
+  final StickerLayer sl;
+  final double canvasW;
+  final double canvasH;
+
+  @override
+  Widget build(BuildContext context) {
+    final w = sl.widthFraction * canvasW;
+    final h = w / sl.kind.aspectRatio;
+    final left = sl.x * canvasW - w / 2;
+    final top = sl.y * canvasH - h / 2;
+    return Positioned(
+      left: left,
+      top: top,
+      width: w,
+      height: h,
+      child: Transform.rotate(
+        angle: sl.rotation * math.pi / 180.0,
+        child: StickerWidget(
+          kind: sl.kind,
+          color: sl.color.color,
+          filled: sl.filled,
+          opacity: sl.opacity,
+        ),
+      ),
+    );
   }
 }
 
