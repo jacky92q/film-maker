@@ -9,6 +9,7 @@ import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/domain/models/sticker.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/slide_frame.dart';
 import 'package:film_maker/ui/core/sticker_painter.dart';
 import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';
 import 'package:film_maker/ui/features/export/view_models/export_view_model.dart';
@@ -1115,6 +1116,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
             background,
             buildSlideDim(slide.dimDirection, slide.dimOpacity),
             buildSlideOverlay(slide.overlay),
+            buildSlideFrame(slide.frame, slide.frameColor.color),
             ..._buildSortedLayers(slide, canonicalW, canonicalH, selectedLayerId),
             if (hasPhoto && selectedLayerId == null)
               Positioned(
@@ -2398,6 +2400,48 @@ class _SlideTabs extends StatelessWidget {
               }).toList(),
             ),
           ),
+          const SizedBox(height: 12),
+          // Decorative frame
+          _SectionHeader(L10n.s.secFrameStyle),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: SlideFrame.values.map((fr) {
+                final sel = slide.frame == fr;
+                return GestureDetector(
+                  onTap: () => viewModel.updateSelectedSlide(slide.copyWith(frame: fr)),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    height: 44,
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: sel ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surface2,
+                      border: Border.all(color: sel ? AppTheme.primary : AppTheme.line, width: sel ? 1.5 : 1),
+                    ),
+                    child: Center(
+                      child: Text('${fr.emoji} ${fr.label}',
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontTheme,
+                            color: sel ? AppTheme.primary : AppTheme.textMid,
+                            fontSize: 11,
+                            fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                          )),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          if (slide.frame != SlideFrame.none) ...[
+            const SizedBox(height: 10),
+            _ColorDots(
+              current: slide.frameColor,
+              onSelect: (c) => viewModel.updateSelectedSlide(slide.copyWith(frameColor: c)),
+            ),
+          ],
           const SizedBox(height: 12),
           // Photo shape
           _SectionHeader(L10n.s.secPhotoShape),

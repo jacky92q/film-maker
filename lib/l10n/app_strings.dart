@@ -259,6 +259,9 @@ abstract class AppStrings {
   String get transitionBlur;
   String get transitionWipeLeft;
   String get transitionWipeRight;
+  String get transitionPushUp;
+  String get transitionPushDown;
+  String get transitionCircle;
   // Text color
   String get colorWhite;
   String get colorGold;
@@ -312,6 +315,18 @@ abstract class AppStrings {
   String get animZoomPulse;
   String get animWipeReveal;
   String get animHandwriting;
+  String get animShimmer;
+  String get animDriftZoom;
+  // Decorative frame
+  String get secFrameStyle;
+  String get frameStyleNone;
+  String get frameStyleThin;
+  String get frameStyleDouble;
+  String get frameStyleBrackets;
+  String get frameStyleEditorial;
+  String get frameStyleInset;
+  String get frameStyleDashed;
+  String get frameStyleOrnate;
   // Ambient effects
   String get secAmbient;
   String get ambientNone;
@@ -591,6 +606,9 @@ class _EnStrings extends AppStrings {
   @override String get transitionBlur => 'Blur';
   @override String get transitionWipeLeft => 'Wipe ←';
   @override String get transitionWipeRight => 'Wipe →';
+  @override String get transitionPushUp => 'Push ↑';
+  @override String get transitionPushDown => 'Push ↓';
+  @override String get transitionCircle => 'Circle';
 
   @override String get colorWhite => 'White';
   @override String get colorGold => 'Gold';
@@ -644,6 +662,17 @@ class _EnStrings extends AppStrings {
   @override String get animZoomPulse => 'Zoom Pulse';
   @override String get animWipeReveal => 'Wipe Reveal';
   @override String get animHandwriting => 'Handwriting';
+  @override String get animShimmer => 'Shimmer';
+  @override String get animDriftZoom => 'Drift Zoom';
+  @override String get secFrameStyle => 'Frame';
+  @override String get frameStyleNone => 'None';
+  @override String get frameStyleThin => 'Thin';
+  @override String get frameStyleDouble => 'Double';
+  @override String get frameStyleBrackets => 'Brackets';
+  @override String get frameStyleEditorial => 'Editorial';
+  @override String get frameStyleInset => 'Inset';
+  @override String get frameStyleDashed => 'Dashed';
+  @override String get frameStyleOrnate => 'Ornate';
   @override String get secAmbient => 'Ambient FX';
   @override String get ambientNone => 'None';
   @override String get ambientPetalFall => 'Petals';
@@ -922,6 +951,9 @@ class _KoStrings extends AppStrings {
   @override String get transitionBlur => '블러';
   @override String get transitionWipeLeft => '와이프 ←';
   @override String get transitionWipeRight => '와이프 →';
+  @override String get transitionPushUp => '밀기 ↑';
+  @override String get transitionPushDown => '밀기 ↓';
+  @override String get transitionCircle => '원형';
 
   @override String get colorWhite => '화이트';
   @override String get colorGold => '골드';
@@ -975,6 +1007,17 @@ class _KoStrings extends AppStrings {
   @override String get animZoomPulse => '줌 펄스';
   @override String get animWipeReveal => '와이프';
   @override String get animHandwriting => '필기 쓰기';
+  @override String get animShimmer => '반짝임';
+  @override String get animDriftZoom => '드리프트 줌';
+  @override String get secFrameStyle => '프레임';
+  @override String get frameStyleNone => '없음';
+  @override String get frameStyleThin => '얇은 선';
+  @override String get frameStyleDouble => '이중 선';
+  @override String get frameStyleBrackets => '모서리';
+  @override String get frameStyleEditorial => '에디토리얼';
+  @override String get frameStyleInset => '안쪽 선';
+  @override String get frameStyleDashed => '점선';
+  @override String get frameStyleOrnate => '장식';
   @override String get secAmbient => '앰비언트 FX';
   @override String get ambientNone => '없음';
   @override String get ambientPetalFall => '꽃잎 낙하';
