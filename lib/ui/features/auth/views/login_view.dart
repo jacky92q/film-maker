@@ -190,19 +190,19 @@ class _LoginViewState extends State<LoginView> {
               onSubmitted: (_) => _handleLogin(),
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              height: 54,
-              child: FilledButton(
-                onPressed: widget.viewModel.isLoading ? null : _handleLogin,
-                child: widget.viewModel.isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(L10n.s.signIn),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 54),
               ),
+              onPressed: widget.viewModel.isLoading ? null : _handleLogin,
+              child: widget.viewModel.isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(L10n.s.signIn),
             ),
             if (widget.viewModel.error != null) ...[
               const SizedBox(height: 14),
@@ -235,36 +235,34 @@ class _LoginViewState extends State<LoginView> {
     return ListenableBuilder(
       listenable: widget.viewModel,
       builder: (context, _) {
-        return SizedBox(
-          height: 54,
-          child: OutlinedButton(
-            onPressed: widget.viewModel.isLoading
-                ? null
-                : () => widget.viewModel.loginWithGoogle(),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.textDark,
-              side: const BorderSide(color: AppTheme.line, width: 1.5),
-              backgroundColor: AppTheme.surface,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-              padding: EdgeInsets.zero,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _GoogleLogo(),
-                const SizedBox(width: 12),
-                Text(
-                  L10n.s.signInWithGoogle,
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontTheme,
-                    color: AppTheme.textDark,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+        return OutlinedButton(
+          onPressed: widget.viewModel.isLoading
+              ? null
+              : () => widget.viewModel.loginWithGoogle(),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 54),
+            foregroundColor: AppTheme.textDark,
+            side: const BorderSide(color: AppTheme.line, width: 1.5),
+            backgroundColor: AppTheme.surface,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
+            padding: EdgeInsets.zero,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _GoogleLogo(),
+              const SizedBox(width: 12),
+              Text(
+                L10n.s.signInWithGoogle,
+                style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.textDark,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
