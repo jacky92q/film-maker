@@ -194,17 +194,17 @@ class _RegisterViewState extends State<RegisterView> {
               onSubmitted: (_) => _handleRegister(),
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              height: 54,
-              child: FilledButton(
-                onPressed: widget.viewModel.isLoading ? null : _handleRegister,
-                child: widget.viewModel.isLoading
-                    ? const SizedBox(
-                        width: 22, height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(L10n.s.createAccountButton),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 54),
               ),
+              onPressed: widget.viewModel.isLoading ? null : _handleRegister,
+              child: widget.viewModel.isLoading
+                  ? const SizedBox(
+                      width: 22, height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(L10n.s.createAccountButton),
             ),
             if (widget.viewModel.error != null) ...[
               const SizedBox(height: 14),
