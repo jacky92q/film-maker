@@ -697,6 +697,7 @@ class _PhotoLayerState extends State<_PhotoLayer>
       case SlideContentAnimation.none:
       case SlideContentAnimation.typewriter:
       case SlideContentAnimation.wipeReveal:
+      case SlideContentAnimation.handwriting:
         return Stack(children: [Positioned(left: left, top: top, width: pw, height: ph, child: _photo())]);
 
       case SlideContentAnimation.slideUp:
