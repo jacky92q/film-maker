@@ -1263,6 +1263,7 @@ class _AddContentBar extends StatelessWidget {
     required this.onAddPhoto,
     required this.onAddTitle,
     required this.onAddSubtitle,
+    required this.onAddSticker,
     required this.onMusic,
   });
 
