@@ -6,6 +6,7 @@ import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/domain/models/sticker.dart';
 import 'package:film_maker/ui/core/photo_frame_widget.dart';
 import 'package:film_maker/ui/core/sticker_painter.dart';
+import 'package:film_maker/ui/core/slide_frame.dart';
 import 'package:film_maker/ui/core/slide_overlay.dart';
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
 import 'package:flutter/material.dart';
@@ -288,6 +289,14 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
         return ClipRect(clipper: _RightToLeftClipper(t), child: child);
       case TransitionEffect.wipeRight:
         return ClipRect(clipper: _LeftToRightClipper(t),  child: child);
+      case TransitionEffect.pushUp:
+        return FractionalTranslation(
+            translation: Offset(0, 1.0 - t), child: child);
+      case TransitionEffect.pushDown:
+        return FractionalTranslation(
+            translation: Offset(0, -(1.0 - t)), child: child);
+      case TransitionEffect.circleReveal:
+        return ClipPath(clipper: _CircleRevealClipper(t), child: child);
     }
   }
 }
@@ -352,6 +361,7 @@ class _SingleSlide extends StatelessWidget {
           _Background(slide: slide, kenBurnsCtrl: kenBurnsCtrl, playing: playing),
           buildSlideDim(slide.dimDirection, slide.dimOpacity),
           buildSlideOverlay(slide.overlay),
+          buildSlideFrame(slide.frame, slide.frameColor.color),
           ..._layers(),
           if (slide.ambientEffect != SlideAmbientEffect.none)
             Positioned.fill(
@@ -502,11 +512,16 @@ Duration _animDur(SlideContentAnimation a) => switch (a) {
   SlideContentAnimation.float       => const Duration(milliseconds: 2200),
   SlideContentAnimation.zoomPulse   => const Duration(milliseconds: 3000),
   SlideContentAnimation.wipeReveal  => const Duration(milliseconds: 2200),
-  SlideContentAnimation.handwriting  => const Duration(milliseconds: 2600),
+  SlideContentAnimation.handwriting => const Duration(milliseconds: 2600),
+  SlideContentAnimation.shimmer     => const Duration(milliseconds: 2600),
+  SlideContentAnimation.driftZoom   => const Duration(milliseconds: 7000),
 };
 
 bool _loops(SlideContentAnimation a) =>
-    a == SlideContentAnimation.float || a == SlideContentAnimation.zoomPulse;
+    a == SlideContentAnimation.float ||
+    a == SlideContentAnimation.zoomPulse ||
+    a == SlideContentAnimation.shimmer ||
+    a == SlideContentAnimation.driftZoom;
 
 // ── Text layer ────────────────────────────────────────────────────────────────
 
@@ -632,6 +647,37 @@ class _TextLayerState extends State<_TextLayer>
               child: _text(),
             )));
         });
+
+      case SlideContentAnimation.shimmer:
+        return AnimatedBuilder(animation: _ctrl, builder: (_, __) {
+          final p = _ctrl.value;
+          return Positioned.fill(child: Align(alignment: _align,
+            child: ShaderMask(
+              blendMode: BlendMode.srcATOP,
+              shaderCallback: (rect) => LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: const [
+                  Color(0x00FFFFFF),
+                  Color(0xFFFFF4D0),
+                  Color(0x00FFFFFF),
+                ],
+                stops: [
+                  (p - 0.18).clamp(0.0, 1.0),
+                  p.clamp(0.0, 1.0),
+                  (p + 0.18).clamp(0.0, 1.0),
+                ],
+              ).createShader(rect),
+              child: _text(),
+            )));
+        });
+
+      case SlideContentAnimation.driftZoom:
+        return AnimatedBuilder(animation: _ctrl, builder: (_, __) {
+          final scale = 1.0 + 0.05 * Curves.easeInOut.transform(_ctrl.value);
+          return Positioned.fill(child: Align(alignment: _align,
+            child: Transform.scale(scale: scale, child: _text())));
+        });
     }
   }
 }
@@ -708,6 +754,7 @@ class _PhotoLayerState extends State<_PhotoLayer>
       case SlideContentAnimation.typewriter:
       case SlideContentAnimation.wipeReveal:
       case SlideContentAnimation.handwriting:
+      case SlideContentAnimation.shimmer:
         return Stack(children: [Positioned(left: left, top: top, width: pw, height: ph, child: _photo())]);
 
       case SlideContentAnimation.slideUp:
@@ -746,6 +793,22 @@ class _PhotoLayerState extends State<_PhotoLayer>
           return Stack(children: [Positioned(
             left: left - dw, top: top - dh,
             width: pw * sc, height: ph * sc, child: child!)]);
+        }, child: _photo());
+
+      case SlideContentAnimation.driftZoom:
+        return AnimatedBuilder(animation: _ctrl, builder: (_, child) {
+          final t = Curves.easeInOut.transform(_ctrl.value);
+          final sc = 1.0 + 0.12 * t;
+          final panX = (t - 0.5) * pw * 0.06;
+          return Stack(children: [Positioned(
+            left: left, top: top, width: pw, height: ph,
+            child: ClipRect(
+              child: Transform.scale(
+                scale: sc,
+                child: Transform.translate(
+                    offset: Offset(panX, 0), child: child),
+              ),
+            ))]);
         }, child: _photo());
     }
   }
@@ -789,6 +852,21 @@ class _StickerLayer extends StatelessWidget {
 }
 
 // ── Clippers ──────────────────────────────────────────────────────────────────
+
+class _CircleRevealClipper extends CustomClipper<Path> {
+  const _CircleRevealClipper(this.p);
+  final double p;
+  @override
+  Path getClip(Size s) {
+    final center = Offset(s.width / 2, s.height / 2);
+    final maxR = math.sqrt(s.width * s.width + s.height * s.height) / 2;
+    return Path()
+      ..addOval(Rect.fromCircle(center: center, radius: maxR * p));
+  }
+
+  @override
+  bool shouldReclip(_CircleRevealClipper o) => o.p != p;
+}
 
 class _LeftToRightClipper extends CustomClipper<Rect> {
   const _LeftToRightClipper(this.p);

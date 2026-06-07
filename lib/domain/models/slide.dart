@@ -2,7 +2,7 @@ import 'package:film_maker/domain/models/sticker.dart';
 import 'package:film_maker/l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 
-enum TransitionEffect { fade, slideLeft, slideRight, zoomIn, kenBurns, blurDissolve, wipeLeft, wipeRight }
+enum TransitionEffect { fade, slideLeft, slideRight, zoomIn, kenBurns, blurDissolve, wipeLeft, wipeRight, pushUp, pushDown, circleReveal }
 
 enum SlideTextColor { white, gold, cream, black, rose, silver, champagne, blush, dustyBlue, sage, lavender, warmGray, coral }
 
@@ -28,6 +28,9 @@ extension TransitionEffectLabel on TransitionEffect {
       case TransitionEffect.blurDissolve: return L10n.s.transitionBlur;
       case TransitionEffect.wipeLeft:     return L10n.s.transitionWipeLeft;
       case TransitionEffect.wipeRight:    return L10n.s.transitionWipeRight;
+      case TransitionEffect.pushUp:       return L10n.s.transitionPushUp;
+      case TransitionEffect.pushDown:     return L10n.s.transitionPushDown;
+      case TransitionEffect.circleReveal: return L10n.s.transitionCircle;
     }
   }
 }
@@ -225,6 +228,8 @@ enum SlideContentAnimation {
   zoomPulse,
   wipeReveal,
   handwriting,
+  shimmer,
+  driftZoom,
 }
 
 extension SlideContentAnimationX on SlideContentAnimation {
@@ -237,7 +242,9 @@ extension SlideContentAnimationX on SlideContentAnimation {
     SlideContentAnimation.float       => L10n.s.animFloat,
     SlideContentAnimation.zoomPulse   => L10n.s.animZoomPulse,
     SlideContentAnimation.wipeReveal  => L10n.s.animWipeReveal,
-    SlideContentAnimation.handwriting  => L10n.s.animHandwriting,
+    SlideContentAnimation.handwriting => L10n.s.animHandwriting,
+    SlideContentAnimation.shimmer     => L10n.s.animShimmer,
+    SlideContentAnimation.driftZoom   => L10n.s.animDriftZoom,
   };
 
   String get emoji => switch (this) {
@@ -249,7 +256,9 @@ extension SlideContentAnimationX on SlideContentAnimation {
     SlideContentAnimation.float       => '〜',
     SlideContentAnimation.zoomPulse   => '⊙',
     SlideContentAnimation.wipeReveal  => '▶',
-    SlideContentAnimation.handwriting  => '✍',
+    SlideContentAnimation.handwriting => '✍',
+    SlideContentAnimation.shimmer     => '☀',
+    SlideContentAnimation.driftZoom   => '◎',
   };
 
   // Animations that make sense on text layers
@@ -262,6 +271,7 @@ extension SlideContentAnimationX on SlideContentAnimation {
     SlideContentAnimation.float,
     SlideContentAnimation.wipeReveal,
     SlideContentAnimation.handwriting,
+    SlideContentAnimation.shimmer,
   ];
 
   // Animations that make sense on photo layers
@@ -272,7 +282,45 @@ extension SlideContentAnimationX on SlideContentAnimation {
     SlideContentAnimation.fadeStagger,
     SlideContentAnimation.float,
     SlideContentAnimation.zoomPulse,
+    SlideContentAnimation.driftZoom,
   ];
+}
+
+/// Decorative full-slide border frame, drawn over the whole canvas — the
+/// signature "editorial / magazine" look of premium wedding templates.
+enum SlideFrame {
+  none,
+  thinBorder,
+  doubleBorder,
+  cornerBrackets,
+  editorialTicks,
+  insetLine,
+  dashedBorder,
+  ornateCorners,
+}
+
+extension SlideFrameX on SlideFrame {
+  String get label => switch (this) {
+    SlideFrame.none           => L10n.s.frameStyleNone,
+    SlideFrame.thinBorder     => L10n.s.frameStyleThin,
+    SlideFrame.doubleBorder   => L10n.s.frameStyleDouble,
+    SlideFrame.cornerBrackets => L10n.s.frameStyleBrackets,
+    SlideFrame.editorialTicks => L10n.s.frameStyleEditorial,
+    SlideFrame.insetLine      => L10n.s.frameStyleInset,
+    SlideFrame.dashedBorder   => L10n.s.frameStyleDashed,
+    SlideFrame.ornateCorners  => L10n.s.frameStyleOrnate,
+  };
+
+  String get emoji => switch (this) {
+    SlideFrame.none           => '∅',
+    SlideFrame.thinBorder     => '▢',
+    SlideFrame.doubleBorder   => '◳',
+    SlideFrame.cornerBrackets => '⌐',
+    SlideFrame.editorialTicks => '⊞',
+    SlideFrame.insetLine      => '▭',
+    SlideFrame.dashedBorder   => '⬚',
+    SlideFrame.ornateCorners  => '❖',
+  };
 }
 
 enum SlideOverlay { none, vignette, filmGrain, lightLeak, bokeh }
@@ -737,6 +785,12 @@ class Slide {
         ambientEffect: SlideAmbientEffect.values.firstWhere(
             (e) => e.name == j['ambientEffect'],
             orElse: () => SlideAmbientEffect.none),
+        frame: SlideFrame.values.firstWhere(
+            (e) => e.name == j['frame'],
+            orElse: () => SlideFrame.none),
+        frameColor: SlideTextColor.values.firstWhere(
+            (e) => e.name == j['frameColor'],
+            orElse: () => SlideTextColor.white),
       );
 
   Map<String, dynamic> toJson() => {
@@ -762,6 +816,8 @@ class Slide {
         'dimDirection': dimDirection.name,
         'dimOpacity': dimOpacity,
         'ambientEffect': ambientEffect.name,
+        'frame': frame.name,
+        'frameColor': frameColor.name,
       };
 
   const Slide({
@@ -787,6 +843,8 @@ class Slide {
     this.dimDirection = DimDirection.none,
     this.dimOpacity = 0.5,
     this.ambientEffect = SlideAmbientEffect.none,
+    this.frame = SlideFrame.none,
+    this.frameColor = SlideTextColor.white,
   });
 
   final String id;
@@ -811,6 +869,8 @@ class Slide {
   final DimDirection dimDirection;
   final double dimOpacity;
   final SlideAmbientEffect ambientEffect;
+  final SlideFrame frame;
+  final SlideTextColor frameColor;
 
   Slide copyWith({
     String? imagePath,
@@ -834,6 +894,8 @@ class Slide {
     DimDirection? dimDirection,
     double? dimOpacity,
     SlideAmbientEffect? ambientEffect,
+    SlideFrame? frame,
+    SlideTextColor? frameColor,
   }) {
     return Slide(
       id: id,
@@ -858,6 +920,8 @@ class Slide {
       dimDirection: dimDirection ?? this.dimDirection,
       dimOpacity: dimOpacity ?? this.dimOpacity,
       ambientEffect: ambientEffect ?? this.ambientEffect,
+      frame: frame ?? this.frame,
+      frameColor: frameColor ?? this.frameColor,
     );
   }
 }
