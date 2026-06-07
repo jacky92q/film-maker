@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:film_maker/data/services/video_export_service.dart';
@@ -9,6 +10,7 @@ import 'package:film_maker/ui/core/film_canvas.dart';
 import 'package:film_maker/ui/core/image_utils.dart';
 import 'package:film_maker/ui/core/responsive.dart';
 import 'package:film_maker/ui/core/web_download.dart';
+import 'package:film_maker/ui/core/web_video_encoder.dart';
 import 'package:film_maker/ui/features/export/view_models/export_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -32,6 +34,9 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
 
   Ticker?            _exportTicker;
   VideoExportService? _exportService;
+  WebVideoEncoder?   _webEncoder;
+  Uint8List?         _webMp4Bytes;
+  String?            _webMp4Filename;
 
   bool _cancelled  = false;
   bool _filmDone   = false;
@@ -57,6 +62,8 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
     _exportService?.cancelExport();
     _canvasOverlay?.remove();
     _filmController.dispose();
+    _webEncoder = null;
+    _webMp4Bytes = null;
     super.dispose();
   }
 
@@ -113,8 +120,6 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
       return;
     }
 
-    // Web browsers cannot run the native video encoder.  Instead, render each
-    // slide as a PNG and trigger a browser download for every slide image.
     if (kIsWeb) {
       await _startWebExport();
       return;
@@ -159,54 +164,115 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
     }
   }
 
-  // ── Web export ────────────────────────────────────────────────────────────
+  // ── Web export (MP4 via WebCodecs + mp4-muxer) ───────────────────────────
 
-  /// Renders each slide to a high-quality PNG and triggers a browser download.
-  /// Full video encoding is not available in web browsers — the mobile/desktop
-  /// apps produce MP4 files via the native encoder.
   Future<void> _startWebExport() async {
+    _webMp4Bytes    = null;
+    _webMp4Filename = null;
+
+    final project = widget.viewModel.project;
+    final res     = widget.viewModel.resolution;
+
+    _totalFrames = project.slides.fold<int>(
+      0, (s, sl) => s + sl.durationSeconds * _fps,
+    );
+
     try {
       _installCanvas();
       await SchedulerBinding.instance.endOfFrame;
       await _precacheAllImages();
       if (_cancelled || !mounted) { _removeCanvas(); return; }
+      await SchedulerBinding.instance.endOfFrame;
 
-      final project = widget.viewModel.project;
-      final res     = widget.viewModel.resolution;
-      final safeTitle = project.title.replaceAll(RegExp(r'[^\w가-힣]+'), '_');
-      final totalSlides = project.slides.length;
+      final frameW = (project.orientation.canvasWidth  * res.pixelRatio).round();
+      final frameH = (project.orientation.canvasHeight * res.pixelRatio).round();
 
-      // Render each slide once (at slide-start, i.e. t=0 of its animations)
-      // and download as a numbered PNG.
-      for (int i = 0; i < totalSlides; i++) {
-        if (_cancelled) break;
+      _webEncoder = WebVideoEncoder(
+        width:   frameW,
+        height:  frameH,
+        fps:     _fps,
+        bitrate: res.bitrateBps,
+      );
+      await _webEncoder!.start();
 
-        _filmController.seekToSlide(i);  // jump canvas to slide i
-        // Give Flutter two frames to settle layout + animations.
-        await SchedulerBinding.instance.endOfFrame;
-        await SchedulerBinding.instance.endOfFrame;
-
-        final boundary = _captureKey.currentContext?.findRenderObject()
-            as RenderRepaintBoundary?;
-        if (boundary == null) continue;
-
-        final image   = await boundary.toImage(pixelRatio: res.pixelRatio);
-        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-        image.dispose();
-        if (byteData == null) continue;
-
-        downloadBytes(
-          byteData.buffer.asUint8List(),
-          '${safeTitle}_slide_${i + 1}.png',
-        );
-
-        if (mounted) {
-          widget.viewModel.updateProgress((i + 1) / totalSlides);
-        }
-      }
-
+      _filmController.play();
+      _exportTicker = createTicker(_onWebExportTick);
+      _exportTicker!.start();
+    } catch (e) {
       _removeCanvas();
-      if (mounted) widget.viewModel.completeExport('${safeTitle}_${totalSlides}slides.png');
+      if (mounted) widget.viewModel.failExport(e.toString());
+    }
+  }
+
+  void _onWebExportTick(Duration elapsed) {
+    if (_cancelled) {
+      _exportTicker?.stop();
+      return;
+    }
+
+    if (_filmDone && !_capturing && !_finalizing) {
+      _exportTicker?.stop();
+      _exportTicker = null;
+      _finalizing = true;
+      _doWebFinalize();
+      return;
+    }
+
+    if (_capturing || _filmDone) return;
+
+    final targetFrame = (elapsed.inMicroseconds * _fps / 1e6).floor();
+    if (targetFrame <= _lastCapturedFrame) return;
+
+    _capturing = true;
+    _doWebCapture().then((_) {
+      _lastCapturedFrame = targetFrame;
+      _doneFrames++;
+      _capturing = false;
+      if (mounted && _totalFrames > 0) {
+        widget.viewModel.updateProgress(_doneFrames / _totalFrames * 0.8);
+      }
+    }).catchError((Object e) {
+      _capturing = false;
+      if (!_cancelled && mounted) {
+        _cancelled = true;
+        _exportTicker?.stop();
+        _removeCanvas();
+        widget.viewModel.failExport(e.toString());
+      }
+    });
+  }
+
+  Future<void> _doWebCapture() async {
+    final boundary = _captureKey.currentContext?.findRenderObject()
+        as RenderRepaintBoundary?;
+    if (boundary == null) return;
+
+    final res = widget.viewModel.resolution;
+    final image = await boundary.toImage(pixelRatio: res.pixelRatio);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    image.dispose();
+
+    if (byteData != null) {
+      await _webEncoder!.addFrame(byteData.buffer.asUint8List());
+    }
+  }
+
+  Future<void> _doWebFinalize() async {
+    try {
+      if (mounted) widget.viewModel.updateProgress(0.9);
+      final project   = widget.viewModel.project;
+      final safeTitle = project.title.replaceAll(RegExp(r'[^\w가-힣]+'), '_');
+      final filename  = '$safeTitle.mp4';
+
+      final mp4Bytes = await _webEncoder!.finalize();
+      _webEncoder = null;
+      _removeCanvas();
+
+      downloadBytes(mp4Bytes, filename);
+      _webMp4Bytes    = mp4Bytes;
+      _webMp4Filename = filename;
+
+      if (mounted) widget.viewModel.completeExport(filename);
     } catch (e) {
       _removeCanvas();
       if (mounted) widget.viewModel.failExport(e.toString());
@@ -296,6 +362,14 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
   // ── Share ─────────────────────────────────────────────────────────────────
 
   Future<void> _shareVideo() async {
+    if (kIsWeb) {
+      // On web, re-download the MP4 that was already produced.
+      if (_webMp4Bytes != null && _webMp4Filename != null) {
+        downloadBytes(_webMp4Bytes!, _webMp4Filename!);
+      }
+      return;
+    }
+
     final path = widget.viewModel.outputPath;
     if (path == null) return;
     try {
@@ -344,6 +418,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
     _exportTicker = null;
     _exportService?.cancelExport();
     _exportService = null;
+    _webEncoder = null;
     _removeCanvas();
     widget.viewModel.reset();
   }
@@ -632,15 +707,13 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
           width: double.infinity,
           height: 56,
           child: FilledButton.icon(
-            icon: Icon(kIsWeb
-                ? Icons.download_outlined
-                : Icons.movie_creation_outlined, size: 20),
-            label: Text(kIsWeb ? L10n.s.exportSlideImages : L10n.s.exportToMp4),
+            icon: const Icon(Icons.movie_creation_outlined, size: 20),
+            label: Text(L10n.s.exportToMp4),
             onPressed: widget.viewModel.startExport,
           ),
         ),
         const SizedBox(height: 12),
-        if (kIsWeb)
+        if (kIsWeb) ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
@@ -665,8 +738,8 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
                 ),
               ],
             ),
-          )
-        else ...[
+          ),
+        ] else ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
@@ -894,16 +967,17 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
         const SizedBox(height: 28),
         Row(
           children: [
-            if (!kIsWeb) ...[
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.share_outlined, size: 18),
-                  label: Text(L10n.s.share),
-                  onPressed: _shareVideo,
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: Icon(
+                  kIsWeb ? Icons.download_outlined : Icons.share_outlined,
+                  size: 18,
                 ),
+                label: Text(L10n.s.share),
+                onPressed: _shareVideo,
               ),
-              const SizedBox(width: 12),
-            ],
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: FilledButton.icon(
                 icon: const Icon(Icons.check_circle_outline, size: 18),
