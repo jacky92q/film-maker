@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:film_maker/data/repositories/project_repository.dart';
 import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/l10n/app_strings.dart';
@@ -312,6 +314,18 @@ class _ProjectCard extends StatelessWidget {
   }
 
   Widget _buildThumbnail() {
+    // Resolve the best photo path from the first slide.
+    String? photoPath;
+    if (project.slides.isNotEmpty) {
+      final first = project.slides.first;
+      photoPath = first.imagePath;
+      if ((photoPath == null || photoPath.isEmpty) &&
+          first.photoLayers.isNotEmpty) {
+        photoPath = first.photoLayers.first.imagePath;
+      }
+    }
+
+    // Palette used as fallback when no photo is available.
     final palettes = [
       [const Color(0xFF3B1F0A), const Color(0xFFC07842)],
       [const Color(0xFF0A2A1F), const Color(0xFF1AA38C)],
@@ -320,9 +334,82 @@ class _ProjectCard extends StatelessWidget {
     ];
     final palette = palettes[project.id.hashCode % palettes.length];
 
+    final hasPhoto = photoPath != null && photoPath.isNotEmpty;
+
     return AspectRatio(
       aspectRatio: 16 / 9,
-      child: Container(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background: real photo or gradient fallback.
+          if (hasPhoto)
+            Image.file(
+              File(photoPath!),
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, __, ___) => _gradientBox(palette),
+            )
+          else
+            _gradientBox(palette),
+
+          // Faint movie icon on gradient-only cards.
+          if (!hasPhoto)
+            const Center(
+              child: Opacity(
+                opacity: 0.15,
+                child: Icon(Icons.movie_creation, size: 52, color: Colors.white),
+              ),
+            ),
+
+          // Subtle scrim so the music badge is readable over photos.
+          if (project.musicName != null)
+            const Positioned(
+              bottom: 0, left: 0, right: 0,
+              child: SizedBox(
+                height: 32,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black54],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // Music badge.
+          if (project.musicName != null)
+            Positioned(
+              bottom: 6, right: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.music_note, color: Colors.white70, size: 10),
+                    const SizedBox(width: 3),
+                    Text(L10n.s.musicBadge,
+                        style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 9,
+                            fontFamily: AppTheme.fontTheme)),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _gradientBox(List<Color> palette) => DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -330,35 +417,5 @@ class _ProjectCard extends StatelessWidget {
             colors: palette,
           ),
         ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Opacity(
-              opacity: 0.15,
-              child: const Icon(Icons.movie_creation, size: 52, color: Colors.white),
-            ),
-            if (project.musicName != null)
-              Positioned(
-                bottom: 6, right: 6,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.music_note, color: Colors.white70, size: 10),
-                      const SizedBox(width: 3),
-                      Text(L10n.s.musicBadge, style: const TextStyle(color: Colors.white70, fontSize: 9, fontFamily: AppTheme.fontTheme)),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
+      );
 }
