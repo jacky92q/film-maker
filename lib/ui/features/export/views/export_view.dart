@@ -1,12 +1,14 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:film_maker/data/services/video_export_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/core/film_canvas.dart';
+import 'package:film_maker/ui/core/image_utils.dart';
 import 'package:film_maker/ui/core/responsive.dart';
+import 'package:film_maker/ui/core/web_download.dart';
 import 'package:film_maker/ui/features/export/view_models/export_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -111,6 +113,13 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
       return;
     }
 
+    // Web browsers cannot run the native video encoder.  Instead, render each
+    // slide as a PNG and trigger a browser download for every slide image.
+    if (kIsWeb) {
+      await _startWebExport();
+      return;
+    }
+
     _totalFrames = project.slides.fold<int>(
       0, (s, sl) => s + sl.durationSeconds * _fps,
     );
@@ -144,6 +153,60 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
       _filmController.play();
       _exportTicker = createTicker(_onExportTick);
       _exportTicker!.start();
+    } catch (e) {
+      _removeCanvas();
+      if (mounted) widget.viewModel.failExport(e.toString());
+    }
+  }
+
+  // ── Web export ────────────────────────────────────────────────────────────
+
+  /// Renders each slide to a high-quality PNG and triggers a browser download.
+  /// Full video encoding is not available in web browsers — the mobile/desktop
+  /// apps produce MP4 files via the native encoder.
+  Future<void> _startWebExport() async {
+    try {
+      _installCanvas();
+      await SchedulerBinding.instance.endOfFrame;
+      await _precacheAllImages();
+      if (_cancelled || !mounted) { _removeCanvas(); return; }
+
+      final project = widget.viewModel.project;
+      final res     = widget.viewModel.resolution;
+      final safeTitle = project.title.replaceAll(RegExp(r'[^\w가-힣]+'), '_');
+      final totalSlides = project.slides.length;
+
+      // Render each slide once (at slide-start, i.e. t=0 of its animations)
+      // and download as a numbered PNG.
+      for (int i = 0; i < totalSlides; i++) {
+        if (_cancelled) break;
+
+        _filmController.seekToSlide(i);  // jump canvas to slide i
+        // Give Flutter two frames to settle layout + animations.
+        await SchedulerBinding.instance.endOfFrame;
+        await SchedulerBinding.instance.endOfFrame;
+
+        final boundary = _captureKey.currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
+        if (boundary == null) continue;
+
+        final image   = await boundary.toImage(pixelRatio: res.pixelRatio);
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        image.dispose();
+        if (byteData == null) continue;
+
+        downloadBytes(
+          byteData.buffer.asUint8List(),
+          '${safeTitle}_slide_${i + 1}.png',
+        );
+
+        if (mounted) {
+          widget.viewModel.updateProgress((i + 1) / totalSlides);
+        }
+      }
+
+      _removeCanvas();
+      if (mounted) widget.viewModel.completeExport('${safeTitle}_${totalSlides}slides.png');
     } catch (e) {
       _removeCanvas();
       if (mounted) widget.viewModel.failExport(e.toString());
@@ -223,7 +286,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
     if (paths.isEmpty || !mounted) return;
     await Future.wait(paths.map((p) async {
       try {
-        await precacheImage(FileImage(File(p)), context);
+        await precacheImage(imageProviderFromPath(p), context);
       } catch (_) {
         // Missing/unreadable file — skip; FilmCanvas shows its placeholder.
       }
@@ -569,57 +632,86 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
           width: double.infinity,
           height: 56,
           child: FilledButton.icon(
-            icon: const Icon(Icons.movie_creation_outlined, size: 20),
-            label: Text(L10n.s.exportToMp4),
+            icon: Icon(kIsWeb
+                ? Icons.download_outlined
+                : Icons.movie_creation_outlined, size: 20),
+            label: Text(kIsWeb ? L10n.s.exportSlideImages : L10n.s.exportToMp4),
             onPressed: widget.viewModel.startExport,
           ),
         ),
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppTheme.primary.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: AppTheme.primary.withValues(alpha: 0.18)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.schedule_outlined,
-                  color: AppTheme.primary, size: 16),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  L10n.s.estimatedTime(totalSec),
-                  style: const TextStyle(
-                    fontFamily: AppTheme.fontTheme,
-                    color: AppTheme.textMid,
-                    fontSize: 12,
-                    height: 1.5,
+        if (kIsWeb)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.18)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: AppTheme.primary, size: 16),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    L10n.s.webExportNote,
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.textMid,
+                      fontSize: 12,
+                      height: 1.5,
+                    ),
                   ),
+                ),
+              ],
+            ),
+          )
+        else ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.18)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.schedule_outlined,
+                    color: AppTheme.primary, size: 16),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    L10n.s.estimatedTime(totalSec),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontTheme,
+                      color: AppTheme.textMid,
+                      fontSize: 12,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.save_alt_outlined,
+                  size: 13,
+                  color: AppTheme.textMid.withValues(alpha: 0.7)),
+              const SizedBox(width: 5),
+              Text(
+                L10n.s.savedToGallery,
+                style: TextStyle(
+                  fontFamily: AppTheme.fontTheme,
+                  color: AppTheme.textMid.withValues(alpha: 0.7),
+                  fontSize: 12,
                 ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.save_alt_outlined,
-                size: 13,
-                color: AppTheme.textMid.withValues(alpha: 0.7)),
-            const SizedBox(width: 5),
-            Text(
-              L10n.s.savedToGallery,
-              style: TextStyle(
-                fontFamily: AppTheme.fontTheme,
-                color: AppTheme.textMid.withValues(alpha: 0.7),
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
+        ],
       ],
     );
   }
@@ -802,14 +894,16 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
         const SizedBox(height: 28),
         Row(
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.share_outlined, size: 18),
-                label: Text(L10n.s.share),
-                onPressed: _shareVideo,
+            if (!kIsWeb) ...[
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.share_outlined, size: 18),
+                  label: Text(L10n.s.share),
+                  onPressed: _shareVideo,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
+              const SizedBox(width: 12),
+            ],
             Expanded(
               child: FilledButton.icon(
                 icon: const Icon(Icons.check_circle_outline, size: 18),

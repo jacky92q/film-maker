@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:film_maker/data/repositories/project_repository.dart';
 import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_routes.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/image_utils.dart';
 import 'package:film_maker/ui/core/new_film_dialog.dart';
 import 'package:film_maker/ui/features/editor/view_models/editor_view_model.dart';
 import 'package:film_maker/ui/features/editor/views/editor_view.dart';
@@ -316,8 +315,8 @@ class _ProjectCard extends StatelessWidget {
         children: [
           // Background: real photo or gradient fallback.
           if (hasPhoto)
-            Image.file(
-              File(photoPath),
+            imageFromPath(
+              photoPath,
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,

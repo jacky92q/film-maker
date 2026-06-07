@@ -89,8 +89,15 @@ class AuthViewModel extends ChangeNotifier {
     }
     if (message.contains('sign_in_failed') ||
         message.contains('ApiException') ||
-        message.contains('DEVELOPER_ERROR')) {
+        message.contains('DEVELOPER_ERROR') ||
+        message.contains('popup_closed') ||
+        message.contains('popup_blocked') ||
+        message.contains('cancelled-popup-request')) {
       return L10n.s.errGoogleSignIn;
+    }
+    if (message.contains('unauthorized-domain') ||
+        message.contains('auth/unauthorized-domain')) {
+      return L10n.s.errUnauthorizedDomain;
     }
     return L10n.s.errGeneric;
   }

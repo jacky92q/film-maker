@@ -90,6 +90,7 @@ abstract class AppStrings {
   String get errTooManyRequests;
   String get errOperationNotAllowed;
   String get errGoogleSignIn;
+  String get errUnauthorizedDomain;
   String get errGeneric;
 
   // ── Home ──────────────────────────────────────────────────────────────────
@@ -138,6 +139,8 @@ abstract class AppStrings {
   String get resFullHdDesc;
   String get res4kDesc;
   String get exportToMp4;
+  String get exportSlideImages;
+  String get webExportNote;
   String estimatedTime(int seconds);
   String get savedToGallery;
   String get renderingTitle;
@@ -447,6 +450,7 @@ class _EnStrings extends AppStrings {
   @override String get errTooManyRequests => 'Too many attempts. Please try again later.';
   @override String get errOperationNotAllowed => 'This sign-in method is not enabled. Contact the app admin.';
   @override String get errGoogleSignIn => 'Google Sign-In failed. Android SHA-1 fingerprint may need to be registered in Firebase Console.';
+  @override String get errUnauthorizedDomain => 'This domain is not authorized for Google Sign-In. Add it in Firebase Console → Authentication → Authorized domains.';
   @override String get errGeneric => 'Something went wrong. Please try again.';
 
   @override String get welcomeBack => 'Welcome back';
@@ -492,6 +496,9 @@ class _EnStrings extends AppStrings {
   @override String get resFullHdDesc => 'Great for TV and displays';
   @override String get res4kDesc => 'Best for cinema-quality output';
   @override String get exportToMp4 => 'Export to MP4';
+  @override String get exportSlideImages => 'Download Slide Images';
+  @override String get webExportNote =>
+      'Web export downloads each slide as a high-quality PNG.\nFor MP4 video, use the mobile or desktop app.';
   @override String estimatedTime(int seconds) =>
       'Estimated time: about ${seconds}s\nReal-time rendering — same as your film length.';
   @override String get savedToGallery => 'Video will be saved to your device gallery';
@@ -792,6 +799,7 @@ class _KoStrings extends AppStrings {
   @override String get errTooManyRequests => '시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.';
   @override String get errOperationNotAllowed => '이 로그인 방식은 사용할 수 없습니다. 관리자에게 문의하세요.';
   @override String get errGoogleSignIn => 'Google 로그인에 실패했습니다. Firebase Console에 Android SHA-1 지문 등록이 필요할 수 있습니다.';
+  @override String get errUnauthorizedDomain => '이 도메인은 Google 로그인이 허용되지 않습니다. Firebase Console → Authentication → 승인된 도메인에 추가해 주세요.';
   @override String get errGeneric => '문제가 발생했습니다. 다시 시도해 주세요.';
 
   @override String get welcomeBack => '다시 오신 걸 환영해요';
@@ -837,6 +845,9 @@ class _KoStrings extends AppStrings {
   @override String get resFullHdDesc => 'TV와 디스플레이에 적합';
   @override String get res4kDesc => '영화급 화질에 최적';
   @override String get exportToMp4 => 'MP4로 내보내기';
+  @override String get exportSlideImages => '슬라이드 이미지 다운로드';
+  @override String get webExportNote =>
+      '웹 브라우저에서는 각 슬라이드를 고화질 PNG로 다운로드합니다.\nMP4 영상은 모바일 또는 데스크탑 앱을 이용해 주세요.';
   @override String estimatedTime(int seconds) =>
       '예상 소요 시간: 약 $seconds초\n실시간 렌더링으로 영상 길이와 동일합니다.';
   @override String get savedToGallery => '영상이 기기 갤러리에 저장됩니다';

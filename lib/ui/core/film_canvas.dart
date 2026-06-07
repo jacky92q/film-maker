@@ -38,6 +38,7 @@ class FilmCanvasController extends ChangeNotifier {
   void toggle()  => isPlaying ? pause() : play();
   void next()    => _state?._skipTo(currentIndex + 1);
   void previous()=> _state?._skipTo(currentIndex - 1);
+  void seekToSlide(int index) => _state?._skipTo(index);
 
   // Called by _FilmCanvasState to trigger listener notifications from
   // within the controller (avoids calling the protected notifyListeners
