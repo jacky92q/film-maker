@@ -344,7 +344,7 @@ class _ProjectCard extends StatelessWidget {
           // Background: real photo or gradient fallback.
           if (hasPhoto)
             Image.file(
-              File(photoPath!),
+              File(photoPath),
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
