@@ -1,6 +1,7 @@
 import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/responsive.dart';
 import 'package:film_maker/ui/features/auth/view_models/auth_view_model.dart';
 import 'package:film_maker/ui/features/auth/views/register_view.dart';
 import 'package:flutter/material.dart';
@@ -53,17 +54,20 @@ class _LoginViewState extends State<LoginView> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildForm(),
-                  const SizedBox(height: 20),
-                  _buildDivider(),
-                  const SizedBox(height: 20),
-                  _buildGoogleButton(),
-                  const SizedBox(height: 28),
-                  _buildRegisterLink(),
-                ],
+              child: ResponsiveCenter(
+                maxWidth: 440,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildForm(),
+                    const SizedBox(height: 20),
+                    _buildDivider(),
+                    const SizedBox(height: 20),
+                    _buildGoogleButton(),
+                    const SizedBox(height: 28),
+                    _buildRegisterLink(),
+                  ],
+                ),
               ),
             ),
           ),

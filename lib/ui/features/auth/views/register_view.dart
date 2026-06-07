@@ -1,6 +1,7 @@
 import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
 import 'package:film_maker/ui/core/app_theme.dart';
+import 'package:film_maker/ui/core/responsive.dart';
 import 'package:film_maker/ui/features/auth/view_models/auth_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -57,7 +58,7 @@ class _RegisterViewState extends State<RegisterView> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-              child: _buildForm(),
+              child: ResponsiveCenter(maxWidth: 440, child: _buildForm()),
             ),
           ),
         ],
