@@ -144,7 +144,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
                 fontFamily: AppTheme.fontTheme, color: AppTheme.textMid)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
+            onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(L10n.s.discard,
                 style: TextStyle(
                     fontFamily: AppTheme.fontTheme,
