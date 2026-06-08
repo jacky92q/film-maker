@@ -2582,34 +2582,6 @@ class _SlideTabs extends StatelessWidget {
               onSelect: (c) => viewModel.updateSelectedSlide(slide.copyWith(frameColor: c)),
             ),
           ],
-          const SizedBox(height: 12),
-          // Photo shape
-          _SectionHeader(L10n.s.secPhotoShape),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8, runSpacing: 8,
-            children: PhotoShape.values.map((sh) => ChoiceChip(
-              label: Text(sh.label),
-              selected: slide.photoShape == sh,
-              onSelected: (_) => viewModel.updateSelectedSlide(slide.copyWith(photoShape: sh)),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            )).toList(),
-          ),
-          const SizedBox(height: 12),
-          // Photo frame
-          _SectionHeader(L10n.s.secPhotoFrame),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8, runSpacing: 8,
-            children: PhotoFrame.values.map((fr) => ChoiceChip(
-              label: Text(fr.label),
-              selected: slide.photoFrame == fr,
-              onSelected: (_) => viewModel.updateSelectedSlide(slide.copyWith(photoFrame: fr)),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            )).toList(),
-          ),
         ],
       ),
     );
