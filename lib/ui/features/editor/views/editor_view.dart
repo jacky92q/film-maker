@@ -870,34 +870,33 @@ class _SlideCanvas extends StatefulWidget {
 }
 
 class _SlideCanvasState extends State<_SlideCanvas> {
-  // Saved at gesture start so we compute absolute (not cumulative) deltas.
+  // Background photo gesture start values.
   double _scaleStart = 1.0;
   double _offsetXStart = 0.0;
   double _offsetYStart = 0.0;
-  Offset _focalStart = Offset.zero;
 
-  // Photo-layer gesture start values
+  // Photo/sticker/text layer gesture start values (shared — only one drag at a time).
   double _plStartW = 0.0;
   double _plStartH = 0.0;
   double _plStartCropScale = 1.0;
+  double _plStartCropOX = 0.0;
+  double _plStartCropOY = 0.0;
+  double _layerStartX = 0.0;
+  double _layerStartY = 0.0;
 
-  // Drag divisors set per-build based on platform + viewport width:
-  //   native: canonical pixels (FittedBox applies inverse transform)
-  //   mobile web: canonical units → matches native app sensitivity
-  //   desktop web: rendered size × 0.4 → ~2.5× faster than 1:1, matches phone-web feel
-  double _dragW = 1280;
-  double _dragH = 720;
+  // Absolute global screen position at gesture start — used by all drag handlers.
+  // Tracking from an absolute start avoids accumulated error and is unaffected
+  // by the widget moving during the gesture.
+  Offset _globalFocalStart = Offset.zero;
 
-  // Resize divisors for corner handles: always 1:1 screen tracking.
-  double _resizeDivW = 1280;
-  double _resizeDivH = 720;
+  // Rendered FittedBox scale (set each build).
+  double _canvasScale = 1.0;
+
+  // 1.0 for mouse / native (exact 1:1); 0.7 for mobile-web touch.
+  double _dragFactor = 1.0;
 
   // True when running on web with a wide viewport (desktop / mouse device).
   bool _isDesktopWeb = false;
-
-  // Cumulative drag delta since corner-handle resize started.
-  double _cornerDeltaX = 0;
-  double _cornerDeltaY = 0;
 
   // True while a corner dot is being dragged — prevents the parent photo-layer
   // GestureDetector from also processing the same pointer event.
@@ -913,11 +912,20 @@ class _SlideCanvasState extends State<_SlideCanvas> {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => widget.viewModel.selectLayer(layer.id),
-          onPanUpdate: (d) => widget.viewModel.moveTextLayer(
-            layer.id,
-            (layer.x + d.delta.dx / _dragW).clamp(0.05, 0.95),
-            (layer.y + d.delta.dy / _dragH).clamp(0.05, 0.95),
-          ),
+          onScaleStart: (d) {
+            _globalFocalStart = d.focalPoint;
+            _layerStartX = layer.x;
+            _layerStartY = layer.y;
+          },
+          onScaleUpdate: (d) {
+            final dx = (d.focalPoint.dx - _globalFocalStart.dx) * _dragFactor;
+            final dy = (d.focalPoint.dy - _globalFocalStart.dy) * _dragFactor;
+            widget.viewModel.moveTextLayer(
+              layer.id,
+              (_layerStartX + dx / (_canvasScale * canvasW)).clamp(0.05, 0.95),
+              (_layerStartY + dy / (_canvasScale * canvasH)).clamp(0.05, 0.95),
+            );
+          },
           child: _LayerWidget(
             layer: layer,
             selected: layer.id == selectedLayerId,
@@ -944,32 +952,37 @@ class _SlideCanvasState extends State<_SlideCanvas> {
           widget.viewModel.selectPhotoLayer(pl.id);
           widget.viewModel.selectLayer(null);
         },
-        onScaleStart: (_) {
+        onScaleStart: (d) {
           if (_cornerResizing) return;
+          _globalFocalStart = d.focalPoint;
+          _layerStartX = pl.x;
+          _layerStartY = pl.y;
           _plStartW = pl.widthFraction;
           _plStartH = pl.heightFraction;
           _plStartCropScale = pl.cropScale;
+          _plStartCropOX = pl.cropOffsetX;
+          _plStartCropOY = pl.cropOffsetY;
         },
         onScaleUpdate: (d) {
           if (_cornerResizing) return;
-          // pw/ph are in canonical pixels; on web focalPointDelta is in screen
-          // pixels, so scale the crop divisors the same way as _dragW/_dragH.
-          final cropDivW = kIsWeb ? pw * (_dragW / canvasW) : pw;
-          final cropDivH = kIsWeb ? ph * (_dragH / canvasH) : ph;
+          final dx = (d.focalPoint.dx - _globalFocalStart.dx) * _dragFactor;
+          final dy = (d.focalPoint.dy - _globalFocalStart.dy) * _dragFactor;
           if (!isSelectedPL) {
-            final newX = (pl.x + d.focalPointDelta.dx / _dragW).clamp(0.04, 0.96);
-            final newY = (pl.y + d.focalPointDelta.dy / _dragH).clamp(0.04, 0.96);
-            widget.viewModel.movePhotoLayer(pl.id, newX, newY);
+            widget.viewModel.movePhotoLayer(
+              pl.id,
+              (_layerStartX + dx / (_canvasScale * canvasW)).clamp(0.04, 0.96),
+              (_layerStartY + dy / (_canvasScale * canvasH)).clamp(0.04, 0.96),
+            );
           } else if (isCropMode) {
-            final newOX = (pl.cropOffsetX + d.focalPointDelta.dx / cropDivW).clamp(-0.5, 0.5);
-            final newOY = (pl.cropOffsetY + d.focalPointDelta.dy / cropDivH).clamp(-0.5, 0.5);
+            final newOX = (_plStartCropOX + dx / (_canvasScale * pw)).clamp(-0.5, 0.5);
+            final newOY = (_plStartCropOY + dy / (_canvasScale * ph)).clamp(-0.5, 0.5);
             final newCS = (_plStartCropScale * d.scale).clamp(1.0, 4.0);
             widget.viewModel.updatePhotoLayer(
               pl.copyWith(cropOffsetX: newOX, cropOffsetY: newOY, cropScale: newCS),
             );
           } else {
-            final newX = (pl.x + d.focalPointDelta.dx / _dragW).clamp(0.04, 0.96);
-            final newY = (pl.y + d.focalPointDelta.dy / _dragH).clamp(0.04, 0.96);
+            final newX = (_layerStartX + dx / (_canvasScale * canvasW)).clamp(0.04, 0.96);
+            final newY = (_layerStartY + dy / (_canvasScale * canvasH)).clamp(0.04, 0.96);
             final newW = (_plStartW * d.scale).clamp(0.08, 1.0);
             final newH = (_plStartH * d.scale).clamp(0.08, 1.0);
             widget.viewModel.updatePhotoLayer(
@@ -1018,7 +1031,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                   ),
                 ),
               if (_isDesktopWeb && isSelectedPL && !isCropMode)
-                ..._buildCornerHandles(pl, pw, ph),
+                ..._buildCornerHandles(pl, pw, ph, canvasW, canvasH),
             ],
           ),
         ),
@@ -1028,7 +1041,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
 
   // Corner resize handles for desktop web (mouse users who can't pinch).
   // Each dot is 14px canonical, offset -7 so it's centered on the corner.
-  List<Widget> _buildCornerHandles(PhotoLayer pl, double pw, double ph) {
+  List<Widget> _buildCornerHandles(PhotoLayer pl, double pw, double ph, double canvasW, double canvasH) {
     const dotSize = 14.0;
     const half = dotSize / 2;
     final corners = [
@@ -1048,20 +1061,17 @@ class _SlideCanvasState extends State<_SlideCanvas> {
         // parent photo-layer GestureDetector doesn't win the gesture arena.
         child: Listener(
           behavior: HitTestBehavior.opaque,
-          onPointerDown: (_) {
+          onPointerDown: (e) {
+            _globalFocalStart = e.position;
             _plStartW = pl.widthFraction;
             _plStartH = pl.heightFraction;
-            _cornerDeltaX = 0;
-            _cornerDeltaY = 0;
             _cornerResizing = true;
           },
           onPointerMove: (e) {
-            _cornerDeltaX += e.delta.dx;
-            _cornerDeltaY += e.delta.dy;
-            final dw = signX * _cornerDeltaX / _resizeDivW;
-            final dh = signY * _cornerDeltaY / _resizeDivH;
-            final newW = (_plStartW + dw).clamp(0.08, 1.0);
-            final newH = (_plStartH + dh).clamp(0.08, 1.0);
+            final totalDx = e.position.dx - _globalFocalStart.dx;
+            final totalDy = e.position.dy - _globalFocalStart.dy;
+            final newW = (_plStartW + signX * totalDx / (_canvasScale * canvasW)).clamp(0.08, 1.0);
+            final newH = (_plStartH + signY * totalDy / (_canvasScale * canvasH)).clamp(0.08, 1.0);
             widget.viewModel.updatePhotoLayer(
               pl.copyWith(widthFraction: newW, heightFraction: newH),
             );
@@ -1094,12 +1104,17 @@ class _SlideCanvasState extends State<_SlideCanvas> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => widget.viewModel.selectSticker(sl.id),
-        onScaleStart: (_) {
+        onScaleStart: (d) {
+          _globalFocalStart = d.focalPoint;
+          _layerStartX = sl.x;
+          _layerStartY = sl.y;
           _plStartW = sl.widthFraction;
         },
         onScaleUpdate: (d) {
-          final newX = (sl.x + d.focalPointDelta.dx / _dragW).clamp(0.02, 0.98);
-          final newY = (sl.y + d.focalPointDelta.dy / _dragH).clamp(0.02, 0.98);
+          final dx = (d.focalPoint.dx - _globalFocalStart.dx) * _dragFactor;
+          final dy = (d.focalPoint.dy - _globalFocalStart.dy) * _dragFactor;
+          final newX = (_layerStartX + dx / (_canvasScale * canvasW)).clamp(0.02, 0.98);
+          final newY = (_layerStartY + dy / (_canvasScale * canvasH)).clamp(0.02, 0.98);
           final newW = (_plStartW * d.scale).clamp(0.04, 1.2);
           final newRot = sl.rotation + d.rotation * 180 / 3.14159265;
           if (isSelected) {
@@ -1156,20 +1171,17 @@ class _SlideCanvasState extends State<_SlideCanvas> {
     _scaleStart = slide.photoScale;
     _offsetXStart = slide.photoOffsetX;
     _offsetYStart = slide.photoOffsetY;
-    _focalStart = d.localFocalPoint;
+    _globalFocalStart = d.focalPoint;
   }
 
   void _onPhotoScaleUpdate(ScaleUpdateDetails d, double w, double h) {
     final newScale = (_scaleStart * d.scale).clamp(0.1, 4.0);
-    final delta = d.localFocalPoint - _focalStart;
-    // On web, localFocalPoint is in screen pixels; use the actual displayed
-    // canvas size (_dragW/_dragH) so panning tracks the pointer 1:1.
-    final divW = kIsWeb ? _dragW : w;
-    final divH = kIsWeb ? _dragH : h;
+    final dx = (d.focalPoint.dx - _globalFocalStart.dx) * _dragFactor;
+    final dy = (d.focalPoint.dy - _globalFocalStart.dy) * _dragFactor;
     widget.viewModel.updatePhotoTransform(
       scale: newScale,
-      offsetX: _offsetXStart + delta.dx / divW,
-      offsetY: _offsetYStart + delta.dy / divH,
+      offsetX: _offsetXStart + dx / (_canvasScale * w),
+      offsetY: _offsetYStart + dy / (_canvasScale * h),
     );
   }
 
@@ -1183,39 +1195,21 @@ class _SlideCanvasState extends State<_SlideCanvas> {
     final canonicalW = orientation.canvasWidth;
     final canonicalH = orientation.canvasHeight;
 
-    // _dragW/_dragH are set below inside LayoutBuilder so the gesture handlers
-    // always have the correct value before they fire.
+    // _canvasScale/_dragFactor are set inside LayoutBuilder so gesture handlers
+    // always have the correct values before they fire.
     return LayoutBuilder(builder: (context, constraints) {
       // Compute the actual on-screen size of the canvas after FittedBox scaling.
       final scaleW = constraints.maxWidth > 0 ? constraints.maxWidth / canonicalW : 1.0;
       final scaleH = constraints.maxHeight > 0 ? constraints.maxHeight / canonicalH : 1.0;
-      final scale  = math.min(scaleW, scaleH);
-      // On web, GestureDetector delivers deltas in screen pixels (not in the
-      // FittedBox child's canonical space). Divisors are tuned per context:
-      //   native: canonical size (Flutter handles scaling internally)
-      //   mobile web: canonical size (touch gestures feel native at 1:1)
-      //   desktop web: rendered size × 0.4 (~2.5× faster, matches mobile feel)
-      if (!kIsWeb) {
-        _dragW = canonicalW;
-        _dragH = canonicalH;
-        _isDesktopWeb = false;
-      } else {
-        // Use viewport width for detection — widget constraints may be narrowed
-        // by sidebars and don't reflect the actual device type.
-        _isDesktopWeb = MediaQuery.of(context).size.width >= 700;
-        if (_isDesktopWeb) {
-          // Factor 0.1 → ~10× faster than 1:1 pixel tracking; compensates for
-          // mouse being far more precise than touch, and canvas being larger.
-          _dragW = canonicalW * scale * 0.1;
-          _dragH = canonicalH * scale * 0.1;
-        } else {
-          _dragW = canonicalW;
-          _dragH = canonicalH;
-        }
-      }
-      // Corner handles track 1:1 screen pixels for precise mouse control.
-      _resizeDivW = kIsWeb ? canonicalW * scale : canonicalW;
-      _resizeDivH = kIsWeb ? canonicalH * scale : canonicalH;
+      _canvasScale = math.min(scaleW, scaleH);
+
+      // Use viewport width to detect device type — widget constraints may be
+      // narrowed by sidebars and don't reflect the actual device.
+      _isDesktopWeb = kIsWeb && MediaQuery.of(context).size.width >= 700;
+
+      // Mouse and native gestures track 1:1; mobile web touch is slightly
+      // dampened so a finger doesn't overshoot on small canvases.
+      _dragFactor = (kIsWeb && !_isDesktopWeb) ? 0.7 : 1.0;
 
       return _buildCanvas(context, canonicalW, canonicalH);
     });
