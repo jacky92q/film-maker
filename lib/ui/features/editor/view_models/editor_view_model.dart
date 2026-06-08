@@ -222,6 +222,43 @@ class EditorViewModel extends ChangeNotifier {
     _updateSlide(slide.copyWith(textLayers: layers));
   }
 
+  /// True when any movable object (text, photo, or sticker) is selected.
+  bool get hasSelectedLayer =>
+      _selectedLayerId != null ||
+      _selectedPhotoLayerId != null ||
+      _selectedStickerId != null;
+
+  /// Nudges the currently selected object by [dx]/[dy] in normalised (0–1)
+  /// canvas units. Used by keyboard arrow keys.
+  void nudgeSelectedLayer(double dx, double dy) {
+    if (_cropMode) return;
+    if (_selectedLayerId != null) {
+      final l = selectedLayer;
+      if (l == null) return;
+      moveTextLayer(
+        l.id,
+        (l.x + dx).clamp(0.05, 0.95),
+        (l.y + dy).clamp(0.05, 0.95),
+      );
+    } else if (_selectedPhotoLayerId != null) {
+      final pl = selectedPhotoLayer;
+      if (pl == null) return;
+      movePhotoLayer(
+        pl.id,
+        (pl.x + dx).clamp(0.04, 0.96),
+        (pl.y + dy).clamp(0.04, 0.96),
+      );
+    } else if (_selectedStickerId != null) {
+      final sl = selectedSticker;
+      if (sl == null) return;
+      moveStickerLayer(
+        sl.id,
+        (sl.x + dx).clamp(0.02, 0.98),
+        (sl.y + dy).clamp(0.02, 0.98),
+      );
+    }
+  }
+
   void movePhotoLayer(String layerId, double x, double y) {
     final slide = selectedSlide;
     if (slide == null) return;

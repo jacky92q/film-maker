@@ -395,6 +395,23 @@ class _ProjectCard extends StatelessWidget {
               ),
             ),
           ),
+
+          // Delete button (visible on every card; long-press also works).
+          Positioned(
+            top: 4, right: 4,
+            child: GestureDetector(
+              onTap: onDelete,
+              child: Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.delete_outline,
+                    color: Colors.white, size: 15),
+              ),
+            ),
+          ),
         ],
       ),
     );
