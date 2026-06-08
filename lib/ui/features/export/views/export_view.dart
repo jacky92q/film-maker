@@ -261,7 +261,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
     try {
       if (mounted) widget.viewModel.updateProgress(0.9);
       final project   = widget.viewModel.project;
-      final safeTitle = project.title.replaceAll(RegExp(r'[^\w가-힣]+'), '_');
+      final safeTitle = '${project.title}_film_maker';
       final filename  = '$safeTitle.mp4';
 
       final mp4Bytes = await _webEncoder!.finalize();
