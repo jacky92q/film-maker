@@ -7,7 +7,7 @@ import 'package:web/web.dart' as web;
 void downloadBytes(Uint8List bytes, String filename) {
   final blob = web.Blob(
     <JSAny>[bytes.toJS].toJS,
-    web.BlobPropertyBag(type: 'image/png'),
+    web.BlobPropertyBag(type: 'video/mp4'),
   );
   final url = web.URL.createObjectURL(blob);
   final a = web.document.createElement('a') as web.HTMLAnchorElement
