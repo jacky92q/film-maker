@@ -832,6 +832,10 @@ class _SlideCanvasState extends State<_SlideCanvas> {
   double _cornerDeltaX = 0;
   double _cornerDeltaY = 0;
 
+  // True while a corner dot is being dragged — prevents the parent photo-layer
+  // GestureDetector from also processing the same pointer event.
+  bool _cornerResizing = false;
+
   Widget _buildTextLayerItem(TextLayer layer, double canvasW, double canvasH, String? selectedLayerId) {
     return Positioned.fill(
       child: Align(
@@ -874,11 +878,13 @@ class _SlideCanvasState extends State<_SlideCanvas> {
           widget.viewModel.selectLayer(null);
         },
         onScaleStart: (_) {
+          if (_cornerResizing) return;
           _plStartW = pl.widthFraction;
           _plStartH = pl.heightFraction;
           _plStartCropScale = pl.cropScale;
         },
         onScaleUpdate: (d) {
+          if (_cornerResizing) return;
           // pw/ph are in canonical pixels; on web focalPointDelta is in screen
           // pixels, so scale the crop divisors the same way as _dragW/_dragH.
           final cropDivW = kIsWeb ? pw * (_dragW / canvasW) : pw;
@@ -971,18 +977,20 @@ class _SlideCanvasState extends State<_SlideCanvas> {
         top: top,
         width: dotSize,
         height: dotSize,
-        child: GestureDetector(
+        // Use Listener (raw pointer events) instead of GestureDetector so the
+        // parent photo-layer GestureDetector doesn't win the gesture arena.
+        child: Listener(
           behavior: HitTestBehavior.opaque,
-          onTap: () {},
-          onScaleStart: (_) {
+          onPointerDown: (_) {
             _plStartW = pl.widthFraction;
             _plStartH = pl.heightFraction;
             _cornerDeltaX = 0;
             _cornerDeltaY = 0;
+            _cornerResizing = true;
           },
-          onScaleUpdate: (d) {
-            _cornerDeltaX += d.focalPointDelta.dx;
-            _cornerDeltaY += d.focalPointDelta.dy;
+          onPointerMove: (e) {
+            _cornerDeltaX += e.delta.dx;
+            _cornerDeltaY += e.delta.dy;
             final dw = signX * _cornerDeltaX / _resizeDivW;
             final dh = signY * _cornerDeltaY / _resizeDivH;
             final newW = (_plStartW + dw).clamp(0.08, 1.0);
@@ -991,6 +999,8 @@ class _SlideCanvasState extends State<_SlideCanvas> {
               pl.copyWith(widthFraction: newW, heightFraction: newH),
             );
           },
+          onPointerUp: (_) => _cornerResizing = false,
+          onPointerCancel: (_) => _cornerResizing = false,
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -1123,10 +1133,14 @@ class _SlideCanvasState extends State<_SlideCanvas> {
         _dragH = canonicalH;
         _isDesktopWeb = false;
       } else {
-        _isDesktopWeb = constraints.maxWidth >= 700;
+        // Use viewport width for detection — widget constraints may be narrowed
+        // by sidebars and don't reflect the actual device type.
+        _isDesktopWeb = MediaQuery.of(context).size.width >= 700;
         if (_isDesktopWeb) {
-          _dragW = canonicalW * scale * 0.4;
-          _dragH = canonicalH * scale * 0.4;
+          // Factor 0.1 → ~10× faster than 1:1 pixel tracking; compensates for
+          // mouse being far more precise than touch, and canvas being larger.
+          _dragW = canonicalW * scale * 0.1;
+          _dragH = canonicalH * scale * 0.1;
         } else {
           _dragW = canonicalW;
           _dragH = canonicalH;

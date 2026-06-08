@@ -33,6 +33,64 @@
   <link rel="manifest" href="manifest.json">
 
   <script>
+    // IndexedDB-backed image store — keeps picked images alive across page reloads.
+    window.filmMakerImageStore = (function () {
+      const DB_NAME = 'filmMakerImages';
+      const STORE   = 'images';
+      let _dbPromise = null;
+
+      function getDb() {
+        if (!_dbPromise) {
+          _dbPromise = new Promise(function (resolve, reject) {
+            const req = indexedDB.open(DB_NAME, 1);
+            req.onupgradeneeded = function (e) {
+              const db = e.target.result;
+              if (!db.objectStoreNames.contains(STORE)) {
+                db.createObjectStore(STORE);
+              }
+            };
+            req.onsuccess  = function (e) { resolve(e.target.result); };
+            req.onerror    = function ()  { reject(req.error); };
+          });
+        }
+        return _dbPromise;
+      }
+
+      return {
+        store: async function (key, bytes) {
+          const db = await getDb();
+          return new Promise(function (resolve, reject) {
+            const txn = db.transaction(STORE, 'readwrite');
+            txn.objectStore(STORE).put(bytes, key);
+            txn.oncomplete = function () { resolve(); };
+            txn.onerror    = function () { reject(txn.error); };
+          });
+        },
+
+        load: async function (key) {
+          const db = await getDb();
+          return new Promise(function (resolve, reject) {
+            const txn = db.transaction(STORE, 'readonly');
+            const req = txn.objectStore(STORE).get(key);
+            req.onsuccess = function () { resolve(req.result ?? null); };
+            req.onerror   = function () { reject(req.error); };
+          });
+        },
+
+        delete: async function (key) {
+          const db = await getDb();
+          return new Promise(function (resolve) {
+            const txn = db.transaction(STORE, 'readwrite');
+            txn.objectStore(STORE).delete(key);
+            txn.oncomplete = function () { resolve(); };
+            txn.onerror    = function () { resolve(); }; // best-effort
+          });
+        },
+      };
+    })();
+  </script>
+
+  <script>
     // Global encoder helper used by the Flutter web export path.
     // Uses WebCodecs VideoEncoder + mp4-muxer (loaded on first use via dynamic import).
     window.filmMakerEncoder = {
@@ -57,8 +115,10 @@
         }
 
         if (!this._Mp4Muxer) {
-          const mod = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5/build/mp4-muxer.js');
-          this._Mp4Muxer = mod;
+          // esm.sh serves a proper ES module; use default??mod to handle both
+          // ESM named exports and CJS-wrapped-as-default-export formats.
+          const mod = await import('https://esm.sh/mp4-muxer@5');
+          this._Mp4Muxer = mod.default ?? mod;
         }
 
         const { Muxer, ArrayBufferTarget } = this._Mp4Muxer;

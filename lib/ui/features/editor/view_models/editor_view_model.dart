@@ -4,6 +4,7 @@ import 'package:film_maker/data/repositories/project_repository.dart';
 import 'package:film_maker/domain/models/project.dart';
 import 'package:film_maker/domain/models/slide.dart';
 import 'package:film_maker/domain/models/sticker.dart';
+import 'package:film_maker/ui/core/web_image_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -313,8 +314,15 @@ class EditorViewModel extends ChangeNotifier {
         final double canvasW = _project.orientation.canvasWidth;
         final double canvasH = _project.orientation.canvasHeight;
         double wf = 0.45, hf = 0.55; // fallback
+        String imagePath = picked.path;
         try {
           final bytes = await picked.readAsBytes();
+          // Persist image bytes on web so they survive page reloads.
+          if (kIsWeb) {
+            final key = _uuid.v4();
+            await webStoreImage(key, bytes);
+            imagePath = 'web_img://$key';
+          }
           final codec = await ui.instantiateImageCodec(bytes);
           final frame = await codec.getNextFrame();
           final imgW = frame.image.width.toDouble();
@@ -333,7 +341,7 @@ class EditorViewModel extends ChangeNotifier {
 
         final layer = PhotoLayer(
           id: _uuid.v4(),
-          imagePath: picked.path,
+          imagePath: imagePath,
           zOrder: _nextZOrder(),
           widthFraction: wf,
           heightFraction: hf,
@@ -357,9 +365,16 @@ class EditorViewModel extends ChangeNotifier {
         requestFullMetadata: false,
       );
       if (picked != null) {
+        String imagePath = picked.path;
+        if (kIsWeb) {
+          final bytes = await picked.readAsBytes();
+          final key = _uuid.v4();
+          await webStoreImage(key, bytes);
+          imagePath = 'web_img://$key';
+        }
         final layers = [
           for (final l in slide.photoLayers)
-            if (l.id == layerId) l.copyWith(imagePath: picked.path) else l,
+            if (l.id == layerId) l.copyWith(imagePath: imagePath) else l,
         ];
         _updateSlide(slide.copyWith(photoLayers: layers));
       }
@@ -433,15 +448,22 @@ class EditorViewModel extends ChangeNotifier {
         requestFullMetadata: false,
       );
       if (picked != null) {
+        String imagePath = picked.path;
+        if (kIsWeb) {
+          final bytes = await picked.readAsBytes();
+          final key = _uuid.v4();
+          await webStoreImage(key, bytes);
+          imagePath = 'web_img://$key';
+        }
         switch (slot) {
           case 2:
-            _updateSlide(slide.copyWith(imagePath2: picked.path));
+            _updateSlide(slide.copyWith(imagePath2: imagePath));
             break;
           case 3:
-            _updateSlide(slide.copyWith(imagePath3: picked.path));
+            _updateSlide(slide.copyWith(imagePath3: imagePath));
             break;
           default:
-            _updateSlide(slide.copyWith(imagePath: picked.path));
+            _updateSlide(slide.copyWith(imagePath: imagePath));
         }
       }
     } catch (_) {
@@ -459,7 +481,14 @@ class EditorViewModel extends ChangeNotifier {
         requestFullMetadata: false, // uses system Photo Picker on Android 13+ (no permission needed)
       );
       if (picked != null) {
-        _updateSlide(slide.copyWith(imagePath: picked.path));
+        String imagePath = picked.path;
+        if (kIsWeb) {
+          final bytes = await picked.readAsBytes();
+          final key = _uuid.v4();
+          await webStoreImage(key, bytes);
+          imagePath = 'web_img://$key';
+        }
+        _updateSlide(slide.copyWith(imagePath: imagePath));
       }
     } catch (_) {
       // Image picker unavailable in this environment
