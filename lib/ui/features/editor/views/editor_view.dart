@@ -19,6 +19,7 @@ import 'package:film_maker/ui/features/preview/view_models/preview_view_model.da
 import 'package:film_maker/ui/features/preview/views/preview_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 // Returns the appropriate TextStyle for a given font style using bundled fonts.
@@ -77,6 +78,7 @@ class EditorView extends StatefulWidget {
 
 class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
   final _titleController = TextEditingController();
+  final _keyboardFocus = FocusNode(debugLabel: 'editorKeyboard');
   bool _editingTitle = false;
   _EditSection _section = _EditSection.slide;
   bool _isPortraitLayout = true;
@@ -98,6 +100,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     widget.viewModel.removeListener(_onViewModelChange);
     _titleController.dispose();
+    _keyboardFocus.dispose();
     super.dispose();
   }
 
@@ -111,6 +114,62 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
     if (nowVisible != _keyboardVisible) {
       setState(() => _keyboardVisible = nowVisible);
     }
+  }
+
+  Future<void> _confirmDeleteSlide(int index) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(L10n.s.deleteSlideTitle,
+            style: TextStyle(
+                fontFamily: AppTheme.fontTheme, color: AppTheme.textDark)),
+        content: Text(L10n.s.deleteSlideConfirm,
+            style: TextStyle(
+                fontFamily: AppTheme.fontTheme, color: AppTheme.textMid)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(L10n.s.cancel,
+                style: TextStyle(
+                    fontFamily: AppTheme.fontTheme, color: AppTheme.textMid)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(L10n.s.delete,
+                style: const TextStyle(
+                    fontFamily: AppTheme.fontTheme, color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      widget.viewModel.selectSlide(index);
+      widget.viewModel.deleteSelectedSlide();
+    }
+  }
+
+  // Arrow keys nudge the selected object. Shift = larger step.
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (_editingTitle || !widget.viewModel.hasSelectedLayer) {
+      return KeyEventResult.ignored;
+    }
+    final shift = HardwareKeyboard.instance.isShiftPressed;
+    final step = shift ? 0.02 : 0.005;
+    final (double dx, double dy) = switch (event.logicalKey) {
+      LogicalKeyboardKey.arrowLeft => (-step, 0.0),
+      LogicalKeyboardKey.arrowRight => (step, 0.0),
+      LogicalKeyboardKey.arrowUp => (0.0, -step),
+      LogicalKeyboardKey.arrowDown => (0.0, step),
+      _ => (0.0, 0.0),
+    };
+    if (dx == 0 && dy == 0) return KeyEventResult.ignored;
+    widget.viewModel.nudgeSelectedLayer(dx, dy);
+    return KeyEventResult.handled;
   }
 
   // Auto-switch the section tab when a layer is tapped on the canvas.
@@ -284,7 +343,11 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
       child: Scaffold(
         backgroundColor: AppTheme.bg,
         appBar: _buildAppBar(),
-        body: ListenableBuilder(
+        body: Focus(
+          focusNode: _keyboardFocus,
+          autofocus: true,
+          onKeyEvent: _handleKey,
+          child: ListenableBuilder(
           listenable: widget.viewModel,
           builder: (context, _) {
             final slide = widget.viewModel.selectedSlide;
@@ -305,6 +368,7 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
               },
             );
           },
+        ),
         ),
       ),
     );
@@ -483,6 +547,9 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
                     index: index,
                     isSelected: index == widget.viewModel.selectedSlideIndex,
                     onTap: () => widget.viewModel.selectSlide(index),
+                    onDelete: slides.length > 1
+                        ? () => _confirmDeleteSlide(index)
+                        : null,
                   ),
                 );
               },
@@ -3290,12 +3357,15 @@ class _SlideThumbnail extends StatelessWidget {
     required this.index,
     required this.isSelected,
     required this.onTap,
+    this.onDelete,
   });
 
   final Slide slide;
   final int index;
   final bool isSelected;
   final VoidCallback onTap;
+  // Null when the slide can't be deleted (e.g. it's the only slide).
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -3365,10 +3435,29 @@ class _SlideThumbnail extends StatelessWidget {
                 ),
               ),
               if (hasAnimation)
-                const Positioned(
+                Positioned(
                   top: 3,
-                  right: 3,
-                  child: Text('✨', style: TextStyle(fontSize: 10)),
+                  left: isSelected && onDelete != null ? 3 : null,
+                  right: isSelected && onDelete != null ? null : 3,
+                  child: const Text('✨', style: TextStyle(fontSize: 10)),
+                ),
+              // Delete button on the selected slide.
+              if (isSelected && onDelete != null)
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: GestureDetector(
+                    onTap: onDelete,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close,
+                          color: Colors.white, size: 12),
+                    ),
+                  ),
                 ),
             ],
           ),

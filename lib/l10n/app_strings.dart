@@ -123,6 +123,8 @@ abstract class AppStrings {
   String get noFilmsSub;
   String get deleteFilmTitle;
   String deleteFilmConfirm(String title);
+  String get deleteSlideTitle;
+  String get deleteSlideConfirm;
   String get today;
   String get yesterday;
   String daysAgo(int n);
@@ -481,6 +483,8 @@ class _EnStrings extends AppStrings {
   @override String get noFilmsSub => 'Tap the button below to create\nyour first memory film';
   @override String get deleteFilmTitle => 'Delete Film?';
   @override String deleteFilmConfirm(String title) => '"$title" will be permanently deleted.';
+  @override String get deleteSlideTitle => 'Delete Slide?';
+  @override String get deleteSlideConfirm => 'This slide will be removed from your film.';
   @override String get today => 'Today';
   @override String get yesterday => 'Yesterday';
   @override String daysAgo(int n) => '$n days ago';
@@ -830,6 +834,8 @@ class _KoStrings extends AppStrings {
   @override String get noFilmsSub => '아래 버튼을 눌러\n첫 번째 추억 영상을 만들어보세요';
   @override String get deleteFilmTitle => '영상을 삭제할까요?';
   @override String deleteFilmConfirm(String title) => '"$title"이(가) 영구적으로 삭제됩니다.';
+  @override String get deleteSlideTitle => '슬라이드를 삭제할까요?';
+  @override String get deleteSlideConfirm => '이 슬라이드가 영상에서 제거됩니다.';
   @override String get today => '오늘';
   @override String get yesterday => '어제';
   @override String daysAgo(int n) => '$n일 전';

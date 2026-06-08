@@ -9,9 +9,23 @@ import 'package:film_maker/ui/core/app_theme.dart';
 import 'package:film_maker/ui/features/auth/view_models/auth_view_model.dart';
 import 'package:film_maker/ui/features/auth/views/login_view.dart';
 import 'package:film_maker/ui/features/home/views/home_view.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+
+/// Lets horizontal scroll views (effect pickers, slide timeline) be dragged
+/// with a mouse on desktop web — by default Flutter only allows touch/stylus
+/// drags, so mouse users couldn't scroll the cut-off effect rows.
+class _AppScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.trackpad,
+      };
+}
 
 class FilmMakerApp extends StatefulWidget {
   const FilmMakerApp({super.key});
@@ -48,6 +62,7 @@ class _FilmMakerAppState extends State<FilmMakerApp> {
           return MaterialApp(
             title: 'Film Maker',
             debugShowCheckedModeBanner: false,
+            scrollBehavior: _AppScrollBehavior(),
             theme: AppTheme.light(),
             locale: locale.language.locale,
             supportedLocales: const [Locale('en'), Locale('ko')],
