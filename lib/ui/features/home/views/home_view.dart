@@ -58,8 +58,8 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  void _goToProjects() {
-    Navigator.of(context).push(
+  Future<void> _goToProjects() async {
+    await Navigator.of(context).push(
       SlideUpPageRoute(
         builder: (_) => ProjectsView(
           viewModel: ProjectsViewModel(projectRepository: widget.projectRepository),
@@ -67,6 +67,7 @@ class _HomeViewState extends State<HomeView> {
         ),
       ),
     );
+    _viewModel.loadStats();
   }
 
   Future<void> _showNewFilmDialog() async {
