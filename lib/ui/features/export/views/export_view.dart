@@ -260,9 +260,10 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
   Future<void> _doWebFinalize() async {
     try {
       if (mounted) widget.viewModel.updateProgress(0.9);
-      final project   = widget.viewModel.project;
-      final safeTitle = project.title.replaceAll(RegExp(r'[^\w가-힣]+'), '_');
-      final filename  = '$safeTitle.mp4';
+      final now = DateTime.now();
+      final ts = '${now.year % 100}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
+                 '_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+      final filename = 'film_maker_$ts.mp4';
 
       final mp4Bytes = await _webEncoder!.finalize();
       _webEncoder = null;
@@ -397,11 +398,13 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
   Future<void> _doFinalize() async {
     try {
       if (mounted) widget.viewModel.updateProgress(0.9);
-      final project  = widget.viewModel.project;
-      final safeTitle = project.title.replaceAll(RegExp(r'[^\w가-힣]+'), '_');
+      final project = widget.viewModel.project;
+      final now = DateTime.now();
+      final ts = '${now.year % 100}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
+                 '_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
       final path = await _exportService!.finalize(
         musicPath: project.musicPath,
-        outputName: safeTitle,
+        outputName: 'film_maker_$ts',
       );
       _exportService = null;
       _removeCanvas();
