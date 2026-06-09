@@ -1077,8 +1077,6 @@ class _SlideCanvasState extends State<_SlideCanvas> {
               angle: sl.rotation * 3.14159265 / 180.0,
               child: StickerWidget(
                 kind: sl.kind,
-                color: sl.color.color,
-                filled: sl.filled,
                 opacity: sl.opacity,
               ),
             ),
@@ -2805,52 +2803,51 @@ class _StickerPicker extends StatelessWidget {
           _SectionHeader(L10n.s.stickerPickPrompt),
           const SizedBox(height: 12),
           Expanded(
-            child: GridView.count(
-              crossAxisCount: 4,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 0.82,
-              children: StickerKind.values.map((kind) {
-                return GestureDetector(
-                  onTap: () => onPick(kind),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surface2,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.line),
-                          ),
-                          child: Center(
-                            child: AspectRatio(
-                              aspectRatio: kind.aspectRatio,
-                              child: StickerWidget(
-                                kind: kind,
-                                color: const Color(0xFFC9A84C),
-                                filled: kind.defaultFilled,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        kind.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+            child: CustomScrollView(
+              slivers: [
+                for (final cat in StickerCategory.values) ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4, bottom: 8),
+                      child: Text(
+                        cat.label,
                         style: const TextStyle(
                           fontFamily: AppTheme.fontTheme,
                           color: AppTheme.textMid,
-                          fontSize: 10,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                );
-              }).toList(),
+                  SliverGrid(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                    ),
+                    delegate: SliverChildListDelegate([
+                      for (final kind in StickerKind.values
+                          .where((k) => k.category == cat))
+                        GestureDetector(
+                          onTap: () => onPick(kind),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surface2,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.line),
+                            ),
+                            child: StickerWidget(kind: kind),
+                          ),
+                        ),
+                    ]),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 18)),
+                ],
+              ],
             ),
           ),
         ],
@@ -2907,7 +2904,7 @@ class _StickerLayerPanel extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            // Change sticker shape
+            // Change sticker
             _SectionHeader(L10n.s.stickerKindLabel),
             const SizedBox(height: 8),
             SizedBox(
@@ -2930,47 +2927,11 @@ class _StickerLayerPanel extends StatelessWidget {
                           width: sel ? 1.5 : 1,
                         ),
                       ),
-                      child: Center(
-                        child: AspectRatio(
-                          aspectRatio: kind.aspectRatio,
-                          child: StickerWidget(
-                            kind: kind,
-                            color: const Color(0xFFC9A84C),
-                            filled: kind.defaultFilled,
-                          ),
-                        ),
-                      ),
+                      child: StickerWidget(kind: kind),
                     ),
                   );
                 }).toList(),
               ),
-            ),
-            const SizedBox(height: 16),
-            // Color
-            _SectionHeader(L10n.s.secTextColor),
-            const SizedBox(height: 10),
-            _ColorDots(
-              current: sticker.color,
-              onSelect: (c) => _apply((s) => s.copyWith(color: c)),
-            ),
-            const SizedBox(height: 16),
-            // Fill style
-            _SectionHeader(L10n.s.stickerStyle),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _StickerStyleChip(
-                  label: L10n.s.stickerFilled,
-                  selected: sticker.filled,
-                  onTap: () => _apply((s) => s.copyWith(filled: true)),
-                ),
-                const SizedBox(width: 8),
-                _StickerStyleChip(
-                  label: L10n.s.stickerLine,
-                  selected: !sticker.filled,
-                  onTap: () => _apply((s) => s.copyWith(filled: false)),
-                ),
-              ],
             ),
             const SizedBox(height: 16),
             // Size
@@ -3011,49 +2972,6 @@ class _StickerLayerPanel extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StickerStyleChip extends StatelessWidget {
-  const _StickerStyleChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          height: 40,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: selected ? AppTheme.primary.withValues(alpha: 0.18) : AppTheme.surface2,
-            border: Border.all(
-              color: selected ? AppTheme.primary : AppTheme.line,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: AppTheme.fontTheme,
-                color: selected ? AppTheme.primary : AppTheme.textMid,
-                fontSize: 12,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
-              ),
-            ),
-          ),
         ),
       ),
     );

@@ -348,6 +348,10 @@ abstract class AppStrings {
   // Stickers
   String get stickerPickPrompt;
   String get stickerKindLabel;
+  String get stickerCatCharms;
+  String get stickerCatHearts;
+  String get stickerCatKeepsakes;
+  String get stickerCatWedding;
   String get stickerStyle;
   String get stickerFilled;
   String get stickerLine;
@@ -699,6 +703,10 @@ class _EnStrings extends AppStrings {
 
   @override String get stickerPickPrompt => 'Choose a sticker';
   @override String get stickerKindLabel => 'Sticker';
+  @override String get stickerCatCharms => 'Charms';
+  @override String get stickerCatHearts => 'Hearts';
+  @override String get stickerCatKeepsakes => 'Keepsakes';
+  @override String get stickerCatWedding => 'Wedding';
   @override String get stickerStyle => 'Style';
   @override String get stickerFilled => 'Filled';
   @override String get stickerLine => 'Line art';
@@ -1050,6 +1058,10 @@ class _KoStrings extends AppStrings {
 
   @override String get stickerPickPrompt => '스티커 선택';
   @override String get stickerKindLabel => '스티커';
+  @override String get stickerCatCharms => '참 & 오브제';
+  @override String get stickerCatHearts => '하트';
+  @override String get stickerCatKeepsakes => '소품';
+  @override String get stickerCatWedding => '웨딩';
   @override String get stickerStyle => '스타일';
   @override String get stickerFilled => '채움';
   @override String get stickerLine => '선화';

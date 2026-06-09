@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:film_maker/data/services/video_export_service.dart';
+import 'package:film_maker/domain/models/sticker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:film_maker/l10n/app_strings.dart';
 import 'package:film_maker/l10n/locale_controller.dart';
@@ -341,6 +342,7 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
   // FilmCanvas paints each photo instantly the moment its slide appears.
   Future<void> _precacheAllImages() async {
     final paths = <String>{};
+    final stickerAssets = <String>{};
     for (final slide in widget.viewModel.project.slides) {
       for (final p in [slide.imagePath, slide.imagePath2, slide.imagePath3]) {
         if (p != null && p.isNotEmpty) paths.add(p);
@@ -349,15 +351,25 @@ class _ExportViewState extends State<ExportView> with TickerProviderStateMixin {
         final p = pl.imagePath;
         if (p != null && p.isNotEmpty) paths.add(p);
       }
-    }
-    if (paths.isEmpty || !mounted) return;
-    await Future.wait(paths.map((p) async {
-      try {
-        await precacheImage(imageProviderFromPath(p), context);
-      } catch (_) {
-        // Missing/unreadable file — skip; FilmCanvas shows its placeholder.
+      for (final s in slide.stickerLayers) {
+        stickerAssets.add(s.kind.assetPath);
       }
-    }));
+    }
+    if (!mounted) return;
+    await Future.wait([
+      ...paths.map((p) async {
+        try {
+          await precacheImage(imageProviderFromPath(p), context);
+        } catch (_) {
+          // Missing/unreadable file — skip; FilmCanvas shows its placeholder.
+        }
+      }),
+      ...stickerAssets.map((a) async {
+        try {
+          if (mounted) await precacheImage(AssetImage(a), context);
+        } catch (_) {}
+      }),
+    ]);
   }
 
   // ── Share ─────────────────────────────────────────────────────────────────

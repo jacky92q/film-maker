@@ -854,8 +854,6 @@ class _StickerLayer extends StatelessWidget {
         angle: sl.rotation * math.pi / 180.0,
         child: StickerWidget(
           kind: sl.kind,
-          color: sl.color.color,
-          filled: sl.filled,
           opacity: sl.opacity,
         ),
       ),

@@ -298,8 +298,6 @@ class EditorViewModel extends ChangeNotifier {
       x: 0.5,
       y: 0.5,
       widthFraction: 0.24,
-      filled: kind.defaultFilled,
-      color: SlideTextColor.gold,
       zOrder: _nextZOrder(),
     );
     _selectedStickerId = layer.id;
