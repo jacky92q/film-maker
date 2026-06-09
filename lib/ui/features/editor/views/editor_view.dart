@@ -898,9 +898,6 @@ class _SlideCanvasState extends State<_SlideCanvas> {
   // True when running on web with a wide viewport (desktop / mouse device).
   bool _isDesktopWeb = false;
 
-  // True while a corner dot is being dragged — prevents the parent photo-layer
-  // GestureDetector from also processing the same pointer event.
-  bool _cornerResizing = false;
 
   Widget _buildTextLayerItem(TextLayer layer, double canvasW, double canvasH, String? selectedLayerId) {
     return Positioned.fill(
@@ -953,7 +950,6 @@ class _SlideCanvasState extends State<_SlideCanvas> {
           widget.viewModel.selectLayer(null);
         },
         onScaleStart: (d) {
-          if (_cornerResizing) return;
           _globalFocalStart = d.focalPoint;
           _layerStartX = pl.x;
           _layerStartY = pl.y;
@@ -964,7 +960,6 @@ class _SlideCanvasState extends State<_SlideCanvas> {
           _plStartCropOY = pl.cropOffsetY;
         },
         onScaleUpdate: (d) {
-          if (_cornerResizing) return;
           final dx = (d.focalPoint.dx - _globalFocalStart.dx) * _dragFactor;
           final dy = (d.focalPoint.dy - _globalFocalStart.dy) * _dragFactor;
           if (!isSelectedPL) {
@@ -1030,8 +1025,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
                     child: Text(L10n.s.crop.toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold)),
                   ),
                 ),
-              if (_isDesktopWeb && isSelectedPL && !isCropMode)
-                ..._buildCornerHandles(pl, pw, ph, canvasW, canvasH),
+
             ],
           ),
         ),
@@ -1041,55 +1035,6 @@ class _SlideCanvasState extends State<_SlideCanvas> {
 
   // Corner resize handles for desktop web (mouse users who can't pinch).
   // Each dot is 14px canonical, offset -7 so it's centered on the corner.
-  List<Widget> _buildCornerHandles(PhotoLayer pl, double pw, double ph, double canvasW, double canvasH) {
-    const dotSize = 14.0;
-    const half = dotSize / 2;
-    final corners = [
-      (-half, -half, -1.0, -1.0),  // TL
-      (pw - half, -half, 1.0, -1.0),  // TR
-      (-half, ph - half, -1.0, 1.0),  // BL
-      (pw - half, ph - half, 1.0, 1.0),  // BR
-    ];
-    return corners.map((c) {
-      final (left, top, signX, signY) = c;
-      return Positioned(
-        left: left,
-        top: top,
-        width: dotSize,
-        height: dotSize,
-        // Use Listener (raw pointer events) instead of GestureDetector so the
-        // parent photo-layer GestureDetector doesn't win the gesture arena.
-        child: Listener(
-          behavior: HitTestBehavior.opaque,
-          onPointerDown: (e) {
-            _globalFocalStart = e.position;
-            _plStartW = pl.widthFraction;
-            _plStartH = pl.heightFraction;
-            _cornerResizing = true;
-          },
-          onPointerMove: (e) {
-            final totalDx = e.position.dx - _globalFocalStart.dx;
-            final totalDy = e.position.dy - _globalFocalStart.dy;
-            final newW = (_plStartW + signX * totalDx / (_canvasScale * canvasW)).clamp(0.08, 1.0);
-            final newH = (_plStartH + signY * totalDy / (_canvasScale * canvasH)).clamp(0.08, 1.0);
-            widget.viewModel.updatePhotoLayer(
-              pl.copyWith(widthFraction: newW, heightFraction: newH),
-            );
-          },
-          onPointerUp: (_) => _cornerResizing = false,
-          onPointerCancel: (_) => _cornerResizing = false,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.blueAccent, width: 2),
-              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 3)],
-            ),
-          ),
-        ),
-      );
-    }).toList();
-  }
 
   Widget _buildStickerLayerItem(StickerLayer sl, double canvasW, double canvasH) {
     final isSelected = widget.viewModel.selectedStickerId == sl.id;
