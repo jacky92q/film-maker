@@ -211,6 +211,7 @@ abstract class AppStrings {
   String get secBarColor;
   String get secTextBg;
   String get secOutline;
+  String get secShadow;
   String get secSpacing;
   String get secRotation;
   String get secAnimation;
@@ -242,6 +243,12 @@ abstract class AppStrings {
   String get strokeThin;
   String get strokeMed;
   String get strokeBold;
+
+  // Shadow labels
+  String get shadowNone;
+  String get shadowSoft;
+  String get shadowMedium;
+  String get shadowStrong;
 
   // Spacing labels
   String get spacingNormal;
@@ -575,6 +582,7 @@ class _EnStrings extends AppStrings {
   @override String get secBarColor => 'Bar Color';
   @override String get secTextBg => 'Text Bg';
   @override String get secOutline => 'Outline';
+  @override String get secShadow => 'Shadow';
   @override String get secSpacing => 'Spacing';
   @override String get secRotation => 'Rotation';
   @override String get secAnimation => 'Animation';
@@ -603,6 +611,11 @@ class _EnStrings extends AppStrings {
   @override String get strokeThin => 'Thin';
   @override String get strokeMed => 'Med';
   @override String get strokeBold => 'Bold';
+
+  @override String get shadowNone => 'None';
+  @override String get shadowSoft => 'Soft';
+  @override String get shadowMedium => 'Medium';
+  @override String get shadowStrong => 'Strong';
 
   @override String get spacingNormal => 'Normal';
   @override String get spacingWide => 'Wide';
@@ -930,6 +943,7 @@ class _KoStrings extends AppStrings {
   @override String get secBarColor => '바 색상';
   @override String get secTextBg => '텍스트 배경';
   @override String get secOutline => '외곽선';
+  @override String get secShadow => '그림자';
   @override String get secSpacing => '자간';
   @override String get secRotation => '회전';
   @override String get secAnimation => '애니메이션';
@@ -958,6 +972,11 @@ class _KoStrings extends AppStrings {
   @override String get strokeThin => '얇게';
   @override String get strokeMed => '보통';
   @override String get strokeBold => '굵게';
+
+  @override String get shadowNone => '없음';
+  @override String get shadowSoft => '약하게';
+  @override String get shadowMedium => '보통';
+  @override String get shadowStrong => '강하게';
 
   @override String get spacingNormal => '기본';
   @override String get spacingWide => '넓게';

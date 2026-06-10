@@ -1317,7 +1317,7 @@ class _LayerWidget extends StatelessWidget {
       layer.fontStyle,
       fontSize: fontSize,
       color: color,
-      shadows: [Shadow(color: Colors.black.withValues(alpha: 0.8), blurRadius: 10)],
+      shadows: layer.shadowLevel.shadows,
     ).copyWith(letterSpacing: layer.letterSpacing);
 
     // Build text content — optionally with stroke outline
@@ -1883,6 +1883,38 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                   ),
                   child: Center(
                     child: Text(lbl,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTheme,
+                          color: sel ? AppTheme.primary : AppTheme.textMid,
+                          fontSize: 11,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                        )),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+          // Shadow intensity
+          _SectionHeader(L10n.s.secShadow),
+          const SizedBox(height: 8),
+          Row(
+            children: TextShadowLevel.values.map((sh) {
+              final sel = layer.shadowLevel == sh;
+              return GestureDetector(
+                onTap: () => _applyStyle((l) => l.copyWith(shadowLevel: sh)),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  height: 44,
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: sel ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surface2,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: sel ? AppTheme.primary : AppTheme.line, width: sel ? 1.5 : 1),
+                  ),
+                  child: Center(
+                    child: Text(sh.label,
                         style: TextStyle(
                           fontFamily: AppTheme.fontTheme,
                           color: sel ? AppTheme.primary : AppTheme.textMid,

@@ -581,7 +581,7 @@ class _TextLayerState extends State<_TextLayer>
     final l = widget.layer;
     final style = slideLayerTextStyle(
       l.fontStyle, fontSize: l.fontSize, color: l.color.color,
-      shadows: [Shadow(color: Colors.black.withValues(alpha: 0.85), blurRadius: 12)],
+      shadows: l.shadowLevel.shadows,
     );
     Widget content = Text(override ?? l.text, style: style, textAlign: TextAlign.center);
     if (l.isSubtitle) {
