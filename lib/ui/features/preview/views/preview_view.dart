@@ -20,6 +20,8 @@ class _PreviewViewState extends State<PreviewView> {
   bool _showControls = true;
   Timer? _hideControlsTimer;
   int _currentIndex = 0;
+  bool _isDragging = false;
+  double _dragValue = 0;
 
   @override
   void initState() {
@@ -237,7 +239,7 @@ class _PreviewViewState extends State<PreviewView> {
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
             colors: [
-              Colors.black.withValues(alpha: 0.85),
+              Colors.black.withValues(alpha: 0.88),
               Colors.black.withValues(alpha: 0.3),
               Colors.transparent,
             ],
@@ -245,40 +247,102 @@ class _PreviewViewState extends State<PreviewView> {
           ),
         ),
         padding: EdgeInsets.only(
-          left: 28,
-          right: 28,
-          bottom: MediaQuery.of(context).padding.bottom + 24,
+          left: 16,
+          right: 16,
+          bottom: MediaQuery.of(context).padding.bottom + 20,
           top: 40,
         ),
-        child: Column(
-          children: [
-            _buildSlideIndicators(total),
-            const SizedBox(height: 14),
-            _buildProgressBar(total),
-            const SizedBox(height: 8),
-            Text(
-              '${_currentIndex + 1} / $total',
-              style: TextStyle(
-                fontFamily: AppTheme.fontTheme,
-                color: Colors.white.withValues(alpha: 0.45),
-                fontSize: 11,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ],
+        child: ListenableBuilder(
+          listenable: _filmController,
+          builder: (context, _) {
+            final totalSec = _filmController.totalSeconds;
+            final rawElapsed = _isDragging ? _dragValue : _filmController.elapsedSeconds;
+            final elapsed = totalSec > 0 ? rawElapsed.clamp(0.0, totalSec) : 0.0;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Slide indicator dots
+                _buildSlideIndicators(total),
+                const SizedBox(height: 6),
+                // Scrubber row: [elapsed] ----●---- [total]
+                Row(
+                  children: [
+                    _buildTimeLabel(elapsed),
+                    Expanded(
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 3.0,
+                          thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 6),
+                          overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 16),
+                          activeTrackColor: AppTheme.primary,
+                          inactiveTrackColor:
+                              Colors.white.withValues(alpha: 0.22),
+                          thumbColor: AppTheme.primary,
+                          overlayColor:
+                              AppTheme.primary.withValues(alpha: 0.25),
+                        ),
+                        child: Slider(
+                          value: elapsed,
+                          min: 0,
+                          max: totalSec > 0 ? totalSec : 1,
+                          onChanged: totalSec > 0
+                              ? (v) {
+                                  _hideControlsTimer?.cancel();
+                                  setState(() {
+                                    _isDragging = true;
+                                    _dragValue = v;
+                                  });
+                                }
+                              : null,
+                          onChangeEnd: totalSec > 0
+                              ? (v) {
+                                  _filmController.seekToSeconds(v);
+                                  setState(() => _isDragging = false);
+                                  _scheduleHideControls();
+                                }
+                              : null,
+                        ),
+                      ),
+                    ),
+                    _buildTimeLabel(totalSec),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                // Slide counter
+                Text(
+                  '${_currentIndex + 1} / $total',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontTheme,
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 11,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildProgressBar(int total) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: LinearProgressIndicator(
-        value: total > 0 ? (_currentIndex + 1) / total : 0,
-        backgroundColor: Colors.white.withValues(alpha: 0.15),
-        valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
-        minHeight: 4,
+  Widget _buildTimeLabel(double seconds) {
+    final s = seconds.round().clamp(0, 5999);
+    final m = s ~/ 60;
+    final sec = s % 60;
+    return SizedBox(
+      width: 36,
+      child: Text(
+        '$m:${sec.toString().padLeft(2, '0')}',
+        style: TextStyle(
+          fontFamily: AppTheme.fontTheme,
+          color: Colors.white.withValues(alpha: 0.65),
+          fontSize: 11,
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -288,16 +352,23 @@ class _PreviewViewState extends State<PreviewView> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(total, (i) {
         final isCurrent = i == _currentIndex;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          width: isCurrent ? 24 : 6,
-          height: 4,
-          margin: const EdgeInsets.symmetric(horizontal: 2.5),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(2),
-            color: isCurrent
-                ? AppTheme.primary
-                : Colors.white.withValues(alpha: 0.35),
+        return GestureDetector(
+          onTap: () {
+            _filmController.seekToSlide(i);
+            setState(() => _showControls = true);
+            _scheduleHideControls();
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            width: isCurrent ? 24 : 6,
+            height: 4,
+            margin: const EdgeInsets.symmetric(horizontal: 2.5),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(2),
+              color: isCurrent
+                  ? AppTheme.primary
+                  : Colors.white.withValues(alpha: 0.35),
+            ),
           ),
         );
       }),

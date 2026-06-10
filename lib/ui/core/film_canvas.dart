@@ -40,6 +40,20 @@ class FilmCanvasController extends ChangeNotifier {
   void previous()=> _state?._skipTo(currentIndex - 1);
   void seekToSlide(int index) => _state?._skipTo(index);
 
+  // ── Progress tracking ───────────────────────────────────────────────────────
+
+  double _elapsedSeconds = 0.0;
+  double _totalSeconds = 0.0;
+
+  /// Total elapsed playback time in seconds (updated ~12× per second).
+  double get elapsedSeconds => _elapsedSeconds;
+
+  /// Sum of all slide durations in seconds.
+  double get totalSeconds => _totalSeconds;
+
+  /// Seek to [seconds] within the whole film.
+  void seekToSeconds(double seconds) => _state?._seekToSeconds(seconds);
+
   // Called by _FilmCanvasState to trigger listener notifications from
   // within the controller (avoids calling the protected notifyListeners
   // from outside the ChangeNotifier subclass).
@@ -93,6 +107,12 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
   late AnimationController _kenBurnsCtrl;
   Timer? _slideTimer;
 
+  // ── Progress tracking ───────────────────────────────────────────────────────
+  final _sw = Stopwatch();   // elapsed time within the current slide
+  Timer? _progressTimer;
+  double _priorSeconds = 0.0;  // sum of durations of slides before current
+  double _swOffset = 0.0;      // carry-over when seeking into the middle of a slide
+
   @override
   void initState() {
     super.initState();
@@ -112,6 +132,7 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
   @override
   void dispose() {
     widget.controller?._detach();
+    _progressTimer?.cancel();
     _slideTimer?.cancel();
     _transitionCtrl.dispose();
     _kenBurnsCtrl.dispose();
@@ -124,9 +145,13 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
     if (_isPlaying == playing) return;
     _isPlaying = playing;
     if (playing) {
+      _sw.start();
+      _startProgressTimer();
       _startSlideTimer();
       _resumeKenBurns();
     } else {
+      _sw.stop();
+      _progressTimer?.cancel();
       _slideTimer?.cancel();
       _kenBurnsCtrl.stop();
     }
@@ -166,7 +191,16 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
     _slideTimer?.cancel();
     if (_currentIndex >= widget.project.slides.length) return;
     final slide = widget.project.slides[_currentIndex];
-    _slideTimer = Timer(Duration(seconds: slide.durationSeconds), _advance);
+    final elapsed = _swOffset + _sw.elapsed.inMilliseconds / 1000.0;
+    final remaining = slide.durationSeconds.toDouble() - elapsed;
+    if (remaining <= 0) {
+      Future.microtask(_advance);
+      return;
+    }
+    _slideTimer = Timer(
+      Duration(milliseconds: (remaining * 1000).round()),
+      _advance,
+    );
   }
 
   void _advance() {
@@ -174,8 +208,13 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
     final next = _currentIndex + 1;
     if (next >= widget.project.slides.length) {
       widget.onComplete?.call();
+      _setPlaying(false);
       return;
     }
+    _priorSeconds += widget.project.slides[_currentIndex].durationSeconds.toDouble();
+    _swOffset = 0;
+    _sw.reset();
+    if (_isPlaying) _sw.start();
     setState(() {
       _prevIndex    = _currentIndex;
       _currentIndex = next;
@@ -185,11 +224,94 @@ class _FilmCanvasState extends State<FilmCanvas> with TickerProviderStateMixin {
 
   void _skipTo(int index) {
     if (index < 0 || index >= widget.project.slides.length) return;
+    _computePriorSeconds(index);
+    _swOffset = 0;
+    _sw.reset();
+    if (_isPlaying) _sw.start();
     setState(() {
       _prevIndex    = null;
       _currentIndex = index;
     });
     _beginSlide(index, withTransition: false);
+    _updateProgress();
+  }
+
+  // ── Progress helpers ────────────────────────────────────────────────────────
+
+  void _computePriorSeconds(int index) {
+    double s = 0;
+    for (int i = 0; i < index.clamp(0, widget.project.slides.length); i++) {
+      s += widget.project.slides[i].durationSeconds;
+    }
+    _priorSeconds = s;
+  }
+
+  double get _totalDuration =>
+      widget.project.slides.fold(0.0, (a, s) => a + s.durationSeconds);
+
+  double get _elapsed =>
+      (_priorSeconds + _swOffset + _sw.elapsed.inMilliseconds / 1000.0)
+          .clamp(0.0, _totalDuration);
+
+  void _updateProgress() {
+    final c = widget.controller;
+    if (c == null) return;
+    c._elapsedSeconds = _elapsed;
+    c._totalSeconds = _totalDuration;
+    c._notifyChanged();
+  }
+
+  void _startProgressTimer() {
+    _progressTimer?.cancel();
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 80), (_) {
+      if (mounted) _updateProgress();
+    });
+  }
+
+  void _seekToSeconds(double targetSeconds) {
+    final slides = widget.project.slides;
+    if (slides.isEmpty) return;
+    targetSeconds = targetSeconds.clamp(0.0, _totalDuration);
+
+    double accumulated = 0;
+    int targetIdx = slides.length - 1;
+    for (int i = 0; i < slides.length; i++) {
+      final dur = slides[i].durationSeconds.toDouble();
+      if (accumulated + dur > targetSeconds) {
+        targetIdx = i;
+        break;
+      }
+      accumulated += dur;
+    }
+
+    final offset = (targetSeconds - accumulated)
+        .clamp(0.0, slides[targetIdx].durationSeconds.toDouble());
+
+    _priorSeconds = accumulated;
+    _swOffset = offset;
+    _sw.reset();
+    if (_isPlaying) _sw.start();
+
+    final changedSlide = _currentIndex != targetIdx;
+    setState(() {
+      _prevIndex    = null;
+      _currentIndex = targetIdx;
+    });
+
+    if (changedSlide) {
+      final slide = slides[targetIdx];
+      if (slide.transition == TransitionEffect.kenBurns) {
+        _kenBurnsCtrl.reset();
+        if (_isPlaying) _kenBurnsCtrl.repeat(reverse: true);
+      } else {
+        _kenBurnsCtrl.stop();
+        _kenBurnsCtrl.reset();
+      }
+      widget.onSlideChanged?.call(targetIdx);
+    }
+
+    if (_isPlaying) _startSlideTimer();
+    _updateProgress();
   }
 
   void _resumeKenBurns() {
