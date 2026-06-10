@@ -373,7 +373,7 @@ class _SingleSlide extends StatelessWidget {
           _Background(slide: slide, kenBurnsCtrl: kenBurnsCtrl, playing: playing),
           buildSlideDim(slide.dimDirection, slide.dimOpacity),
           buildSlideOverlay(slide.overlay),
-          buildSlideFrame(slide.frame, slide.frameColor.color),
+          buildSlideFrame(slide.frame, slide.effectiveFrameColor),
           ..._layers(),
           if (slide.ambientEffect != SlideAmbientEffect.none)
             Positioned.fill(
@@ -580,7 +580,7 @@ class _TextLayerState extends State<_TextLayer>
   Widget _text({String? override}) {
     final l = widget.layer;
     final style = slideLayerTextStyle(
-      l.fontStyle, fontSize: l.fontSize, color: l.color.color,
+      l.fontStyle, fontSize: l.fontSize, color: l.effectiveColor,
       shadows: l.shadowLevel.shadows,
     );
     Widget content = Text(override ?? l.text, style: style, textAlign: TextAlign.center);
@@ -589,7 +589,7 @@ class _TextLayerState extends State<_TextLayer>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: l.barColor.color, width: 2.5)),
+            border: Border(left: BorderSide(color: l.effectiveBarColor, width: 2.5)),
           ),
           child: content,
         ),

@@ -550,6 +550,10 @@ class _EditorViewState extends State<EditorView> with WidgetsBindingObserver {
                     onDelete: slides.length > 1
                         ? () => _confirmDeleteSlide(index)
                         : null,
+                    onDuplicate: () {
+                      widget.viewModel.selectSlide(index);
+                      widget.viewModel.duplicateSelectedSlide();
+                    },
                   ),
                 );
               },
@@ -1252,7 +1256,7 @@ class _SlideCanvasState extends State<_SlideCanvas> {
             background,
             buildSlideDim(slide.dimDirection, slide.dimOpacity),
             buildSlideOverlay(slide.overlay),
-            buildSlideFrame(slide.frame, slide.frameColor.color),
+            buildSlideFrame(slide.frame, slide.effectiveFrameColor),
             ..._buildSortedLayers(slide, canonicalW, canonicalH, selectedLayerId),
             if (hasPhoto && selectedLayerId == null)
               Positioned(
@@ -1311,7 +1315,7 @@ class _LayerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = layer.color.color;
+    final color = layer.effectiveColor;
     final double fontSize = layer.fontSize;
     final style = slideLayerTextStyle(
       layer.fontStyle,
@@ -1349,7 +1353,7 @@ class _LayerWidget extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             border: Border(
-                left: BorderSide(color: layer.barColor.color, width: 2.5)),
+                left: BorderSide(color: layer.effectiveBarColor, width: 2.5)),
           ),
           child: content,
         ),
@@ -1815,18 +1819,20 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
           // Text color
           _SectionHeader(L10n.s.secTextColor),
           const SizedBox(height: 8),
-          _ColorDots(
-            current: layer.color,
-            onSelect: (c) => _applyStyle((l) => l.copyWith(color: c)),
+          _ColorPickerField(
+            current: layer.effectiveColor,
+            onChanged: (c) =>
+                _applyStyle((l) => l.copyWith(customColor: c.toARGB32())),
           ),
           // Bar color (subtitle only)
           if (layer.isSubtitle) ...[
             const SizedBox(height: 12),
             _SectionHeader(L10n.s.secBarColor),
             const SizedBox(height: 8),
-            _ColorDots(
-              current: layer.barColor,
-              onSelect: (c) => _applyStyle((l) => l.copyWith(barColor: c)),
+            _ColorPickerField(
+              current: layer.effectiveBarColor,
+              onChanged: (c) =>
+                  _applyStyle((l) => l.copyWith(customBarColor: c.toARGB32())),
             ),
           ],
           const SizedBox(height: 12),
@@ -1963,6 +1969,14 @@ class _TextLayerTabsState extends State<_TextLayerTabs> {
                 ),
               );
             }).toList(),
+          ),
+          const SizedBox(height: 12),
+          // Align
+          _SectionHeader(L10n.s.secAlign),
+          const SizedBox(height: 8),
+          _AlignButtons(
+            onCenterH: () => _applyStyle((l) => l.copyWith(x: 0.5)),
+            onCenterV: () => _applyStyle((l) => l.copyWith(y: 0.5)),
           ),
           const SizedBox(height: 12),
           // Rotation
@@ -2170,6 +2184,13 @@ class _PhotoLayerTabs extends StatelessWidget {
               onChanged: (v) => vm.updatePhotoLayer(layer.copyWith(rotation: v)),
             ),
             const SizedBox(height: 8),
+            _SectionHeader(L10n.s.secAlign),
+            const SizedBox(height: 8),
+            _AlignButtons(
+              onCenterH: () => vm.updatePhotoLayer(layer.copyWith(x: 0.5)),
+              onCenterV: () => vm.updatePhotoLayer(layer.copyWith(y: 0.5)),
+            ),
+            const SizedBox(height: 12),
             // Change photo button
             SizedBox(
               width: double.infinity,
@@ -2337,9 +2358,11 @@ class _SlideTabs extends StatelessWidget {
         children: [
           _SectionHeader(L10n.s.secBackground),
           const SizedBox(height: 8),
-          _BackgroundColorPicker(
-            current: slide.backgroundColor,
-            onSelect: (c) => viewModel.updateSelectedSlide(slide.copyWith(backgroundColor: c)),
+          _ColorPickerField(
+            current: Color(slide.backgroundColor),
+            presets: _backgroundPresets,
+            onChanged: (c) => viewModel.updateSelectedSlide(
+                slide.copyWith(backgroundColor: c.toARGB32())),
           ),
             // ── Dim / Gradient ──────────────────────────────────────────
           const SizedBox(height: 12),
@@ -2613,9 +2636,10 @@ class _SlideTabs extends StatelessWidget {
           ),
           if (slide.frame != SlideFrame.none) ...[
             const SizedBox(height: 10),
-            _ColorDots(
-              current: slide.frameColor,
-              onSelect: (c) => viewModel.updateSelectedSlide(slide.copyWith(frameColor: c)),
+            _ColorPickerField(
+              current: slide.effectiveFrameColor,
+              onChanged: (c) => viewModel.updateSelectedSlide(
+                  slide.copyWith(customFrameColor: c.toARGB32())),
             ),
           ],
         ],
@@ -2768,52 +2792,244 @@ class _AnimationPickerRow extends StatelessWidget {
   }
 }
 
-class _ColorDots extends StatelessWidget {
-  const _ColorDots({required this.current, required this.onSelect});
-  final SlideTextColor current;
-  final void Function(SlideTextColor) onSelect;
+/// A full color chooser: a row of preset swatches plus an interactive HSV
+/// spectrum (saturation/value field + hue slider) so the user can dial in any
+/// color visually. Replaces the old preset-only dots and the hex text field.
+class _ColorPickerField extends StatelessWidget {
+  const _ColorPickerField({
+    required this.current,
+    required this.onChanged,
+    this.presets,
+  });
+
+  final Color current;
+  final ValueChanged<Color> onChanged;
+  // When null, falls back to the bundled text-color palette.
+  final List<Color>? presets;
+
+  // Default swatch palette derived from the bundled text colors.
+  static final List<Color> _textPresets =
+      SlideTextColor.values.map((e) => e.color).toList();
+
+  static bool _isLight(Color c) =>
+      (c.r * 255 * 299 + c.g * 255 * 587 + c.b * 255 * 114) / 1000 > 160;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: SlideTextColor.values.map((c) {
-        final sel = c == current;
-        return GestureDetector(
-          onTap: () => onSelect(c),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: c.color,
-              border: Border.all(
-                  color: sel ? AppTheme.primary : AppTheme.line,
-                  width: sel ? 2.5 : 1),
-              boxShadow: sel
-                  ? [
-                      BoxShadow(
-                          color: AppTheme.primary.withValues(alpha: 0.5),
-                          blurRadius: 6)
-                    ]
-                  : null,
-            ),
-            child: sel
-                ? Icon(Icons.check,
-                    size: 16,
-                    color:
-                        c == SlideTextColor.white || c == SlideTextColor.cream ||
-                        c == SlideTextColor.champagne || c == SlideTextColor.silver
-                            ? Colors.black
-                            : Colors.white)
-                : null,
-          ),
-        );
-      }).toList(),
+    final swatches = presets ?? _textPresets;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: swatches.map((c) {
+            final sel = c.toARGB32() == current.toARGB32();
+            return GestureDetector(
+              onTap: () => onChanged(c),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c,
+                  border: Border.all(
+                      color: sel ? AppTheme.primary : AppTheme.line,
+                      width: sel ? 2.5 : 1),
+                  boxShadow: sel
+                      ? [
+                          BoxShadow(
+                              color: AppTheme.primary.withValues(alpha: 0.5),
+                              blurRadius: 6)
+                        ]
+                      : null,
+                ),
+                child: sel
+                    ? Icon(Icons.check,
+                        size: 15,
+                        color: _isLight(c) ? Colors.black : Colors.white)
+                    : null,
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        _SectionHeader(L10n.s.secColorCustom),
+        const SizedBox(height: 8),
+        _SpectrumPicker(color: current, onChanged: onChanged),
+      ],
     );
   }
+}
+
+/// Interactive HSV picker: a saturation/value square the user drags within,
+/// plus a hue slider beneath it and a live preview of the resulting color.
+class _SpectrumPicker extends StatefulWidget {
+  const _SpectrumPicker({required this.color, required this.onChanged});
+  final Color color;
+  final ValueChanged<Color> onChanged;
+
+  @override
+  State<_SpectrumPicker> createState() => _SpectrumPickerState();
+}
+
+class _SpectrumPickerState extends State<_SpectrumPicker> {
+  late HSVColor _hsv;
+
+  @override
+  void initState() {
+    super.initState();
+    _hsv = HSVColor.fromColor(widget.color);
+  }
+
+  @override
+  void didUpdateWidget(_SpectrumPicker old) {
+    super.didUpdateWidget(old);
+    // Sync when the color changes from outside (e.g. a preset tap) and the new
+    // value doesn't match what this picker last emitted.
+    if (widget.color.toARGB32() != _hsv.toColor().toARGB32()) {
+      _hsv = HSVColor.fromColor(widget.color);
+    }
+  }
+
+  void _emit(HSVColor v) {
+    setState(() => _hsv = v);
+    widget.onChanged(v.toColor());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Saturation / Value field.
+        SizedBox(
+          height: 130,
+          child: LayoutBuilder(builder: (ctx, c) {
+            void handle(Offset local) {
+              final s = (local.dx / c.maxWidth).clamp(0.0, 1.0);
+              final v = (1.0 - local.dy / c.maxHeight).clamp(0.0, 1.0);
+              _emit(_hsv.withSaturation(s).withValue(v));
+            }
+
+            // Listener (raw pointer events) instead of GestureDetector so the
+            // drag isn't lost to the surrounding vertical scroll view.
+            return Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerDown: (e) => handle(e.localPosition),
+              onPointerMove: (e) => handle(e.localPosition),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: CustomPaint(
+                  painter: _SatValPainter(_hsv),
+                  child: Stack(children: [
+                    Positioned(
+                      left: _hsv.saturation * c.maxWidth - 7,
+                      top: (1 - _hsv.value) * c.maxHeight - 7,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black54, blurRadius: 3),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 12),
+        // Hue slider.
+        SizedBox(
+          height: 22,
+          child: LayoutBuilder(builder: (ctx, c) {
+            void handle(Offset local) {
+              final h = (local.dx / c.maxWidth).clamp(0.0, 1.0) * 360.0;
+              _emit(_hsv.withHue(h));
+            }
+
+            return Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerDown: (e) => handle(e.localPosition),
+              onPointerMove: (e) => handle(e.localPosition),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(11),
+                child: CustomPaint(
+                  painter: _HuePainter(),
+                  child: Stack(children: [
+                    Positioned(
+                      left: (_hsv.hue / 360.0) * c.maxWidth - 6,
+                      top: -1,
+                      child: Container(
+                        width: 12,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black54, blurRadius: 3),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+}
+
+class _SatValPainter extends CustomPainter {
+  const _SatValPainter(this.hsv);
+  final HSVColor hsv;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    // Base hue, fully saturated and bright.
+    final hueColor = HSVColor.fromAHSV(1, hsv.hue, 1, 1).toColor();
+    final satGrad = LinearGradient(
+      colors: [Colors.white, hueColor],
+    ).createShader(rect);
+    canvas.drawRect(rect, Paint()..shader = satGrad);
+    final valGrad = const LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [Colors.transparent, Colors.black],
+    ).createShader(rect);
+    canvas.drawRect(rect, Paint()..shader = valGrad);
+  }
+
+  @override
+  bool shouldRepaint(_SatValPainter old) => old.hsv.hue != hsv.hue;
+}
+
+class _HuePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    const hues = [
+      Color(0xFFFF0000), Color(0xFFFFFF00), Color(0xFF00FF00),
+      Color(0xFF00FFFF), Color(0xFF0000FF), Color(0xFFFF00FF),
+      Color(0xFFFF0000),
+    ];
+    final grad = const LinearGradient(colors: hues).createShader(rect);
+    canvas.drawRect(rect, Paint()..shader = grad);
+  }
+
+  @override
+  bool shouldRepaint(_HuePainter old) => false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2989,6 +3205,13 @@ class _StickerLayerPanel extends StatelessWidget {
               valueLabel: '${(sticker.opacity * 100).round()}%',
               onChanged: (v) => _apply((s) => s.copyWith(opacity: v)),
             ),
+            const SizedBox(height: 8),
+            _SectionHeader(L10n.s.secAlign),
+            const SizedBox(height: 8),
+            _AlignButtons(
+              onCenterH: () => _apply((s) => s.copyWith(x: 0.5)),
+              onCenterV: () => _apply((s) => s.copyWith(y: 0.5)),
+            ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -3057,132 +3280,63 @@ class _SliderRow extends StatelessWidget {
   }
 }
 
-class _BackgroundColorPicker extends StatefulWidget {
-  const _BackgroundColorPicker({required this.current, required this.onSelect});
-  final int current;
-  final void Function(int argb) onSelect;
+/// Swatch palette offered for slide background colors (darks, neutrals,
+/// pastels). The spectrum picker handles everything in between.
+final List<Color> _backgroundPresets = <int>[
+  // Darks
+  0xFF000000, 0xFF0D0D0D, 0xFF1A1A1A, 0xFF2C2C2C,
+  0xFF1C1C2E, 0xFF1A1A2E, 0xFF2D1B1B, 0xFF1B2D1B,
+  // Lights & warm neutrals
+  0xFFFFFFFF, 0xFFF5F5F5, 0xFFFFF8F2, 0xFFF5F0E8,
+  0xFFEDE0D4, 0xFFD4C5B0, 0xFFC9B9A0, 0xFFBDAD96,
+  // Pastels & colors
+  0xFFE8B4B8, 0xFFD4A5A5, 0xFFB5C4B1, 0xFFB8CCE0,
+  0xFFC9B8D4, 0xFFF2D4A0, 0xFFC07842, 0xFF4A3728,
+].map((c) => Color(c)).toList();
 
-  @override
-  State<_BackgroundColorPicker> createState() => _BackgroundColorPickerState();
-}
-
-class _BackgroundColorPickerState extends State<_BackgroundColorPicker> {
-  late final TextEditingController _hex;
-
-  static const _presets = <int>[
-    // Darks
-    0xFF000000, 0xFF0D0D0D, 0xFF1A1A1A, 0xFF2C2C2C,
-    0xFF1C1C2E, 0xFF1A1A2E, 0xFF2D1B1B, 0xFF1B2D1B,
-    // Lights & warm neutrals
-    0xFFFFFFFF, 0xFFF5F5F5, 0xFFFFF8F2, 0xFFF5F0E8,
-    0xFFEDE0D4, 0xFFD4C5B0, 0xFFC9B9A0, 0xFFBDAD96,
-    // Pastels & colors
-    0xFFE8B4B8, 0xFFD4A5A5, 0xFFB5C4B1, 0xFFB8CCE0,
-    0xFFC9B8D4, 0xFFF2D4A0, 0xFFC07842, 0xFF4A3728,
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _hex = TextEditingController(text: _toHex(widget.current));
-  }
-
-  @override
-  void didUpdateWidget(_BackgroundColorPicker old) {
-    super.didUpdateWidget(old);
-    if (old.current != widget.current) _hex.text = _toHex(widget.current);
-  }
-
-  @override
-  void dispose() {
-    _hex.dispose();
-    super.dispose();
-  }
-
-  static String _toHex(int argb) =>
-      '#${(argb & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
-
-  int? _parseHex(String raw) {
-    final s = raw.replaceAll('#', '').trim();
-    if (s.length != 6) return null;
-    final v = int.tryParse(s, radix: 16);
-    return v != null ? (0xFF000000 | v) : null;
-  }
-
-  static bool _isLight(int c) {
-    final r = (c >> 16) & 0xFF;
-    final g = (c >> 8) & 0xFF;
-    final b = c & 0xFF;
-    return (r * 299 + g * 587 + b * 114) / 1000 > 160;
-  }
+/// Two buttons that center the selected object on the canvas — horizontally
+/// (x = 0.5) and vertically (y = 0.5) — without changing its size. Shared by
+/// the text, photo and sticker edit panels.
+class _AlignButtons extends StatelessWidget {
+  const _AlignButtons({required this.onCenterH, required this.onCenterV});
+  final VoidCallback onCenterH;
+  final VoidCallback onCenterV;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _presets.map((c) {
-            final sel = c == widget.current;
-            return GestureDetector(
-              onTap: () {
-                widget.onSelect(c);
-                _hex.text = _toHex(c);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(c),
-                  border: Border.all(
-                    color: sel ? AppTheme.primary : AppTheme.line,
-                    width: sel ? 2.5 : 1,
-                  ),
-                  boxShadow: sel
-                      ? [
-                          BoxShadow(
-                              color: AppTheme.primary.withValues(alpha: 0.45),
-                              blurRadius: 6)
-                        ]
-                      : null,
-                ),
-                child: sel
-                    ? Icon(Icons.check,
-                        size: 14,
-                        color: _isLight(c) ? Colors.black : Colors.white)
-                    : null,
+    Widget btn(IconData icon, String label, VoidCallback onTap) => Expanded(
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              height: 44,
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.surface2,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.line),
               ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 6),
-        SizedBox(
-          height: 40,
-          child: TextField(
-            controller: _hex,
-            style: TextStyle(
-                fontFamily: AppTheme.fontTheme,
-                color: AppTheme.textDark,
-                fontSize: 12),
-            decoration: const InputDecoration(
-              hintText: '#000000',
-              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-              prefixIcon: Padding(
-                padding: EdgeInsets.all(10),
-                child: Icon(Icons.palette_outlined,
-                    size: 14, color: AppTheme.textMid),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 16, color: AppTheme.textMid),
+                  const SizedBox(width: 6),
+                  Text(label,
+                      style: const TextStyle(
+                        fontFamily: AppTheme.fontTheme,
+                        color: AppTheme.textMid,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      )),
+                ],
               ),
             ),
-            onSubmitted: (raw) {
-              final color = _parseHex(raw);
-              if (color != null) widget.onSelect(color);
-            },
           ),
-        ),
+        );
+
+    return Row(
+      children: [
+        btn(Icons.align_horizontal_center, L10n.s.alignCenterH, onCenterH),
+        btn(Icons.align_vertical_center, L10n.s.alignCenterV, onCenterV),
       ],
     );
   }
@@ -3247,6 +3401,7 @@ class _SlideThumbnail extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.onDelete,
+    this.onDuplicate,
   });
 
   final Slide slide;
@@ -3255,6 +3410,7 @@ class _SlideThumbnail extends StatelessWidget {
   final VoidCallback onTap;
   // Null when the slide can't be deleted (e.g. it's the only slide).
   final VoidCallback? onDelete;
+  final VoidCallback? onDuplicate;
 
   @override
   Widget build(BuildContext context) {
@@ -3323,14 +3479,33 @@ class _SlideThumbnail extends StatelessWidget {
                   ),
                 ),
               ),
-              if (hasAnimation)
-                Positioned(
+              // Animation indicator — hidden while selected to make room for
+              // the action buttons.
+              if (hasAnimation && !isSelected)
+                const Positioned(
                   top: 3,
-                  left: isSelected && onDelete != null ? 3 : null,
-                  right: isSelected && onDelete != null ? null : 3,
-                  child: const Text('✨', style: TextStyle(fontSize: 10)),
+                  right: 3,
+                  child: Text('✨', style: TextStyle(fontSize: 10)),
                 ),
-              // Delete button on the selected slide.
+              // Duplicate button on the selected slide (top-left).
+              if (isSelected && onDuplicate != null)
+                Positioned(
+                  top: 2,
+                  left: 2,
+                  child: GestureDetector(
+                    onTap: onDuplicate,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.copy,
+                          color: Colors.white, size: 11),
+                    ),
+                  ),
+                ),
+              // Delete button on the selected slide (top-right).
               if (isSelected && onDelete != null)
                 Positioned(
                   top: 2,
