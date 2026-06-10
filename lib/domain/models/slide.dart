@@ -379,6 +379,32 @@ extension SlideTextBgX on SlideTextBg {
   }
 }
 
+enum TextShadowLevel { none, soft, medium, strong }
+
+extension TextShadowLevelX on TextShadowLevel {
+  String get label {
+    switch (this) {
+      case TextShadowLevel.none:   return L10n.s.shadowNone;
+      case TextShadowLevel.soft:   return L10n.s.shadowSoft;
+      case TextShadowLevel.medium: return L10n.s.shadowMedium;
+      case TextShadowLevel.strong: return L10n.s.shadowStrong;
+    }
+  }
+
+  List<Shadow> get shadows {
+    switch (this) {
+      case TextShadowLevel.none:
+        return [];
+      case TextShadowLevel.soft:
+        return [Shadow(color: const Color(0xFF000000).withValues(alpha: 0.4), blurRadius: 6)];
+      case TextShadowLevel.medium:
+        return [Shadow(color: const Color(0xFF000000).withValues(alpha: 0.72), blurRadius: 10)];
+      case TextShadowLevel.strong:
+        return [Shadow(color: const Color(0xFF000000).withValues(alpha: 0.9), blurRadius: 18)];
+    }
+  }
+}
+
 extension SlideTemplateX on SlideTemplate {
   String get label {
     switch (this) {
@@ -453,6 +479,9 @@ class TextLayer {
         contentAnimation: SlideContentAnimation.values.firstWhere(
             (e) => e.name == j['contentAnimation'],
             orElse: () => SlideContentAnimation.none),
+        shadowLevel: TextShadowLevel.values.firstWhere(
+            (e) => e.name == j['shadowLevel'],
+            orElse: () => TextShadowLevel.medium),
       );
 
   Map<String, dynamic> toJson() => {
@@ -471,6 +500,7 @@ class TextLayer {
         'letterSpacing': letterSpacing,
         'zOrder': zOrder,
         'contentAnimation': contentAnimation.name,
+        'shadowLevel': shadowLevel.name,
       };
 
   const TextLayer({
@@ -489,6 +519,7 @@ class TextLayer {
     this.letterSpacing = 0.0,
     this.zOrder = 0,
     this.contentAnimation = SlideContentAnimation.none,
+    this.shadowLevel = TextShadowLevel.medium,
   });
 
   final String id;
@@ -506,6 +537,7 @@ class TextLayer {
   final double letterSpacing;
   final int zOrder;
   final SlideContentAnimation contentAnimation;
+  final TextShadowLevel shadowLevel;
 
   TextLayer copyWith({
     String? text,
@@ -522,6 +554,7 @@ class TextLayer {
     double? letterSpacing,
     int? zOrder,
     SlideContentAnimation? contentAnimation,
+    TextShadowLevel? shadowLevel,
   }) {
     return TextLayer(
       id: id,
@@ -539,6 +572,7 @@ class TextLayer {
       letterSpacing: letterSpacing ?? this.letterSpacing,
       zOrder: zOrder ?? this.zOrder,
       contentAnimation: contentAnimation ?? this.contentAnimation,
+      shadowLevel: shadowLevel ?? this.shadowLevel,
     );
   }
 }
