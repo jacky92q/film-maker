@@ -482,6 +482,8 @@ class TextLayer {
         shadowLevel: TextShadowLevel.values.firstWhere(
             (e) => e.name == j['shadowLevel'],
             orElse: () => TextShadowLevel.medium),
+        customColor: j['customColor'] as int?,
+        customBarColor: j['customBarColor'] as int?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -501,6 +503,8 @@ class TextLayer {
         'zOrder': zOrder,
         'contentAnimation': contentAnimation.name,
         'shadowLevel': shadowLevel.name,
+        'customColor': customColor,
+        'customBarColor': customBarColor,
       };
 
   const TextLayer({
@@ -520,6 +524,8 @@ class TextLayer {
     this.zOrder = 0,
     this.contentAnimation = SlideContentAnimation.none,
     this.shadowLevel = TextShadowLevel.medium,
+    this.customColor,
+    this.customBarColor,
   });
 
   final String id;
@@ -539,6 +545,19 @@ class TextLayer {
   final SlideContentAnimation contentAnimation;
   final TextShadowLevel shadowLevel;
 
+  /// Optional free-form ARGB color overrides chosen via the spectrum picker.
+  /// When non-null they take precedence over the [color] / [barColor] preset.
+  final int? customColor;
+  final int? customBarColor;
+
+  /// Effective text color: custom override if set, else the preset's color.
+  Color get effectiveColor =>
+      customColor != null ? Color(customColor!) : color.color;
+
+  /// Effective subtitle bar color: custom override if set, else the preset.
+  Color get effectiveBarColor =>
+      customBarColor != null ? Color(customBarColor!) : barColor.color;
+
   TextLayer copyWith({
     String? text,
     bool? isSubtitle,
@@ -555,6 +574,8 @@ class TextLayer {
     int? zOrder,
     SlideContentAnimation? contentAnimation,
     TextShadowLevel? shadowLevel,
+    int? customColor,
+    int? customBarColor,
   }) {
     return TextLayer(
       id: id,
@@ -573,6 +594,8 @@ class TextLayer {
       zOrder: zOrder ?? this.zOrder,
       contentAnimation: contentAnimation ?? this.contentAnimation,
       shadowLevel: shadowLevel ?? this.shadowLevel,
+      customColor: customColor ?? this.customColor,
+      customBarColor: customBarColor ?? this.customBarColor,
     );
   }
 }
@@ -840,6 +863,7 @@ class Slide {
         frameColor: SlideTextColor.values.firstWhere(
             (e) => e.name == j['frameColor'],
             orElse: () => SlideTextColor.white),
+        customFrameColor: j['customFrameColor'] as int?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -867,6 +891,7 @@ class Slide {
         'ambientEffect': ambientEffect.name,
         'frame': frame.name,
         'frameColor': frameColor.name,
+        'customFrameColor': customFrameColor,
       };
 
   const Slide({
@@ -894,6 +919,7 @@ class Slide {
     this.ambientEffect = SlideAmbientEffect.none,
     this.frame = SlideFrame.none,
     this.frameColor = SlideTextColor.white,
+    this.customFrameColor,
   });
 
   final String id;
@@ -921,6 +947,13 @@ class Slide {
   final SlideFrame frame;
   final SlideTextColor frameColor;
 
+  /// Optional free-form ARGB override for the decorative frame color.
+  final int? customFrameColor;
+
+  /// Effective frame color: custom override if set, else the preset's color.
+  Color get effectiveFrameColor =>
+      customFrameColor != null ? Color(customFrameColor!) : frameColor.color;
+
   Slide copyWith({
     String? imagePath,
     List<TextLayer>? textLayers,
@@ -945,6 +978,7 @@ class Slide {
     SlideAmbientEffect? ambientEffect,
     SlideFrame? frame,
     SlideTextColor? frameColor,
+    int? customFrameColor,
   }) {
     return Slide(
       id: id,
@@ -971,6 +1005,7 @@ class Slide {
       ambientEffect: ambientEffect ?? this.ambientEffect,
       frame: frame ?? this.frame,
       frameColor: frameColor ?? this.frameColor,
+      customFrameColor: customFrameColor ?? this.customFrameColor,
     );
   }
 }

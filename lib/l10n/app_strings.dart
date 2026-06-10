@@ -217,6 +217,13 @@ abstract class AppStrings {
   String get secAnimation;
   String get secWidth;
   String get secHeight;
+  String get secAlign;
+  String get secColorCustom;
+
+  // Align / arrange
+  String get alignCenterH;
+  String get alignCenterV;
+  String get duplicateSlide;
 
   // Tabs
   String get tabAdjust;
@@ -588,6 +595,11 @@ class _EnStrings extends AppStrings {
   @override String get secAnimation => 'Animation';
   @override String get secWidth => 'Width';
   @override String get secHeight => 'Height';
+  @override String get secAlign => 'Align';
+  @override String get secColorCustom => 'Custom';
+  @override String get alignCenterH => 'Center H';
+  @override String get alignCenterV => 'Center V';
+  @override String get duplicateSlide => 'Duplicate';
 
   @override String get tabAdjust => 'Adjust';
   @override String get tabStyle => 'Style';
@@ -949,6 +961,11 @@ class _KoStrings extends AppStrings {
   @override String get secAnimation => '애니메이션';
   @override String get secWidth => '너비';
   @override String get secHeight => '높이';
+  @override String get secAlign => '정렬';
+  @override String get secColorCustom => '직접 선택';
+  @override String get alignCenterH => '가로 중앙';
+  @override String get alignCenterV => '세로 중앙';
+  @override String get duplicateSlide => '복제';
 
   @override String get tabAdjust => '조정';
   @override String get tabStyle => '스타일';

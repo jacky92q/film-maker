@@ -428,6 +428,37 @@ class EditorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Duplicates the currently selected slide, inserting the copy directly
+  /// after it. All layers (text / photo / sticker) get fresh ids so the copy
+  /// is fully independent — every position, size, color and style setting is
+  /// preserved, ready for the user to just swap the photo or text. Useful for
+  /// films where objects must stay fixed in place across slides.
+  void duplicateSelectedSlide() {
+    final slide = selectedSlide;
+    if (slide == null) return;
+
+    List<Map<String, dynamic>> reid(List raw) => [
+          for (final e in raw)
+            {...Map<String, dynamic>.from(e as Map), 'id': _uuid.v4()},
+        ];
+
+    final json = slide.toJson();
+    json['id'] = _uuid.v4();
+    json['textLayers'] = reid(json['textLayers'] as List? ?? []);
+    json['photoLayers'] = reid(json['photoLayers'] as List? ?? []);
+    json['stickerLayers'] = reid(json['stickerLayers'] as List? ?? []);
+
+    final copy = Slide.fromJson(json);
+    final slides = [..._project.slides]..insert(_selectedSlideIndex + 1, copy);
+    _project = _project.copyWith(slides: slides);
+    _selectedSlideIndex += 1;
+    _selectedLayerId = null;
+    _selectedPhotoLayerId = null;
+    _selectedStickerId = null;
+    _hasUnsavedChanges = true;
+    notifyListeners();
+  }
+
   void deleteSelectedSlide() {
     if (_project.slides.length <= 1) return;
     final slides = [..._project.slides]..removeAt(_selectedSlideIndex);
