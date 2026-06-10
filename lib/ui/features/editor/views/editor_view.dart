@@ -2360,7 +2360,6 @@ class _SlideTabs extends StatelessWidget {
           const SizedBox(height: 8),
           _ColorPickerField(
             current: Color(slide.backgroundColor),
-            presets: _backgroundPresets,
             onChanged: (c) => viewModel.updateSelectedSlide(
                 slide.copyWith(backgroundColor: c.toARGB32())),
           ),
@@ -2792,74 +2791,19 @@ class _AnimationPickerRow extends StatelessWidget {
   }
 }
 
-/// A full color chooser: a row of preset swatches plus an interactive HSV
-/// spectrum (saturation/value field + hue slider) so the user can dial in any
-/// color visually. Replaces the old preset-only dots and the hex text field.
+/// Interactive HSV color picker (saturation/value field + hue slider).
 class _ColorPickerField extends StatelessWidget {
   const _ColorPickerField({
     required this.current,
     required this.onChanged,
-    this.presets,
   });
 
   final Color current;
   final ValueChanged<Color> onChanged;
-  // When null, falls back to the bundled text-color palette.
-  final List<Color>? presets;
-
-  // Default swatch palette derived from the bundled text colors.
-  static final List<Color> _textPresets =
-      SlideTextColor.values.map((e) => e.color).toList();
-
-  static bool _isLight(Color c) =>
-      (c.r * 255 * 299 + c.g * 255 * 587 + c.b * 255 * 114) / 1000 > 160;
 
   @override
   Widget build(BuildContext context) {
-    final swatches = presets ?? _textPresets;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: swatches.map((c) {
-            final sel = c.toARGB32() == current.toARGB32();
-            return GestureDetector(
-              onTap: () => onChanged(c),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: c,
-                  border: Border.all(
-                      color: sel ? AppTheme.primary : AppTheme.line,
-                      width: sel ? 2.5 : 1),
-                  boxShadow: sel
-                      ? [
-                          BoxShadow(
-                              color: AppTheme.primary.withValues(alpha: 0.5),
-                              blurRadius: 6)
-                        ]
-                      : null,
-                ),
-                child: sel
-                    ? Icon(Icons.check,
-                        size: 15,
-                        color: _isLight(c) ? Colors.black : Colors.white)
-                    : null,
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 12),
-        _SectionHeader(L10n.s.secColorCustom),
-        const SizedBox(height: 8),
-        _SpectrumPicker(color: current, onChanged: onChanged),
-      ],
-    );
+    return _SpectrumPicker(color: current, onChanged: onChanged);
   }
 }
 
@@ -2900,7 +2844,13 @@ class _SpectrumPickerState extends State<_SpectrumPicker> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    // Wrap in GestureDetector to win the gesture arena for horizontal drags,
+    // preventing the enclosing TabBarView from sliding while the picker is used.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: (_) {},
+      onHorizontalDragUpdate: (_) {},
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Saturation / Value field.
@@ -2913,8 +2863,6 @@ class _SpectrumPickerState extends State<_SpectrumPicker> {
               _emit(_hsv.withSaturation(s).withValue(v));
             }
 
-            // Listener (raw pointer events) instead of GestureDetector so the
-            // drag isn't lost to the surrounding vertical scroll view.
             return Listener(
               behavior: HitTestBehavior.opaque,
               onPointerDown: (e) => handle(e.localPosition),
@@ -2986,6 +2934,7 @@ class _SpectrumPickerState extends State<_SpectrumPicker> {
           }),
         ),
       ],
+      ),
     );
   }
 }
@@ -3279,20 +3228,6 @@ class _SliderRow extends StatelessWidget {
     );
   }
 }
-
-/// Swatch palette offered for slide background colors (darks, neutrals,
-/// pastels). The spectrum picker handles everything in between.
-final List<Color> _backgroundPresets = <int>[
-  // Darks
-  0xFF000000, 0xFF0D0D0D, 0xFF1A1A1A, 0xFF2C2C2C,
-  0xFF1C1C2E, 0xFF1A1A2E, 0xFF2D1B1B, 0xFF1B2D1B,
-  // Lights & warm neutrals
-  0xFFFFFFFF, 0xFFF5F5F5, 0xFFFFF8F2, 0xFFF5F0E8,
-  0xFFEDE0D4, 0xFFD4C5B0, 0xFFC9B9A0, 0xFFBDAD96,
-  // Pastels & colors
-  0xFFE8B4B8, 0xFFD4A5A5, 0xFFB5C4B1, 0xFFB8CCE0,
-  0xFFC9B8D4, 0xFFF2D4A0, 0xFFC07842, 0xFF4A3728,
-].map((c) => Color(c)).toList();
 
 /// Two buttons that center the selected object on the canvas — horizontally
 /// (x = 0.5) and vertically (y = 0.5) — without changing its size. Shared by
